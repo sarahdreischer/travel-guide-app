@@ -6,6 +6,7 @@ import type { CacheKey, AdviceRecord } from '@/lib/advice-store'
 import { LLMAdapter, AdviceTimeoutError } from '@/lib/llm-adapter'
 import { getSubQuestions } from '@/lib/sub-questions'
 import { CATEGORIES } from '@/lib/destinations'
+import { canCallAI, recordAICall, getRateLimitStatus } from '@/lib/ai-rate-limiter'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -16,6 +17,13 @@ export type CategoryResult =
 export type AdviceActionResult = {
   results: CategoryResult[]
   errors: string[] // Categories that failed
+}
+
+export type ReconcileResult = {
+  generated: number
+  skipped: number
+  errors: number
+  rateLimited: boolean
 }
 
 // ─── Server Action ────────────────────────────────────────────────────────────
@@ -44,8 +52,20 @@ export async function getOrGenerateAdviceAction(
         continue
       }
 
-      // Step 2: Cache miss — generate via LLM (Req 4.4)
+      // Step 2: Check rate limit before making LLM call
+      if (!canCallAI()) {
+        results.push({
+          status: 'error',
+          category,
+          message: 'Rate limited — try again later',
+        })
+        errors.push(category)
+        continue
+      }
+
+      // Step 3: Cache miss — generate via LLM (Req 4.4)
       const subQuestions = getSubQuestions(category)
+      recordAICall()
       const record = await LLMAdapter.generateAdvice({
         cacheKey,
         category,
@@ -55,7 +75,6 @@ export async function getOrGenerateAdviceAction(
       results.push({ status: 'success', record })
     } catch (error: unknown) {
       if (error instanceof AdviceTimeoutError) {
-        // Req 4.7: Log timeout/error server-side, return user-facing error for this category
         console.error(
           `[getOrGenerateAdviceAction] Timeout generating advice for category "${category}":`,
           error.message
@@ -67,7 +86,6 @@ export async function getOrGenerateAdviceAction(
         })
         errors.push(category)
       } else {
-        // Req 4.8: Write failure or unexpected error — log and mark category as failed
         console.error(
           `[getOrGenerateAdviceAction] Error for category "${category}":`,
           error
@@ -83,4 +101,56 @@ export async function getOrGenerateAdviceAction(
   }
 
   return { results, errors }
+}
+
+/**
+ * Reconcile missing advice for a trip on page load.
+ * Only generates advice for categories that are missing from the cache.
+ * Respects the AI rate limit (configurable via AI_MAX_CALLS_PER_HOUR env var).
+ *
+ * Returns how many categories were generated, skipped, or errored.
+ */
+export async function reconcileMissingAdviceAction(
+  cacheKey: CacheKey
+): Promise<ReconcileResult> {
+  let generated = 0
+  let skipped = 0
+  let errors = 0
+  let rateLimited = false
+
+  for (const category of CATEGORIES) {
+    // Check if advice already exists
+    const cached = await AdviceStore.findByCacheKey(cacheKey, category)
+    if (cached) {
+      skipped++
+      continue
+    }
+
+    // Check rate limit
+    if (!canCallAI()) {
+      rateLimited = true
+      const status = getRateLimitStatus()
+      console.log(
+        `[reconcileMissingAdvice] Rate limited — ${status.callsUsed}/${status.maxCalls} calls used this hour. Skipping remaining categories.`
+      )
+      break
+    }
+
+    // Generate the missing advice
+    try {
+      const subQuestions = getSubQuestions(category)
+      recordAICall()
+      await LLMAdapter.generateAdvice({
+        cacheKey,
+        category,
+        subQuestions,
+      })
+      generated++
+    } catch (error: unknown) {
+      console.error(`[reconcileMissingAdvice] Failed for category "${category}":`, error)
+      errors++
+    }
+  }
+
+  return { generated, skipped, errors, rateLimited }
 }

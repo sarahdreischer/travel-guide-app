@@ -29,6 +29,12 @@ jest.mock('@/lib/sub-questions', () => ({
   getSubQuestions: jest.fn(() => ['Question 1?', 'Question 2?']),
 }))
 
+jest.mock('@/lib/ai-rate-limiter', () => ({
+  canCallAI: jest.fn(() => true),
+  recordAICall: jest.fn(),
+  getRateLimitStatus: jest.fn(() => ({ callsUsed: 0, maxCalls: 100, windowMs: 3600000 })),
+}))
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const mockCacheKey: CacheKey = {

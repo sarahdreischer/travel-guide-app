@@ -134,7 +134,7 @@ export async function setupProfileAction(formData: FormData): Promise<ProfileAct
   }
 
   // redirect() must NOT be inside try/catch — it throws a special Next.js error
-  redirect('/home')
+  redirect('/destinations')
 }
 
 // ─── updateProfileAction ──────────────────────────────────────────────────────

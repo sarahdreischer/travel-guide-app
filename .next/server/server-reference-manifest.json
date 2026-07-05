@@ -1,25 +1,25 @@
 {
   "node": {
-    "0008e486c7e2d6322788adb70418099e8652864ad1": {
+    "4021ca78f53a3a61b444f6f94d97e88a420eb3b2ea": {
       "workers": {
-        "app/(auth)/login/page": {
-          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fauth.ts%22%2C%5B%5B%220008e486c7e2d6322788adb70418099e8652864ad1%22%2C%22logoutAction%22%5D%2C%5B%2260a13c4f3a762b2df41e84fb54b385f52ee3c15617%22%2C%22loginAction%22%5D%5D%5D%5D&__client_imported__=true!",
+        "app/(app)/home/[tripId]/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fadvice.ts%22%2C%5B%5B%224021ca78f53a3a61b444f6f94d97e88a420eb3b2ea%22%2C%22reconcileMissingAdviceAction%22%5D%2C%5B%224086805b5a25b695fdcc5b1745d5f995436e471cfd%22%2C%22getOrGenerateAdviceAction%22%5D%5D%5D%5D&__client_imported__=!",
           "async": false
         }
       },
       "layer": {
-        "app/(auth)/login/page": "action-browser"
+        "app/(app)/home/[tripId]/page": "rsc"
       }
     },
-    "60a13c4f3a762b2df41e84fb54b385f52ee3c15617": {
+    "4086805b5a25b695fdcc5b1745d5f995436e471cfd": {
       "workers": {
-        "app/(auth)/login/page": {
-          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fauth.ts%22%2C%5B%5B%220008e486c7e2d6322788adb70418099e8652864ad1%22%2C%22logoutAction%22%5D%2C%5B%2260a13c4f3a762b2df41e84fb54b385f52ee3c15617%22%2C%22loginAction%22%5D%5D%5D%5D&__client_imported__=true!",
+        "app/(app)/home/[tripId]/page": {
+          "moduleId": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fadvice.ts%22%2C%5B%5B%224021ca78f53a3a61b444f6f94d97e88a420eb3b2ea%22%2C%22reconcileMissingAdviceAction%22%5D%2C%5B%224086805b5a25b695fdcc5b1745d5f995436e471cfd%22%2C%22getOrGenerateAdviceAction%22%5D%5D%5D%5D&__client_imported__=!",
           "async": false
         }
       },
       "layer": {
-        "app/(auth)/login/page": "action-browser"
+        "app/(app)/home/[tripId]/page": "rsc"
       }
     }
   },

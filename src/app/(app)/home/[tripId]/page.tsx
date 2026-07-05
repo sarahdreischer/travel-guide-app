@@ -1,12 +1,18 @@
 // Home page for a specific trip — Requirements 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { db } from '@/db'
 import { trips } from '@/db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, desc } from 'drizzle-orm'
+import { AuthService } from '@/lib/auth'
 import { AdviceStore } from '@/lib/advice-store'
 import type { AdviceRecord } from '@/lib/advice-store'
+import { derivebudgetRange } from '@/lib/validators'
+import { reconcileMissingAdviceAction } from '@/actions/advice'
+import { CATEGORIES } from '@/lib/destinations'
 import HomeCardGrid, { type CardData } from '@/components/HomeCardGrid'
+import TripSelector from '@/components/TripSelector'
 import { CONCISE_TOPICS, type ConciseTopic } from '@/lib/destinations'
 
 /**
@@ -109,6 +115,11 @@ export default async function HomePage({
 }) {
   const { tripId } = await params
 
+  // Get current user for trip list
+  const cookieStore = await cookies()
+  const token = cookieStore.get('session_token')?.value
+  const user = token ? await AuthService.getSession(token) : null
+
   // Fetch the trip record for the heading
   const [trip] = await db.select().from(trips).where(eq(trips.id, tripId)).limit(1)
 
@@ -116,14 +127,53 @@ export default async function HomePage({
     notFound()
   }
 
+  // Fetch all user trips for the trip selector
+  const userTrips = user
+    ? await db
+        .select({ id: trips.id, destination: trips.destination, startDate: trips.startDate })
+        .from(trips)
+        .where(eq(trips.userId, user.id))
+        .orderBy(desc(trips.createdAt))
+    : []
+
   // Fetch all cached advice records for this trip
-  const adviceRecords = await AdviceStore.getForTrip(tripId)
+  let adviceRecords = await AdviceStore.getForTrip(tripId)
+
+  // Reconcile missing advice on page load if any categories are missing
+  if (adviceRecords.length < CATEGORIES.length) {
+    const month = new Date(trip.startDate).toLocaleString('en', { month: 'long' }).toLowerCase()
+    const cacheKey = {
+      destination: trip.destination.toLowerCase(),
+      month,
+      travellerType: trip.travelMode.toLowerCase(),
+      budgetRange: derivebudgetRange(trip.budgetUsd),
+    }
+
+    const result = await reconcileMissingAdviceAction(cacheKey)
+
+    if (result.generated > 0) {
+      // Re-fetch advice after generating new records
+      adviceRecords = await AdviceStore.getForTrip(tripId)
+    }
+  }
 
   // Build card data from advice records
   const cards = buildCards(adviceRecords)
 
   return (
     <main className="p-4 max-w-4xl mx-auto">
+      {/* Trip selector for users with multiple trips */}
+      {userTrips.length > 1 && (
+        <TripSelector
+          trips={userTrips.map((t) => ({
+            id: t.id,
+            destination: t.destination,
+            startDate: t.startDate,
+          }))}
+          currentTripId={tripId}
+        />
+      )}
+
       <h1 className="text-2xl font-bold text-gray-900 mb-6">
         {trip.destination} — Travel Advice
       </h1>
