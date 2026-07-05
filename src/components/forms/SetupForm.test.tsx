@@ -249,4 +249,22 @@ describe("SetupForm", () => {
     // Error should be cleared
     expect(screen.queryByText("First name is required.")).not.toBeInTheDocument();
   });
+
+  it("shows profile image field by default (showProfileImage defaults to true)", () => {
+    render(<SetupForm />);
+
+    expect(screen.getByLabelText(/profile image/i)).toBeInTheDocument();
+  });
+
+  it("hides profile image field when showProfileImage is false", () => {
+    render(<SetupForm showProfileImage={false} />);
+
+    expect(screen.queryByLabelText(/profile image/i)).not.toBeInTheDocument();
+  });
+
+  it("shows profile image field when showProfileImage is true", () => {
+    render(<SetupForm showProfileImage={true} />);
+
+    expect(screen.getByLabelText(/profile image/i)).toBeInTheDocument();
+  });
 });

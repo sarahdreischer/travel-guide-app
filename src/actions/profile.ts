@@ -5,6 +5,9 @@ import { AuthService } from '@/lib/auth'
 import { validateEmail, validateUsername } from '@/lib/validators'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { eq } from 'drizzle-orm'
+import { db } from '@/db'
+import { users } from '@/db/schema'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -77,6 +80,20 @@ export async function setupProfileAction(formData: FormData): Promise<ProfileAct
     return { success: false, errors }
   }
 
+  // ── Check for duplicate email ──
+  const [existingUser] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1)
+
+  if (existingUser) {
+    return {
+      success: false,
+      errors: { email: 'An account with this email already exists.' },
+    }
+  }
+
   // ── Create profile ──
   // For MVP, profile image path is stored as null unless a file storage layer is added.
   // The image file would be written to disk/object storage and its path stored here.
@@ -102,6 +119,13 @@ export async function setupProfileAction(formData: FormData): Promise<ProfileAct
     const cookieStore = await cookies()
     cookieStore.set('session_token', loginResult.token, {
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      expires: loginResult.expiresAt,
+    })
+    cookieStore.set('setup_complete', 'true', {
+      httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',

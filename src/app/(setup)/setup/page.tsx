@@ -16,7 +16,7 @@ export default function SetupPage() {
         <p className="text-sm text-gray-600 mb-8 text-center">
           Set up your account to get started with personalised travel advice.
         </p>
-        <SetupForm />
+        <SetupForm showProfileImage={false} />
       </div>
     </main>
   );

@@ -75,3 +75,43 @@ describe('middleware — session guard for (app)/** routes', () => {
     }
   })
 })
+
+describe('middleware — /setup route handling', () => {
+  it('allows access to /setup when no session_token is present (guest)', () => {
+    const req = createRequest('/setup')
+    const res = middleware(req)
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get('location')).toBeNull()
+  })
+
+  it('allows access to /setup when session_token exists but setup_complete is missing', () => {
+    const req = createRequest('/setup', { session_token: 'valid-token' })
+    const res = middleware(req)
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get('location')).toBeNull()
+  })
+
+  it('allows access to /setup when session_token exists but setup_complete is not "true"', () => {
+    const req = createRequest('/setup', {
+      session_token: 'valid-token',
+      setup_complete: 'false',
+    })
+    const res = middleware(req)
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get('location')).toBeNull()
+  })
+
+  it('redirects to /home when session_token and setup_complete=true are both present', () => {
+    const req = createRequest('/setup', {
+      session_token: 'valid-token',
+      setup_complete: 'true',
+    })
+    const res = middleware(req)
+
+    expect(res.status).toBe(307)
+    expect(new URL(res.headers.get('location')!).pathname).toBe('/home')
+  })
+})

@@ -17,6 +17,10 @@ type FormValues = {
 
 // ─── SetupForm ────────────────────────────────────────────────────────────────
 
+interface SetupFormProps {
+  showProfileImage?: boolean;
+}
+
 /**
  * Client Component for new-user profile setup.
  * Fields: firstName, lastName, email, password, profileImage (optional).
@@ -25,7 +29,7 @@ type FormValues = {
  *
  * Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8
  */
-export default function SetupForm() {
+export default function SetupForm({ showProfileImage = true }: SetupFormProps) {
   const [values, setValues] = useState<FormValues>({
     firstName: "",
     lastName: "",
@@ -256,39 +260,41 @@ export default function SetupForm() {
         </div>
 
         {/* Profile Image (optional) */}
-        <div>
-          <label
-            htmlFor="profileImage"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Profile image{" "}
-            <span className="text-gray-600 font-normal">(optional)</span>
-          </label>
-          <input
-            id="profileImage"
-            name="profileImage"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handleChange("profileImage")}
-            aria-invalid={!!errors.profileImage}
-            aria-describedby={
-              errors.profileImage ? "profileImage-error" : undefined
-            }
-            className="w-full min-h-[44px] min-w-[44px] text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
-          />
-          {errors.profileImage && (
-            <p
-              id="profileImage-error"
-              className="mt-1 text-sm text-red-600"
-              role="alert"
+        {showProfileImage && (
+          <div>
+            <label
+              htmlFor="profileImage"
+              className="block text-sm font-medium text-gray-700 mb-1"
             >
-              {errors.profileImage}
+              Profile image{" "}
+              <span className="text-gray-600 font-normal">(optional)</span>
+            </label>
+            <input
+              id="profileImage"
+              name="profileImage"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleChange("profileImage")}
+              aria-invalid={!!errors.profileImage}
+              aria-describedby={
+                errors.profileImage ? "profileImage-error" : undefined
+              }
+              className="w-full min-h-[44px] min-w-[44px] text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+            />
+            {errors.profileImage && (
+              <p
+                id="profileImage-error"
+                className="mt-1 text-sm text-red-600"
+                role="alert"
+              >
+                {errors.profileImage}
+              </p>
+            )}
+            <p className="mt-1 text-xs text-gray-600">
+              JPEG, PNG, or WebP. Max 5 MB.
             </p>
-          )}
-          <p className="mt-1 text-xs text-gray-600">
-            JPEG, PNG, or WebP. Max 5 MB.
-          </p>
-        </div>
+          </div>
+        )}
 
         {/* Submit Button */}
         <button

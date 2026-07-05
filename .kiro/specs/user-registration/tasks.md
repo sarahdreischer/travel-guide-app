@@ -6,8 +6,8 @@ Wire the existing setup flow into a self-service registration path accessible fr
 
 ## Tasks
 
-- [ ] 1. Add "Sign up" link to the login page
-  - [ ] 1.1 Add registration navigation link below LoginForm
+- [x] 1. Add "Sign up" link to the login page
+  - [x] 1.1 Add registration navigation link below LoginForm
     - In `src/app/(auth)/login/page.tsx`, add a paragraph with a "Sign up" link pointing to `/setup`
     - Use a standard `<a>` tag (cross route-group navigation)
     - Apply `min-h-[44px] min-w-[44px] leading-[44px] inline-block` for touch target compliance
@@ -18,8 +18,8 @@ Wire the existing setup flow into a self-service registration path accessible fr
     - In `src/app/(auth)/login/page.test.tsx`, verify the link renders with correct `href="/setup"`, accessible text, and touch target classes
     - _Requirements: 1.1, 1.4, 1.5_
 
-- [ ] 2. Update middleware to allow unauthenticated access to /setup
-  - [ ] 2.1 Modify middleware routing logic for /setup
+- [x] 2. Update middleware to allow unauthenticated access to /setup
+  - [x] 2.1 Modify middleware routing logic for /setup
     - In `src/middleware.ts`, add `/setup` to the matcher config
     - Add special handling: if pathname is `/setup` and user has both `session_token` and `setup_complete=true`, redirect to `/home`
     - If pathname is `/setup` and no session or session without `setup_complete`, allow through with `NextResponse.next()`
@@ -32,13 +32,13 @@ Wire the existing setup flow into a self-service registration path accessible fr
     - Test: user with `session_token` but no `setup_complete` can access `/setup`
     - _Requirements: 2.1, 2.3_
 
-- [ ] 3. Hide profile image field during registration
-  - [ ] 3.1 Add showProfileImage prop to SetupForm component
+- [x] 3. Hide profile image field during registration
+  - [x] 3.1 Add showProfileImage prop to SetupForm component
     - In `src/components/forms/SetupForm.tsx`, add `showProfileImage?: boolean` prop with default `true`
     - Wrap the profile image `<div>` with `{showProfileImage && (...)}`
     - _Requirements: 2.2, 4.1_
 
-  - [ ] 3.2 Pass showProfileImage={false} on the setup page
+  - [x] 3.2 Pass showProfileImage={false} on the setup page
     - In `src/app/(setup)/setup/page.tsx`, pass `showProfileImage={false}` to `<SetupForm />`
     - _Requirements: 2.2, 4.1_
 
@@ -47,17 +47,17 @@ Wire the existing setup flow into a self-service registration path accessible fr
     - Test: profile image field is shown when `showProfileImage={true}` (default)
     - _Requirements: 2.2, 4.1_
 
-- [ ] 4. Checkpoint - Verify UI changes
+- [x] 4. Checkpoint - Verify UI changes
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Add duplicate email check and setup_complete cookie to setupProfileAction
-  - [ ] 5.1 Add duplicate email detection in setupProfileAction
+- [x] 5. Add duplicate email check and setup_complete cookie to setupProfileAction
+  - [x] 5.1 Add duplicate email detection in setupProfileAction
     - In `src/actions/profile.ts`, import `eq` from `drizzle-orm` and `db`/`users` from the db layer
     - After field validation passes, query `db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1)`
     - If a record is found, return `{ success: false, errors: { email: 'An account with this email already exists.' } }`
     - _Requirements: 3.2_
 
-  - [ ] 5.2 Set setup_complete cookie on successful registration
+  - [x] 5.2 Set setup_complete cookie on successful registration
     - In `src/actions/profile.ts`, inside the `if (loginResult.success)` block, add a second `cookieStore.set('setup_complete', 'true', {...})` call
     - Use `httpOnly: false` (middleware Edge Runtime reads it), same `secure`, `sameSite`, `path`, and `expires` as the session token
     - _Requirements: 3.3_
@@ -80,7 +80,7 @@ Wire the existing setup flow into a self-service registration path accessible fr
     - Test: successful registration sets both `session_token` and `setup_complete` cookies
     - _Requirements: 3.2, 3.3_
 
-- [ ] 6. Final checkpoint - Ensure all tests pass
+- [x] 6. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
