@@ -13,8 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className="overflow-x-hidden">
+      <body className="w-full max-w-full">{children}</body>
     </html>
   );
 }

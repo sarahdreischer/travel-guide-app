@@ -73,11 +73,11 @@ Implement the MVPTravel Reality web application incrementally, starting with the
     - **Validates: Requirements 6.4**
     - Use `fc.constantFrom(...CATEGORIES)`; assert returned list is non-empty and matches the expected list exactly for every category
 
-- [ ] 3. Checkpoint — Ensure all tests pass
+- [x] 3. Checkpoint — Ensure all tests pass
   - Run `jest --passWithNoTests`; fix any type errors from `tsc --noEmit`; ask the user if questions arise.
 
-- [ ] 4. Auth_Service and session middleware
-  - [~] 4.1 Implement `lib/auth.ts` — `Auth_Service`
+- [x] 4. Auth_Service and session middleware
+  - [x] 4.1 Implement `lib/auth.ts` — `Auth_Service`
     - `login()`: look up user by email → compare bcrypt hash (cost 12) → call `checkRateLimit()` → create 32-byte hex session token → INSERT into `sessions` with 24-hour expiry; `getSession()`: SELECT from `sessions` JOIN `users` where token matches and `expires_at > NOW()`; `logout()`: DELETE session row; `checkRateLimit()`: read `login_attempts` for email → return locked if `locked_until > NOW()`; on each failed attempt: increment `failed_count`, set `locked_until = NOW() + 15 min` when count reaches 5
     - _Requirements: 1.2, 1.3, 1.4, 1.5, 1.7_
 
@@ -86,20 +86,20 @@ Implement the MVPTravel Reality web application incrementally, starting with the
     - **Validates: Requirements 1.5**
     - Use `fc.integer({ min: 0, max: 10 })` failed-attempt count; assert locked iff consecutive failures ≥ 5; assert locked account is rejected regardless of correct password
 
-  - [~] 4.3 Implement `middleware.ts` — session guard for `(app)/**` routes
+  - [x] 4.3 Implement `middleware.ts` — session guard for `(app)/**` routes
     - Read `session_token` HttpOnly cookie; call `getSession()`; redirect to `/login` if null or expired; pass through otherwise
     - _Requirements: 1.6, 1.7_
 
-  - [~] 4.4 Implement `actions/auth.ts` Server Actions — `loginAction`, `logoutAction`
+  - [x] 4.4 Implement `actions/auth.ts` Server Actions — `loginAction`, `logoutAction`
     - `loginAction`: call `Auth_Service.login()`, set `session_token` HttpOnly Secure SameSite=Lax cookie, redirect to `/home`; `logoutAction`: call `Auth_Service.logout()`, clear cookie, redirect to `/login`
     - _Requirements: 1.2, 1.3, 1.4, 1.5_
 
-  - [~] 4.5 Build `app/(auth)/login/page.tsx` with `components/forms/LoginForm.tsx`
+  - [x] 4.5 Build `app/(auth)/login/page.tsx` with `components/forms/LoginForm.tsx`
     - Email input, password input, Login button; disable button while form is submitting; show inline error from Server Action result; show lock message when account is locked; all inputs have 44 × 44 px minimum touch targets
     - _Requirements: 1.1, 1.3, 1.4, 1.5, 10.5_
 
-- [ ] 5. New-user setup flow
-  - [~] 5.1 Implement `lib/profile.ts` — `Profile_Service`
+- [x] 5. New-user setup flow
+  - [x] 5.1 Implement `lib/profile.ts` — `Profile_Service`
     - `create()`: INSERT into `users` setting `setup_complete = true`; `update()`: UPDATE user row; `deleteAccount()`: DELETE user row (cascades sessions, trips, votes via FK); `validateImage()`: call shared `validateProfileImage()` from `lib/validators.ts`
     - _Requirements: 2.2, 2.3, 2.7, 9.2, 9.3, 9.6_
 
@@ -108,11 +108,11 @@ Implement the MVPTravel Reality web application incrementally, starting with the
     - **Validates: Requirements 9.6**
     - Seed users with random counts of trips/sessions/votes; call `deleteAccount()`; assert zero rows remain in `trips`, `sessions`, `votes` for that `user_id`
 
-  - [~] 5.3 Implement `actions/profile.ts` Server Actions — `setupProfileAction`, `updateProfileAction`, `deleteAccountAction`
+  - [x] 5.3 Implement `actions/profile.ts` Server Actions — `setupProfileAction`, `updateProfileAction`, `deleteAccountAction`
     - `setupProfileAction`: validate fields via `lib/validators.ts`, save via `Profile_Service.create()`, redirect to `/home`; `updateProfileAction`: validate and update; `deleteAccountAction`: call `Profile_Service.deleteAccount()`, clear session cookie, redirect to `/login`
     - _Requirements: 2.3, 2.4, 2.7, 2.8, 9.2, 9.3, 9.6_
 
-  - [~] 5.4 Build `app/(setup)/setup/page.tsx` with `components/forms/SetupForm.tsx`
+  - [x] 5.4 Build `app/(setup)/setup/page.tsx` with `components/forms/SetupForm.tsx`
     - First name, last name, email, optional profile image upload; field-level validation errors; on valid submit, open `LiabilityDisclaimerModal`; modal has "I acknowledge" and "Cancel" buttons; "Cancel" closes modal without submitting; "I acknowledge" triggers `setupProfileAction`; middleware redirects any non-setup-complete user to `/setup` before allowing access to `(app)/**`
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8_
 
@@ -122,11 +122,11 @@ Implement the MVPTravel Reality web application incrementally, starting with the
     - Use `fc.subarray(['firstName','lastName','email'])` of fields to omit; assert field-level error shown per omitted field; assert profile NOT created if any required field missing
 
 
-- [~] 6. Checkpoint — Ensure all tests pass
+- [x] 6. Checkpoint — Ensure all tests pass
   - Run `jest --passWithNoTests` and `tsc --noEmit`; verify login flow end-to-end; ask the user if questions arise.
 
-- [ ] 7. LLM_Adapter and Advice_Store
-  - [~] 7.1 Implement `lib/advice-store.ts` — `Advice_Store`
+- [x] 7. LLM_Adapter and Advice_Store
+  - [x] 7.1 Implement `lib/advice-store.ts` — `Advice_Store`
     - `findByCacheKey()`: SELECT from `advice_cache` using composite index on `(destination, month, traveller_type, budget_range, category)` with citext/lower comparisons; `save()`: INSERT advice row, return row; `getForTrip()`: JOIN trips → advice_cache via derived cache key
     - _Requirements: 4.2, 4.3, 4.6_
 
@@ -140,27 +140,27 @@ Implement the MVPTravel Reality web application incrementally, starting with the
     - **Validates: Requirements 4.4, 4.6**
     - Random `AdviceRecord` data; call `save()` then `findByCacheKey()`; assert returned record is identical to what was saved
 
-  - [~] 7.4 Implement `lib/llm-adapter.ts` — `LLM_Adapter` with Vercel AI SDK
+  - [x] 7.4 Implement `lib/llm-adapter.ts` — `LLM_Adapter` with Vercel AI SDK
     - `generateAdvice()`: build prompt from cacheKey + category + subQuestions, call configured Vercel AI SDK model with 30-second `AbortSignal` timeout, parse structured JSON response (answers keyed by sub-question), on success call `Advice_Store.save()`, on timeout/error log server-side and throw `AdviceTimeoutError`; `summarise()`: call model to generate a single-sentence summary of full advice text
     - _Requirements: 4.1, 4.4, 4.5, 4.7, 4.8, 5.4_
 
-  - [~] 7.5 Implement `actions/advice.ts` Server Action — `getOrGenerateAdviceAction`
+  - [x] 7.5 Implement `actions/advice.ts` Server Action — `getOrGenerateAdviceAction`
     - For each of the 15 categories: call `Advice_Store.findByCacheKey()` → on cache hit return cached advice → on cache miss call `LLM_Adapter.generateAdvice()`; handle `AdviceTimeoutError` and write failures per design error table; return structured result to client
     - _Requirements: 4.2, 4.3, 4.4, 4.7, 4.8_
 
 
-- [ ] 8. Trip creation
-  - [~] 8.1 Implement `actions/trip.ts` Server Action — `createTripAction`
+- [x] 8. Trip creation
+  - [x] 8.1 Implement `actions/trip.ts` Server Action — `createTripAction`
     - Validate all fields (destination, date range, travel mode, budget, travel style, activity preferences) via `lib/validators.ts`; on validation failure return field-level errors; on success INSERT trip row; derive cache key; call `getOrGenerateAdviceAction` for all 15 categories; redirect to `/home/[tripId]`
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-  - [~] 8.2 Build `app/(app)/trip/new/page.tsx` with `components/forms/TripForm.tsx`
+  - [x] 8.2 Build `app/(app)/trip/new/page.tsx` with `components/forms/TripForm.tsx`
     - Destination `<select>` from `DESTINATIONS` constant; date range pickers (start + end); travel mode radio/select; budget number input (min 1, max 1 000 000); travel style select; activity preferences multi-select checkboxes; field-level validation errors from Server Action; all inputs meet 44 × 44 px touch targets; single-column on < 600 px
     - _Requirements: 3.1, 3.3, 3.4, 3.5, 3.6, 10.1, 10.5_
 
 
-- [ ] 9. Home page — Concise Cards and Expanded Cards
-  - [~] 9.1 Implement `components/cards/ConciseCard.tsx`
+- [x] 9. Home page — Concise Cards and Expanded Cards
+  - [x] 9.1 Implement `components/cards/ConciseCard.tsx`
     - Accept `topic`, `summary`, `isLoading`, `isExpanded`, `onToggle` props; render loading placeholder (skeleton) while `isLoading`; render summary text when loaded; render card in collapsed/expanded states; tappable to toggle; minimum 44 × 44 px touch target
     - _Requirements: 5.1, 5.3, 5.5, 5.6, 10.5_
 
@@ -168,7 +168,7 @@ Implement the MVPTravel Reality web application incrementally, starting with the
     - Test renders loading state, renders advice text, renders fallback text when summary generation fails; test toggle expand/collapse
     - _Requirements: 5.3, 5.5, 5.6_
 
-  - [~] 9.3 Implement `components/cards/ExpandedCard.tsx`
+  - [x] 9.3 Implement `components/cards/ExpandedCard.tsx`
     - Accept `category`, `adviceRecord`, `isLoading` props; render topic name, "Recommended?" indicator (Yes/No/Unknown), concise-view answer, and each sub-question with its AI-generated answer as labelled sections; display "Not applicable" for absent answers; show loading state per sub-question while advice is pending
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
@@ -177,16 +177,16 @@ Implement the MVPTravel Reality web application incrementally, starting with the
     - **Validates: Requirements 6.1**
     - Random `AdviceRecord`; assert rendered output contains topic name, recommended indicator, concise answer, and labelled section for each sub-question
 
-  - [~] 9.5 Build `app/(app)/home/[tripId]/page.tsx`
+  - [x] 9.5 Build `app/(app)/home/[tripId]/page.tsx`
     - Server Component: fetch trip + all 15 advice records via `Advice_Store.getForTrip()`; derive 12 Concise Card topics; call `LLM_Adapter.summarise()` per card (streamed); render 12 `ConciseCard` components in responsive grid (≥ 2 columns at ≥ 600 px, single column below); include link to Comprehensive View; include "Add new destination" link
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7_
 
 
-- [~] 10. Checkpoint — Ensure all tests pass
+- [x] 10. Checkpoint — Ensure all tests pass
   - Run `jest --passWithNoTests` and `tsc --noEmit`; verify trip creation → home page card rendering; ask the user if questions arise.
 
-- [ ] 11. Voting and experience notes
-  - [~] 11.1 Implement `actions/vote.ts` Server Actions — `castVoteAction`, `changeVoteAction`, `retractVoteAction`, `addExperienceNoteAction`
+- [x] 11. Voting and experience notes
+  - [x] 11.1 Implement `actions/vote.ts` Server Actions — `castVoteAction`, `changeVoteAction`, `retractVoteAction`, `addExperienceNoteAction`
     - `castVoteAction`: validate no existing vote → INSERT vote row; `changeVoteAction`: UPDATE existing vote row; `retractVoteAction`: DELETE vote row; `addExperienceNoteAction`: validate note length (1–500 chars) via `lib/validators.ts` → UPSERT vote row with `experience_note`; return confirmation or field-level error
     - _Requirements: 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8_
 
@@ -205,7 +205,7 @@ Implement the MVPTravel Reality web application incrementally, starting with the
     - **Validates: Requirements 7.7**
     - After casting any vote and then retracting, assert zero rows for (userId, adviceId) pair
 
-  - [~] 11.5 Implement `components/voting/VoteButtons.tsx`
+  - [x] 11.5 Implement `components/voting/VoteButtons.tsx`
     - Render 👍 Accurate, 👎 Outdated, ➕ Add experience buttons; highlight user's current vote selection; clicking a selected vote retracts it; clicking ➕ opens an inline text input (max 500 chars, character counter, submit + cancel); all buttons meet 44 × 44 px touch targets; call appropriate Server Action on each interaction
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 10.5_
 
@@ -213,13 +213,13 @@ Implement the MVPTravel Reality web application incrementally, starting with the
     - Test renders all three vote states (unvoted, 👍 selected, 👎 selected); test experience note input appears on ➕ click; test character-limit error at 501 chars
     - _Requirements: 7.1, 7.5, 7.8_
 
-  - [~] 11.7 Wire `VoteButtons` into `ExpandedCard.tsx`
+  - [x] 11.7 Wire `VoteButtons` into `ExpandedCard.tsx`
     - Render `VoteButtons` under each sub-question answer in the expanded card; pass current user vote state as props
     - _Requirements: 7.1, 7.5_
 
 
-- [ ] 12. Travel Destinations page
-  - [~] 12.1 Build `app/(app)/destinations/page.tsx`
+- [x] 12. Travel Destinations page
+  - [x] 12.1 Build `app/(app)/destinations/page.tsx`
     - Server Component: query all trips for current user; split into "Upcoming destinations" (end_date ≥ today) and "Past destinations" (end_date < today); render each trip as a tappable row linking to `/home/[tripId]`; show empty-state message with link to `/trip/new` in each section when no trips exist; include "Add new destination" link
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
@@ -229,30 +229,30 @@ Implement the MVPTravel Reality web application incrementally, starting with the
     - Use `fc.array(fc.record({ startDate: fc.date(), endDate: fc.date() }))` relative to today; assert each trip appears in exactly one section and in the correct section
 
 
-- [ ] 13. User Profile page
-  - [~] 13.1 Build `app/(app)/profile/page.tsx`
+- [x] 13. User Profile page
+  - [x] 13.1 Build `app/(app)/profile/page.tsx`
     - Server Component: render current username (first + last name), profile image, editable username field, editable profile image upload, Terms & Conditions link, Logout button, Delete account button; hook all interactive elements to respective Server Actions
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6_
 
-  - [~] 13.2 Implement delete account confirmation dialog in `components/ui/ConfirmDeleteModal.tsx`
+  - [x] 13.2 Implement delete account confirmation dialog in `components/ui/ConfirmDeleteModal.tsx`
     - Modal with warning message, "Confirm deletion" button, "Cancel" button; Cancel closes modal without deleting; Confirm triggers `deleteAccountAction`; on deletion failure show error message and return to profile page
     - _Requirements: 9.5, 9.6_
 
-- [ ] 14. App layout and navigation
-  - [~] 14.1 Build `app/(app)/layout.tsx` — authenticated layout with nav
+- [x] 14. App layout and navigation
+  - [x] 14.1 Build `app/(app)/layout.tsx` — authenticated layout with nav
     - Auth guard (already enforced by middleware); bottom or side navigation linking to Home (active trip), Destinations, Profile; ensure all links and nav items meet 44 × 44 px touch targets; single-column on < 600 px
     - _Requirements: 5.7, 8.4, 10.1, 10.5_
 
-  - [~] 14.2 Build shared primitive UI components in `components/ui/`
+  - [x] 14.2 Build shared primitive UI components in `components/ui/`
     - `Button.tsx`: variants (primary, secondary, destructive), disabled state, loading spinner; `Input.tsx`: label, error state, accessible aria attributes; `Modal.tsx`: focus trap, backdrop click to close, Escape key to close
     - _Requirements: 1.1, 2.5, 9.5, 10.2, 10.5_
 
 
-- [~] 15. Checkpoint — Ensure all tests pass
+- [x] 15. Checkpoint — Ensure all tests pass
   - Run `jest --passWithNoTests` and `tsc --noEmit`; verify full user flow (login → setup → create trip → home cards → vote → destinations → profile → logout); ask the user if questions arise.
 
-- [ ] 16. Responsive layout and accessibility polish
-  - [~] 16.1 Audit and fix all pages for mobile-first responsive behaviour
+- [x] 16. Responsive layout and accessibility polish
+  - [x] 16.1 Audit and fix all pages for mobile-first responsive behaviour
     - Verify single-column layout at 375 px, ≥ 2 column card grid at ≥ 600 px; eliminate horizontal overflow at all viewport widths; use Tailwind `sm:` breakpoint for overrides
     - _Requirements: 5.2, 10.1, 10.4_
 
@@ -260,11 +260,11 @@ Implement the MVPTravel Reality web application incrementally, starting with the
     - Test that card grid renders ≥ 2 columns at 600 px and exactly 1 column at 375 px using RTL with viewport mocking
     - _Requirements: 5.2, 10.1_
 
-  - [~] 16.3 Audit and fix WCAG 2.1 AA colour contrast and touch target sizes across all pages
+  - [x] 16.3 Audit and fix WCAG 2.1 AA colour contrast and touch target sizes across all pages
     - Check all text/background pairs meet 4.5:1 contrast ratio (normal text) or 3:1 (large text); verify all interactive elements have `min-h-[44px] min-w-[44px]`
     - _Requirements: 10.2, 10.5_
 
-- [~] 17. Final checkpoint — Ensure all tests pass
+- [x] 17. Final checkpoint — Ensure all tests pass
   - Run `jest --passWithNoTests`, `tsc --noEmit`, verify no lint errors via `next lint`; ask the user if questions arise.
 
 ---

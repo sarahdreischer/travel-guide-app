@@ -1,9 +1,10 @@
-// Add Travel Destination (Trip Creation) page — Requirement 3
-// Full implementation is handled in a later task.
+import TripForm from '@/components/forms/TripForm'
+
 export default function NewTripPage() {
   return (
-    <main className="p-4">
-      <p className="text-gray-500">New trip form — coming soon.</p>
+    <main className="mx-auto max-w-lg px-4 py-8">
+      <h1 className="mb-6 text-2xl font-bold text-gray-900">Add Travel Destination</h1>
+      <TripForm />
     </main>
-  );
+  )
 }
