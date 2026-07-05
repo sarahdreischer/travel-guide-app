@@ -45,12 +45,41 @@ async function findByCacheKey(key: CacheKey, category: string): Promise<AdviceRe
 }
 
 /**
- * Insert a new advice record into the cache and return the inserted row.
+ * Idempotent save: insert a new advice record or return the existing one if the
+ * cache key + category already exists (ON CONFLICT DO NOTHING).
+ * This ensures retries and concurrent calls don't produce duplicates.
  *
  * Requirements: 4.6
  */
 async function save(advice: NewAdviceRecord): Promise<AdviceRecord> {
-  const [row] = await db.insert(adviceCache).values(advice).returning()
+  const [row] = await db
+    .insert(adviceCache)
+    .values(advice)
+    .onConflictDoNothing({
+      target: [
+        adviceCache.destination,
+        adviceCache.month,
+        adviceCache.travellerType,
+        adviceCache.budgetRange,
+        adviceCache.category,
+      ],
+    })
+    .returning()
+
+  // If conflict occurred, row is undefined — fetch the existing record
+  if (!row) {
+    const existing = await findByCacheKey(
+      {
+        destination: advice.destination as string,
+        month: advice.month as string,
+        travellerType: advice.travellerType as string,
+        budgetRange: advice.budgetRange as string,
+      },
+      advice.category as string,
+    )
+    return existing!
+  }
+
   return row
 }
 

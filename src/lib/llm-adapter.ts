@@ -18,6 +18,19 @@ export class AdviceTimeoutError extends Error {
 
 export type { CacheKey } from '@/lib/advice-store'
 
+// ─── In-flight request deduplication ──────────────────────────────────────────
+//
+// Tracks currently in-progress AI calls by a derived key. If a second request
+// comes in for the same (cacheKey, category) while the first is still running,
+// it awaits the same promise rather than starting a new AI conversation.
+// Once the promise settles, the entry is removed so future requests can retry.
+
+const inFlightRequests = new Map<string, Promise<AdviceRecord>>()
+
+function buildRequestKey(cacheKey: CacheKey, category: string): string {
+  return `${cacheKey.destination}|${cacheKey.month}|${cacheKey.travellerType}|${cacheKey.budgetRange}|${category}`
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getModel() {
@@ -45,13 +58,10 @@ Return a JSON object where keys are the question text and values are concise, pr
 // ─── Core Functions ───────────────────────────────────────────────────────────
 
 /**
- * Generate structured advice for a (cacheKey, category) pair.
- * Uses Vercel AI SDK generateObject with a zod schema for structured output.
- * Enforces a 30-second timeout and saves results to the advice store.
- *
- * Requirements: 4.1, 4.4, 4.5, 4.7, 4.8
+ * The actual AI call — not exported directly. Called only when no in-flight
+ * request exists for this key.
  */
-async function generateAdvice(params: {
+async function executeAICall(params: {
   cacheKey: CacheKey
   category: string
   subQuestions: string[]
@@ -67,7 +77,7 @@ async function generateAdvice(params: {
       abortSignal: AbortSignal.timeout(30_000),
     })
 
-    // Persist the generated advice
+    // Persist the generated advice (upsert — safe for concurrent writes)
     const record = await AdviceStore.save({
       destination: cacheKey.destination,
       month: cacheKey.month,
@@ -89,6 +99,49 @@ async function generateAdvice(params: {
     }
     throw new AdviceTimeoutError()
   }
+}
+
+/**
+ * Generate structured advice for a (cacheKey, category) pair.
+ *
+ * Idempotent at three levels:
+ * 1. Cache check — returns existing DB record if already generated
+ * 2. In-flight dedup — if an AI call for the same key is already running,
+ *    piggybacks on that promise instead of starting a new conversation
+ * 3. Upsert on save — concurrent writes don't produce duplicates
+ *
+ * Requirements: 4.1, 4.4, 4.5, 4.7, 4.8
+ */
+async function generateAdvice(params: {
+  cacheKey: CacheKey
+  category: string
+  subQuestions: string[]
+}): Promise<AdviceRecord> {
+  const { cacheKey, category } = params
+
+  // Level 1: Check DB cache first
+  const existing = await AdviceStore.findByCacheKey(cacheKey, category)
+  if (existing) {
+    return existing
+  }
+
+  // Level 2: Check if there's already an in-flight request for this key
+  const requestKey = buildRequestKey(cacheKey, category)
+  const inFlight = inFlightRequests.get(requestKey)
+  if (inFlight) {
+    // Piggyback on the existing AI call instead of starting a new one
+    return inFlight
+  }
+
+  // Level 3: Start a new AI call and register it in the in-flight map
+  const promise = executeAICall(params).finally(() => {
+    // Clean up once the call settles (success or failure)
+    inFlightRequests.delete(requestKey)
+  })
+
+  inFlightRequests.set(requestKey, promise)
+
+  return promise
 }
 
 /**

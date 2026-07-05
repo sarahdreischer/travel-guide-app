@@ -19,7 +19,7 @@ jest.mock('@/db', () => {
 
   // Chain for insert queries
   mockInsert.mockReturnValue({ values: mockValues })
-  mockValues.mockReturnValue({ returning: mockReturning })
+  mockValues.mockReturnValue({ onConflictDoNothing: jest.fn().mockReturnValue({ returning: mockReturning }) })
   mockReturning.mockResolvedValue([])
 
   return {
@@ -74,7 +74,7 @@ describe('AdviceStore', () => {
     mockWhere.mockReturnValue({ limit: mockLimit })
     mockLimit.mockResolvedValue([])
     mockInsert.mockReturnValue({ values: mockValues })
-    mockValues.mockReturnValue({ returning: mockReturning })
+    mockValues.mockReturnValue({ onConflictDoNothing: jest.fn().mockReturnValue({ returning: mockReturning }) })
     mockReturning.mockResolvedValue([])
   })
 

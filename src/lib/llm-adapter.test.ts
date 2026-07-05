@@ -14,6 +14,7 @@ jest.mock('@ai-sdk/openai', () => ({
 
 jest.mock('@/lib/advice-store', () => ({
   AdviceStore: {
+    findByCacheKey: jest.fn().mockResolvedValue(null),
     save: jest.fn(),
   },
 }))
