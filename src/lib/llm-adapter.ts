@@ -4,13 +4,21 @@ import { openai } from '@ai-sdk/openai'
 import { z } from 'zod'
 import { AdviceStore } from '@/lib/advice-store'
 import type { CacheKey, AdviceRecord } from '@/lib/advice-store'
+import { canCallAI, recordAICall, recordAIFailure, getRateLimitStatus } from '@/lib/ai-rate-limiter'
 
-// ─── Custom Error ─────────────────────────────────────────────────────────────
+// ─── Custom Errors ────────────────────────────────────────────────────────────
 
 export class AdviceTimeoutError extends Error {
   constructor(message = 'AI advice generation timed out or failed') {
     super(message)
     this.name = 'AdviceTimeoutError'
+  }
+}
+
+export class AIRateLimitedError extends Error {
+  constructor(message = 'AI calls are rate limited — try again later') {
+    super(message)
+    this.name = 'AIRateLimitedError'
   }
 }
 
@@ -60,6 +68,10 @@ Return a JSON object where keys are the question text and values are concise, pr
 /**
  * The actual AI call — not exported directly. Called only when no in-flight
  * request exists for this key.
+ *
+ * Enforces rate limiting here (single enforcement point for all AI calls).
+ * Records both successful and failed calls against the rate limit window.
+ * On failure, activates a cooldown to prevent rapid retries.
  */
 async function executeAICall(params: {
   cacheKey: CacheKey
@@ -67,9 +79,28 @@ async function executeAICall(params: {
   subQuestions: string[]
 }): Promise<AdviceRecord> {
   const { cacheKey, category, subQuestions } = params
+
+  // Enforce rate limit — reject before touching the AI provider
+  if (!canCallAI()) {
+    const status = getRateLimitStatus()
+    if (status.inCooldown) {
+      console.log(
+        `[LLM_Adapter] In cooldown after failure (${status.cooldownRemainingSeconds}s remaining). Skipping AI call for "${category}".`
+      )
+    } else {
+      console.log(
+        `[LLM_Adapter] Rate limited (${status.callsUsed}/${status.maxCalls} calls in ${status.windowMinutes}min window). Skipping AI call for "${category}".`
+      )
+    }
+    throw new AIRateLimitedError()
+  }
+
   const prompt = buildAdvicePrompt(cacheKey, category, subQuestions)
 
   try {
+    // Record the call BEFORE making it (counts against window regardless of outcome)
+    recordAICall()
+
     const { object: answers } = await generateObject({
       model: getModel(),
       prompt,
@@ -89,6 +120,9 @@ async function executeAICall(params: {
 
     return record
   } catch (error: unknown) {
+    // Record the failure — activates cooldown to prevent hammering
+    recordAIFailure()
+
     if (error instanceof Error && error.name === 'AbortError') {
       console.error('[LLM_Adapter] Advice generation timed out:', {
         destination: cacheKey.destination,

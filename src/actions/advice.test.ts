@@ -23,6 +23,12 @@ jest.mock('@/lib/llm-adapter', () => ({
       this.name = 'AdviceTimeoutError'
     }
   },
+  AIRateLimitedError: class AIRateLimitedError extends Error {
+    constructor(message = 'AI calls are rate limited — try again later') {
+      super(message)
+      this.name = 'AIRateLimitedError'
+    }
+  },
 }))
 
 jest.mock('@/lib/sub-questions', () => ({
@@ -32,7 +38,8 @@ jest.mock('@/lib/sub-questions', () => ({
 jest.mock('@/lib/ai-rate-limiter', () => ({
   canCallAI: jest.fn(() => true),
   recordAICall: jest.fn(),
-  getRateLimitStatus: jest.fn(() => ({ callsUsed: 0, maxCalls: 100, windowMs: 3600000 })),
+  recordAIFailure: jest.fn(),
+  getRateLimitStatus: jest.fn(() => ({ callsUsed: 0, maxCalls: 100, windowMinutes: 60, inCooldown: false, cooldownRemainingSeconds: 0 })),
 }))
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

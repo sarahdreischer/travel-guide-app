@@ -3,10 +3,10 @@
 // Advice Server Actions — Requirements 4.2, 4.3, 4.4, 4.7, 4.8
 import { AdviceStore } from '@/lib/advice-store'
 import type { CacheKey, AdviceRecord } from '@/lib/advice-store'
-import { LLMAdapter, AdviceTimeoutError } from '@/lib/llm-adapter'
+import { LLMAdapter, AdviceTimeoutError, AIRateLimitedError } from '@/lib/llm-adapter'
 import { getSubQuestions } from '@/lib/sub-questions'
 import { CATEGORIES } from '@/lib/destinations'
-import { canCallAI, recordAICall, getRateLimitStatus } from '@/lib/ai-rate-limiter'
+import { canCallAI, getRateLimitStatus } from '@/lib/ai-rate-limiter'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -65,7 +65,6 @@ export async function getOrGenerateAdviceAction(
 
       // Step 3: Cache miss — generate via LLM (Req 4.4)
       const subQuestions = getSubQuestions(category)
-      recordAICall()
       const record = await LLMAdapter.generateAdvice({
         cacheKey,
         category,
@@ -106,7 +105,7 @@ export async function getOrGenerateAdviceAction(
 /**
  * Reconcile missing advice for a trip on page load.
  * Only generates advice for categories that are missing from the cache.
- * Respects the AI rate limit (configurable via AI_MAX_CALLS_PER_HOUR env var).
+ * Rate limiting is enforced by the LLM adapter (single enforcement point).
  *
  * Returns how many categories were generated, skipped, or errored.
  */
@@ -118,6 +117,15 @@ export async function reconcileMissingAdviceAction(
   let errors = 0
   let rateLimited = false
 
+  // Early exit: if already rate limited, don't even iterate
+  if (!canCallAI()) {
+    const status = getRateLimitStatus()
+    console.log(
+      `[reconcileMissingAdvice] Rate limited before starting — ${status.callsUsed}/${status.maxCalls} calls used (cooldown: ${status.inCooldown}). Skipping reconciliation.`
+    )
+    return { generated: 0, skipped: 0, errors: 0, rateLimited: true }
+  }
+
   for (const category of CATEGORIES) {
     // Check if advice already exists
     const cached = await AdviceStore.findByCacheKey(cacheKey, category)
@@ -126,20 +134,15 @@ export async function reconcileMissingAdviceAction(
       continue
     }
 
-    // Check rate limit
+    // Quick check before each call — stop early if we've hit the limit
     if (!canCallAI()) {
       rateLimited = true
-      const status = getRateLimitStatus()
-      console.log(
-        `[reconcileMissingAdvice] Rate limited — ${status.callsUsed}/${status.maxCalls} calls used this hour. Skipping remaining categories.`
-      )
       break
     }
 
-    // Generate the missing advice
+    // Generate the missing advice (rate limit + cooldown enforced inside LLMAdapter)
     try {
       const subQuestions = getSubQuestions(category)
-      recordAICall()
       await LLMAdapter.generateAdvice({
         cacheKey,
         category,
@@ -147,8 +150,14 @@ export async function reconcileMissingAdviceAction(
       })
       generated++
     } catch (error: unknown) {
+      if (error instanceof AIRateLimitedError) {
+        rateLimited = true
+        break
+      }
       console.error(`[reconcileMissingAdvice] Failed for category "${category}":`, error)
       errors++
+      // After a failure, the LLM adapter activates cooldown — stop trying more categories
+      break
     }
   }
 

@@ -1,3 +1,4 @@
 {
-  "/(app)/home/[tripId]/page": "app/(app)/home/[tripId]/page.js"
+  "/(app)/home/[tripId]/page": "app/(app)/home/[tripId]/page.js",
+  "/(app)/destinations/page": "app/(app)/destinations/page.js"
 }

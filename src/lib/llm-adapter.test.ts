@@ -19,6 +19,13 @@ jest.mock('@/lib/advice-store', () => ({
   },
 }))
 
+jest.mock('@/lib/ai-rate-limiter', () => ({
+  canCallAI: jest.fn(() => true),
+  recordAICall: jest.fn(),
+  recordAIFailure: jest.fn(),
+  getRateLimitStatus: jest.fn(() => ({ callsUsed: 0, maxCalls: 100, windowMinutes: 60, inCooldown: false, cooldownRemainingSeconds: 0 })),
+}))
+
 import { generateObject, generateText } from 'ai'
 import { AdviceStore } from '@/lib/advice-store'
 
