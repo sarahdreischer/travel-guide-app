@@ -10,65 +10,9 @@ import { AdviceStore } from '@/lib/advice-store'
 import type { AdviceRecord } from '@/lib/advice-store'
 import { derivebudgetRange } from '@/lib/validators'
 import { reconcileMissingAdviceAction } from '@/actions/advice'
-import { CATEGORIES } from '@/lib/destinations'
+import { CATEGORIES, CONCISE_TOPICS, CONCISE_TOPIC_MAPPING, type ConciseTopic } from '@/lib/destinations'
 import HomeCardGrid, { type CardData } from '@/components/HomeCardGrid'
 import TripSelector from '@/components/TripSelector'
-import { CONCISE_TOPICS, type ConciseTopic } from '@/lib/destinations'
-
-/**
- * Mapping from the 12 Concise Card topics to (category, sub-question) pairs.
- * Each topic extracts its answer from the relevant category's answers JSONB field.
- */
-const TOPIC_MAPPING: Record<ConciseTopic, { category: string; question: string }> = {
-  'Rental car': {
-    category: 'Transportation – Self Driving',
-    question: 'Is rental car recommended?',
-  },
-  'Parking': {
-    category: 'Transportation – Self Driving',
-    question: 'Is parking easy?',
-  },
-  'Public transport': {
-    category: 'Transportation – Public Transport',
-    question: 'Is public transport sufficient?',
-  },
-  'Laundry': {
-    category: 'Laundry',
-    question: 'Are there self-service laundrettes?',
-  },
-  'Airport transport': {
-    category: 'Transportation – Serviced',
-    question: 'Should I book airport transport in advance?',
-  },
-  'Mobile data': {
-    category: 'Connectivity',
-    question: 'How reliable is mobile data?',
-  },
-  'Cash needed': {
-    category: 'Budget & Money',
-    question: 'Do I need to bring cash?',
-  },
-  'Tipping expected': {
-    category: 'Food',
-    question: 'Is tipping expected?',
-  },
-  'Where to eat': {
-    category: 'Food',
-    question: 'Where do locals eat?',
-  },
-  'Weather conditions': {
-    category: 'Weather',
-    question: 'Are rain showers common?',
-  },
-  'Safety rating': {
-    category: 'Safety',
-    question: 'Is it safe for solo travellers?',
-  },
-  'Mosquitos expected': {
-    category: 'Packing',
-    question: 'Do I need insect repellent?',
-  },
-}
 
 /**
  * Derive a one-sentence summary from the full advice answer text.
@@ -94,7 +38,7 @@ function buildCards(adviceRecords: AdviceRecord[]): CardData[] {
   }
 
   return CONCISE_TOPICS.map((topic) => {
-    const mapping = TOPIC_MAPPING[topic]
+    const mapping = CONCISE_TOPIC_MAPPING[topic]
     const record = byCategory.get(mapping.category)
     const answers = record?.answers as Record<string, string> | null | undefined
     const fullAnswer = answers?.[mapping.question] ?? null
