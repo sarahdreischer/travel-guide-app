@@ -1,5 +1,37 @@
 {
   "node": {
+    "0008e486c7e2d6322788adb70418099e8652864ad1": {
+      "workers": {
+        "app/(auth)/login/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fauth.ts%22%2C%5B%5B%220008e486c7e2d6322788adb70418099e8652864ad1%22%2C%22logoutAction%22%5D%2C%5B%2260a13c4f3a762b2df41e84fb54b385f52ee3c15617%22%2C%22loginAction%22%5D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        },
+        "app/(app)/profile/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fauth.ts%22%2C%5B%5B%220008e486c7e2d6322788adb70418099e8652864ad1%22%2C%22logoutAction%22%5D%2C%5B%2260a13c4f3a762b2df41e84fb54b385f52ee3c15617%22%2C%22loginAction%22%5D%5D%5D%2C%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fprofile.ts%22%2C%5B%5B%2200c9dd32ae6002956372d48ad8e0d0aa58715b3327%22%2C%22deleteAccountAction%22%5D%2C%5B%224046eb97efc77731d3c662a50720f0dd64b2a0fa47%22%2C%22setupProfileAction%22%5D%2C%5B%224090f91237d54c3dab989b27ee477b9acea47c1b36%22%2C%22updateProfileAction%22%5D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/(auth)/login/page": "action-browser",
+        "app/(app)/profile/page": "action-browser"
+      }
+    },
+    "60a13c4f3a762b2df41e84fb54b385f52ee3c15617": {
+      "workers": {
+        "app/(auth)/login/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fauth.ts%22%2C%5B%5B%220008e486c7e2d6322788adb70418099e8652864ad1%22%2C%22logoutAction%22%5D%2C%5B%2260a13c4f3a762b2df41e84fb54b385f52ee3c15617%22%2C%22loginAction%22%5D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        },
+        "app/(app)/profile/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fauth.ts%22%2C%5B%5B%220008e486c7e2d6322788adb70418099e8652864ad1%22%2C%22logoutAction%22%5D%2C%5B%2260a13c4f3a762b2df41e84fb54b385f52ee3c15617%22%2C%22loginAction%22%5D%5D%5D%2C%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fprofile.ts%22%2C%5B%5B%2200c9dd32ae6002956372d48ad8e0d0aa58715b3327%22%2C%22deleteAccountAction%22%5D%2C%5B%224046eb97efc77731d3c662a50720f0dd64b2a0fa47%22%2C%22setupProfileAction%22%5D%2C%5B%224090f91237d54c3dab989b27ee477b9acea47c1b36%22%2C%22updateProfileAction%22%5D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/(auth)/login/page": "action-browser",
+        "app/(app)/profile/page": "action-browser"
+      }
+    },
     "4021ca78f53a3a61b444f6f94d97e88a420eb3b2ea": {
       "workers": {
         "app/(app)/home/[tripId]/page": {
@@ -20,6 +52,50 @@
       },
       "layer": {
         "app/(app)/home/[tripId]/page": "rsc"
+      }
+    },
+    "40ee00a5a3aa2c630c07fd147a16ca9e55468a0ab2": {
+      "workers": {
+        "app/(app)/trip/new/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Ftrip.ts%22%2C%5B%5B%2240ee00a5a3aa2c630c07fd147a16ca9e55468a0ab2%22%2C%22createTripAction%22%5D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/(app)/trip/new/page": "action-browser"
+      }
+    },
+    "00c9dd32ae6002956372d48ad8e0d0aa58715b3327": {
+      "workers": {
+        "app/(app)/profile/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fauth.ts%22%2C%5B%5B%220008e486c7e2d6322788adb70418099e8652864ad1%22%2C%22logoutAction%22%5D%2C%5B%2260a13c4f3a762b2df41e84fb54b385f52ee3c15617%22%2C%22loginAction%22%5D%5D%5D%2C%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fprofile.ts%22%2C%5B%5B%2200c9dd32ae6002956372d48ad8e0d0aa58715b3327%22%2C%22deleteAccountAction%22%5D%2C%5B%224046eb97efc77731d3c662a50720f0dd64b2a0fa47%22%2C%22setupProfileAction%22%5D%2C%5B%224090f91237d54c3dab989b27ee477b9acea47c1b36%22%2C%22updateProfileAction%22%5D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/(app)/profile/page": "action-browser"
+      }
+    },
+    "4046eb97efc77731d3c662a50720f0dd64b2a0fa47": {
+      "workers": {
+        "app/(app)/profile/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fauth.ts%22%2C%5B%5B%220008e486c7e2d6322788adb70418099e8652864ad1%22%2C%22logoutAction%22%5D%2C%5B%2260a13c4f3a762b2df41e84fb54b385f52ee3c15617%22%2C%22loginAction%22%5D%5D%5D%2C%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fprofile.ts%22%2C%5B%5B%2200c9dd32ae6002956372d48ad8e0d0aa58715b3327%22%2C%22deleteAccountAction%22%5D%2C%5B%224046eb97efc77731d3c662a50720f0dd64b2a0fa47%22%2C%22setupProfileAction%22%5D%2C%5B%224090f91237d54c3dab989b27ee477b9acea47c1b36%22%2C%22updateProfileAction%22%5D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/(app)/profile/page": "action-browser"
+      }
+    },
+    "4090f91237d54c3dab989b27ee477b9acea47c1b36": {
+      "workers": {
+        "app/(app)/profile/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fauth.ts%22%2C%5B%5B%220008e486c7e2d6322788adb70418099e8652864ad1%22%2C%22logoutAction%22%5D%2C%5B%2260a13c4f3a762b2df41e84fb54b385f52ee3c15617%22%2C%22loginAction%22%5D%5D%5D%2C%5B%22%2FUsers%2Fsarahdreischer%2Fsrc%2Ftravel-guide-app%2Fsrc%2Factions%2Fprofile.ts%22%2C%5B%5B%2200c9dd32ae6002956372d48ad8e0d0aa58715b3327%22%2C%22deleteAccountAction%22%5D%2C%5B%224046eb97efc77731d3c662a50720f0dd64b2a0fa47%22%2C%22setupProfileAction%22%5D%2C%5B%224090f91237d54c3dab989b27ee477b9acea47c1b36%22%2C%22updateProfileAction%22%5D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/(app)/profile/page": "action-browser"
       }
     }
   },

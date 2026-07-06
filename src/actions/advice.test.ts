@@ -39,7 +39,7 @@ jest.mock('@/lib/ai-rate-limiter', () => ({
   canCallAI: jest.fn(() => true),
   recordAICall: jest.fn(),
   recordAIFailure: jest.fn(),
-  getRateLimitStatus: jest.fn(() => ({ callsUsed: 0, maxCalls: 100, windowMinutes: 60, inCooldown: false, cooldownRemainingSeconds: 0 })),
+  getRateLimitStatus: jest.fn(() => ({ minuteCount: 0, maxPerMinute: 100, dayCount: 0, maxPerDay: 1000, inCooldown: false, cooldownRemainingSeconds: 0 })),
 }))
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

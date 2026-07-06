@@ -104,7 +104,7 @@ export async function getOrGenerateAdviceAction(
 
 /**
  * Reconcile missing advice for a trip on page load.
- * Only generates advice for categories that are missing from the cache.
+ * Collects all missing categories and generates them in a SINGLE AI conversation.
  * Rate limiting is enforced by the LLM adapter (single enforcement point).
  *
  * Returns how many categories were generated, skipped, or errored.
@@ -121,43 +121,39 @@ export async function reconcileMissingAdviceAction(
   if (!canCallAI()) {
     const status = getRateLimitStatus()
     console.log(
-      `[reconcileMissingAdvice] Rate limited before starting — ${status.callsUsed}/${status.maxCalls} calls used (cooldown: ${status.inCooldown}). Skipping reconciliation.`
+      `[reconcileMissingAdvice] Rate limited before starting — minute: ${status.minuteCount}/${status.maxPerMinute}, day: ${status.dayCount}/${status.maxPerDay}, cooldown: ${status.inCooldown}. Skipping reconciliation.`
     )
     return { generated: 0, skipped: 0, errors: 0, rateLimited: true }
   }
 
+  // Collect all missing categories
+  const missingCategories: { category: string; subQuestions: string[] }[] = []
+
   for (const category of CATEGORIES) {
-    // Check if advice already exists
     const cached = await AdviceStore.findByCacheKey(cacheKey, category)
     if (cached) {
       skipped++
-      continue
-    }
-
-    // Quick check before each call — stop early if we've hit the limit
-    if (!canCallAI()) {
-      rateLimited = true
-      break
-    }
-
-    // Generate the missing advice (rate limit + cooldown enforced inside LLMAdapter)
-    try {
+    } else {
       const subQuestions = getSubQuestions(category)
-      await LLMAdapter.generateAdvice({
-        cacheKey,
-        category,
-        subQuestions,
-      })
-      generated++
-    } catch (error: unknown) {
-      if (error instanceof AIRateLimitedError) {
-        rateLimited = true
-        break
-      }
-      console.error(`[reconcileMissingAdvice] Failed for category "${category}":`, error)
-      errors++
-      // After a failure, the LLM adapter activates cooldown — stop trying more categories
-      break
+      missingCategories.push({ category, subQuestions })
+    }
+  }
+
+  if (missingCategories.length === 0) {
+    return { generated: 0, skipped, errors: 0, rateLimited: false }
+  }
+
+  // Generate ALL missing categories in a single AI conversation
+  try {
+    const records = await LLMAdapter.generateAdviceBatch(cacheKey, missingCategories)
+    generated = records.length
+    errors = missingCategories.length - records.length
+  } catch (error: unknown) {
+    if (error instanceof AIRateLimitedError) {
+      rateLimited = true
+    } else {
+      console.error('[reconcileMissingAdvice] Batch generation failed:', error)
+      errors = missingCategories.length
     }
   }
 
