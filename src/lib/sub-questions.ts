@@ -14,6 +14,8 @@ const SUB_QUESTIONS: Record<Category, string[]> = {
   ],
   "Transportation \u2013 Public Transport": [
     "Is public transport sufficient?",
+    "How can I pay for buses?",
+    "How can I pay for trains?",
   ],
   "Transportation \u2013 Serviced": [
     "Should I book airport transport in advance?",

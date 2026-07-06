@@ -23,6 +23,8 @@ describe('getSubQuestions', () => {
   it('returns the correct sub-questions for Transportation – Public Transport', () => {
     expect(getSubQuestions('Transportation – Public Transport')).toEqual([
       'Is public transport sufficient?',
+      "How can I pay for buses?",
+      "How can I pay for trains?",
     ])
   })
 
