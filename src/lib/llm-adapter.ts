@@ -46,6 +46,15 @@ function getModel() {
   return openai(modelId)
 }
 
+function describeBudgetRange(tier: string): string {
+  switch (tier) {
+    case 'budget': return 'budget (under $100/day)'
+    case 'mid': return 'mid-range ($100–$499/day)'
+    case 'luxury': return 'luxury ($500+/day)'
+    default: return tier
+  }
+}
+
 function buildBatchPrompt(
   cacheKey: CacheKey,
   categories: CategoryQuestions[]
@@ -63,7 +72,7 @@ Trip context:
 - Destination: ${cacheKey.destination}
 - Travel Month: ${cacheKey.month}
 - Traveller Type: ${cacheKey.travellerType}
-- Budget Range: ${cacheKey.budgetRange}
+- Budget Range: ${describeBudgetRange(cacheKey.budgetRange)}
 
 Answer ALL questions below grouped by category. Return a JSON object with category names as top-level keys, each containing an object mapping question text to a concise answer.
 

@@ -34,7 +34,7 @@ export type Destination = (typeof DESTINATIONS)[number]
 export const CATEGORY_CONFIG = {
   'Transportation – Self Driving': [
     'Is driving recommended?',
-    'Are roads in good condition?',
+    'Are roads easy to drive on?',
     'Is rental car recommended?',
     'Are mountain roads difficult?',
     'Is parking easy?',
@@ -45,16 +45,16 @@ export const CATEGORY_CONFIG = {
     'Is public transport sufficient?',
     'How can I pay for buses?',
     'How can I pay for trains?',
+    'How can I pay for trams if available?',
+    'How can I pay for metros if available?',
   ],
   'Transportation – Serviced': [
     'Should I book airport transport in advance?',
-    'Are taxis/Uber readily available?',
+    'How much does airport transport cost on average?',
+    'Are taxis or other transportation companies readily available?',
   ],
   'Accommodation': [
     'Which area should I stay in?',
-    'Hotel, hostel or Airbnb?',
-    'Private room or shared dorm?',
-    'Is it social?',
     'Is accommodation likely to sell out?',
   ],
   'Budget & Money': [
@@ -128,6 +128,8 @@ export const CATEGORY_CONFIG = {
   'Local Etiquette': [] as string[],
   'Miscellaneous': [
     'What are things I wish I had known?',
+    'Where can I easily by alcoholic drinks?',
+    'Are acoholic drinks highly taxed?',
   ],
 } as const satisfies Record<string, readonly string[]>
 

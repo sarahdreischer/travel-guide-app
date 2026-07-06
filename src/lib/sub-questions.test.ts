@@ -11,7 +11,7 @@ describe('getSubQuestions', () => {
   it('returns the correct sub-questions for Transportation – Self Driving', () => {
     expect(getSubQuestions('Transportation – Self Driving')).toEqual([
       'Is driving recommended?',
-      'Are roads in good condition?',
+      'Are roads easy to drive on?',
       'Is rental car recommended?',
       'Are mountain roads difficult?',
       'Is parking easy?',
@@ -23,24 +23,24 @@ describe('getSubQuestions', () => {
   it('returns the correct sub-questions for Transportation – Public Transport', () => {
     expect(getSubQuestions('Transportation – Public Transport')).toEqual([
       'Is public transport sufficient?',
-      "How can I pay for buses?",
-      "How can I pay for trains?",
+      'How can I pay for buses?',
+      'How can I pay for trains?',
+      'How can I pay for trams if available?',
+      'How can I pay for metros if available?',
     ])
   })
 
   it('returns the correct sub-questions for Transportation – Serviced', () => {
     expect(getSubQuestions('Transportation – Serviced')).toEqual([
       'Should I book airport transport in advance?',
-      'Are taxis/Uber readily available?',
+      'How much does airport transport cost on average?',
+      'Are taxis or other transportation companies readily available?',
     ])
   })
 
   it('returns the correct sub-questions for Accommodation', () => {
     expect(getSubQuestions('Accommodation')).toEqual([
       'Which area should I stay in?',
-      'Hotel, hostel or Airbnb?',
-      'Private room or shared dorm?',
-      'Is it social?',
       'Is accommodation likely to sell out?',
     ])
   })
@@ -151,6 +151,8 @@ describe('getSubQuestions', () => {
   it('returns the correct sub-questions for Miscellaneous', () => {
     expect(getSubQuestions('Miscellaneous')).toEqual([
       'What are things I wish I had known?',
+      'Where can I easily by alcoholic drinks?',
+      'Are acoholic drinks highly taxed?',
     ])
   })
 
