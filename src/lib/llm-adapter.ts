@@ -101,12 +101,22 @@ async function executeBatchAICall(
     // Record the call (one API request for all categories)
     recordAICall()
 
+    console.log('[LLM_Adapter] ▶ AI REQUEST:', JSON.stringify({
+      model: process.env.AI_MODEL ?? 'gpt-4o-mini',
+      categories: categories.map((c) => c.category),
+      cacheKey,
+      promptLength: prompt.length,
+      prompt,
+    }, null, 2))
+
     const { object: batchAnswers } = await generateObject({
       model: getModel(),
       prompt,
       schema: z.record(z.string(), z.record(z.string(), z.string())),
       abortSignal: AbortSignal.timeout(60_000), // longer timeout for batch
     })
+
+    console.log('[LLM_Adapter] ◀ AI RESPONSE:', JSON.stringify(batchAnswers, null, 2))
 
     // Persist each category's answers as separate rows (upsert)
     const records: AdviceRecord[] = []
@@ -208,11 +218,20 @@ async function generateAdvice(params: {
  */
 async function summarise(fullAdvice: string): Promise<string> {
   try {
+    const summarisePrompt = `Summarise the following travel advice into a single concise sentence (max 15 words):\n\n${fullAdvice}`
+
+    console.log('[LLM_Adapter] ▶ AI SUMMARISE REQUEST:', JSON.stringify({
+      model: process.env.AI_MODEL ?? 'gpt-4o-mini',
+      prompt: summarisePrompt,
+    }, null, 2))
+
     const { text } = await generateText({
       model: getModel(),
-      prompt: `Summarise the following travel advice into a single concise sentence (max 15 words):\n\n${fullAdvice}`,
+      prompt: summarisePrompt,
       abortSignal: AbortSignal.timeout(30_000),
     })
+
+    console.log('[LLM_Adapter] ◀ AI SUMMARISE RESPONSE:', JSON.stringify({ text }, null, 2))
 
     return text
   } catch (error: unknown) {
