@@ -1,6 +1,0 @@
-{
-  "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/(setup)/setup/page": "app/(setup)/setup/page.js",
-  "/(app)/home/[tripId]/page": "app/(app)/home/[tripId]/page.js",
-  "/(app)/home/page": "app/(app)/home/page.js"
-}
