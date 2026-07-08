@@ -26,7 +26,6 @@ export default function GeneratingClient({ tripId, destination }: GeneratingClie
   const [messageIndex, setMessageIndex] = useState(0)
   const [progress, setProgress] = useState(0)
   const [failed, setFailed] = useState(false)
-  const [pollCount, setPollCount] = useState(0)
 
   // Cycle through loading messages
   useEffect(() => {
@@ -38,8 +37,9 @@ export default function GeneratingClient({ tripId, destination }: GeneratingClie
 
   // Poll for advice completion
   useEffect(() => {
-    const maxPolls = 40 // 40 × 3s = 2 minutes max wait
+    const maxPolls = 60 // 60 × 2s = 2 minutes max wait
     let cancelled = false
+    let currentPoll = 0
 
     const poll = async () => {
       if (cancelled) return
@@ -58,10 +58,9 @@ export default function GeneratingClient({ tripId, destination }: GeneratingClie
           return
         }
 
-        setPollCount((c) => c + 1)
-
-        if (pollCount >= maxPolls) {
-          // Timed out waiting — show partial results
+        currentPoll++
+        if (currentPoll >= maxPolls) {
+          // Timed out — go to trip page with whatever is available
           router.replace(`/home/${tripId}`)
           return
         }
@@ -70,19 +69,19 @@ export default function GeneratingClient({ tripId, destination }: GeneratingClie
         return
       }
 
-      // Poll again after 3 seconds
+      // Poll again after 2 seconds (faster feedback)
       if (!cancelled) {
-        setTimeout(poll, 3000)
+        setTimeout(poll, 2000)
       }
     }
 
-    // Start polling after a short delay to let the server action fire
-    const timer = setTimeout(poll, 2000)
+    // Start polling immediately
+    const timer = setTimeout(poll, 1000)
     return () => {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [tripId, router, pollCount])
+  }, [tripId, router])
 
   if (failed) {
     return (

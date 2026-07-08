@@ -74,7 +74,11 @@ Trip context:
 - Traveller Type: ${cacheKey.travellerType}
 - Budget Range: ${describeBudgetRange(cacheKey.budgetRange)}
 
-Answer ALL questions below grouped by category. Return a JSON object with category names as top-level keys, each containing an object mapping question text to a concise answer.
+Answer ALL questions below grouped by category. Return a JSON object where:
+- Top-level keys MUST be the EXACT category names as written below (copy them verbatim, including dashes and special characters)
+- Each category value is an object mapping the EXACT question text to a concise answer
+
+IMPORTANT: Use the category names EXACTLY as they appear in the headings below. Do NOT shorten, rename, or paraphrase them.
 
 ${categoryBlocks}`
 }
@@ -130,6 +134,7 @@ async function executeBatchAICall(
     // Persist each category's answers as separate rows (upsert)
     // AI may return category names with slightly different punctuation (e.g. regular
     // hyphen instead of en-dash), so we do a normalized lookup.
+    // Additionally, when only one category is requested, just take whatever the AI returned.
     const records: AdviceRecord[] = []
     const normalizeKey = (s: string) => s.toLowerCase().replace(/[\u2013\u2014-]/g, '-').replace(/\s+/g, ' ').trim()
     const responseKeyMap = new Map<string, Record<string, string>>()
@@ -138,7 +143,24 @@ async function executeBatchAICall(
     }
 
     for (const cat of categories) {
-      const answers = responseKeyMap.get(normalizeKey(cat.category))
+      let answers = responseKeyMap.get(normalizeKey(cat.category))
+
+      // Fallback: if single category requested and AI returned a single key, use it regardless of name
+      if (!answers && categories.length === 1 && responseKeyMap.size === 1) {
+        answers = [...responseKeyMap.values()][0]
+      }
+
+      // Fallback: try partial match (AI sometimes shortens names)
+      if (!answers) {
+        const normalizedCat = normalizeKey(cat.category)
+        for (const [key, value] of responseKeyMap.entries()) {
+          if (normalizedCat.includes(key) || key.includes(normalizedCat)) {
+            answers = value
+            break
+          }
+        }
+      }
+
       if (answers && Object.keys(answers).length > 0) {
         const record = await AdviceStore.save({
           destination: cacheKey.destination,

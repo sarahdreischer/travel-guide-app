@@ -20,7 +20,7 @@ export const DESTINATIONS = [
   'Mexico',
   'Greece',
   'Morocco',
-  'France',
+  'France - Cap Ferret',
 ] as const
 
 export type Destination = (typeof DESTINATIONS)[number]

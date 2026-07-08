@@ -90,6 +90,7 @@ export default async function HomePage({
   const hasMissingAdvice = adviceRecords.length < categoriesWithQuestions.length
 
   if (hasMissingAdvice) {
+    // Don't block the page — trigger reconciliation in background
     const { startMonth, endMonth } = deriveMonthRange(trip.startDate, trip.endDate)
     const cacheKey = {
       destination: trip.destination.toLowerCase(),
@@ -99,7 +100,6 @@ export default async function HomePage({
       budgetRange: derivebudgetRange(trip.budgetUsd),
     }
 
-    // Fire and forget — don't block the page render
     reconcileMissingAdviceAction(cacheKey).catch(() => {})
   }
 

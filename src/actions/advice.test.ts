@@ -16,6 +16,7 @@ jest.mock('@/lib/advice-store', () => ({
 jest.mock('@/lib/llm-adapter', () => ({
   LLMAdapter: {
     generateAdvice: jest.fn(),
+    generateAdviceBatch: jest.fn(),
   },
   AdviceTimeoutError: class AdviceTimeoutError extends Error {
     constructor(message = 'AI advice generation timed out or failed') {
@@ -85,16 +86,16 @@ describe('getOrGenerateAdviceAction', () => {
       expect(r.status).toBe('success')
     })
     // LLM should not be called when cache hits
-    expect(LLMAdapter.generateAdvice).not.toHaveBeenCalled()
+    expect(LLMAdapter.generateAdviceBatch).not.toHaveBeenCalled()
   })
 
   it('generates advice via LLM on cache miss', async () => {
     const mockFindByCacheKey = AdviceStore.findByCacheKey as jest.Mock
     mockFindByCacheKey.mockResolvedValue(null)
 
-    const mockGenerateAdvice = LLMAdapter.generateAdvice as jest.Mock
-    mockGenerateAdvice.mockImplementation(({ category }: { category: string }) =>
-      Promise.resolve(makeMockRecord(category))
+    const mockGenerateAdvice = LLMAdapter.generateAdviceBatch as jest.Mock
+    mockGenerateAdvice.mockImplementation((_key: unknown, cats: { category: string }[]) =>
+      Promise.resolve([makeMockRecord(cats[0].category)])
     )
 
     const result = await getOrGenerateAdviceAction(mockCacheKey)
@@ -111,12 +112,12 @@ describe('getOrGenerateAdviceAction', () => {
     const mockFindByCacheKey = AdviceStore.findByCacheKey as jest.Mock
     mockFindByCacheKey.mockResolvedValue(null)
 
-    const mockGenerateAdvice = LLMAdapter.generateAdvice as jest.Mock
+    const mockGenerateAdvice = LLMAdapter.generateAdviceBatch as jest.Mock
     // First category times out, rest succeed
     mockGenerateAdvice
       .mockRejectedValueOnce(new AdviceTimeoutError())
-      .mockImplementation(({ category }: { category: string }) =>
-        Promise.resolve(makeMockRecord(category))
+      .mockImplementation((_key: unknown, cats: { category: string }[]) =>
+        Promise.resolve([makeMockRecord(cats[0].category)])
       )
 
     const result = await getOrGenerateAdviceAction(mockCacheKey)
@@ -140,15 +141,15 @@ describe('getOrGenerateAdviceAction', () => {
     const mockFindByCacheKey = AdviceStore.findByCacheKey as jest.Mock
     mockFindByCacheKey.mockResolvedValue(null)
 
-    const mockGenerateAdvice = LLMAdapter.generateAdvice as jest.Mock
+    const mockGenerateAdvice = LLMAdapter.generateAdviceBatch as jest.Mock
     // Second category has a write failure
     mockGenerateAdvice
-      .mockImplementationOnce(({ category }: { category: string }) =>
-        Promise.resolve(makeMockRecord(category))
+      .mockImplementationOnce((_key: unknown, cats: { category: string }[]) =>
+        Promise.resolve([makeMockRecord(cats[0].category)])
       )
       .mockRejectedValueOnce(new Error('DB write failed'))
-      .mockImplementation(({ category }: { category: string }) =>
-        Promise.resolve(makeMockRecord(category))
+      .mockImplementation((_key: unknown, cats: { category: string }[]) =>
+        Promise.resolve([makeMockRecord(cats[0].category)])
       )
 
     const result = await getOrGenerateAdviceAction(mockCacheKey)
@@ -175,15 +176,15 @@ describe('getOrGenerateAdviceAction', () => {
       return Promise.resolve(null)
     })
 
-    const mockGenerateAdvice = LLMAdapter.generateAdvice as jest.Mock
+    const mockGenerateAdvice = LLMAdapter.generateAdviceBatch as jest.Mock
     // Category at index 5 times out, rest generate fine
     let callCount = 0
-    mockGenerateAdvice.mockImplementation(({ category }: { category: string }) => {
+    mockGenerateAdvice.mockImplementation((_key: unknown, cats: { category: string }[]) => {
       callCount++
       if (callCount === 1) {
         return Promise.reject(new AdviceTimeoutError())
       }
-      return Promise.resolve(makeMockRecord(category))
+      return Promise.resolve([makeMockRecord(cats[0].category)])
     })
 
     const result = await getOrGenerateAdviceAction(mockCacheKey)

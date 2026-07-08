@@ -42,61 +42,56 @@ export async function getOrGenerateAdviceAction(
   const results: CategoryResult[] = []
   const errors: string[] = []
 
-  for (const category of CATEGORIES) {
+  // Fire all categories in parallel for speed
+  const categoryTasks = CATEGORIES.map(async (category) => {
     try {
-      // Step 1: Check cache (Req 4.2, 4.3)
+      // Check cache first
       const cached = await AdviceStore.findByCacheKey(cacheKey, category)
-
       if (cached) {
-        // Cache hit — serve from store without calling AI provider
-        results.push({ status: 'success', record: cached })
-        continue
+        return { status: 'success' as const, record: cached, category }
       }
 
-      // Step 2: Check rate limit before making LLM call
+      // Check rate limit
       if (!canCallAI()) {
-        results.push({
-          status: 'error',
-          category,
-          message: 'Rate limited — try again later',
-        })
-        errors.push(category)
-        continue
+        return { status: 'error' as const, category, message: 'Rate limited — try again later' }
       }
 
-      // Step 3: Cache miss — generate via LLM (Req 4.4)
+      // Generate via LLM
       const subQuestions = getSubQuestions(category)
-      const record = await LLMAdapter.generateAdvice({
-        cacheKey,
-        category,
-        subQuestions,
-      })
+      if (subQuestions.length === 0) {
+        return { status: 'skip' as const, category }
+      }
 
-      results.push({ status: 'success', record })
+      const records = await LLMAdapter.generateAdviceBatch(cacheKey, [{ category, subQuestions }])
+      const record = records[0]
+      if (record) {
+        return { status: 'success' as const, record, category }
+      }
+      return { status: 'error' as const, category, message: 'No advice generated' }
     } catch (error: unknown) {
       if (error instanceof AdviceTimeoutError) {
-        console.error(
-          `[getOrGenerateAdviceAction] Timeout generating advice for category "${category}":`,
-          error.message
-        )
-        results.push({
-          status: 'error',
-          category,
-          message: 'Advice could not be loaded at this time',
-        })
-        errors.push(category)
-      } else {
-        console.error(
-          `[getOrGenerateAdviceAction] Error for category "${category}":`,
-          error
-        )
-        results.push({
-          status: 'error',
-          category,
-          message: 'Advice could not be saved and will not be cached',
-        })
-        errors.push(category)
+        return { status: 'error' as const, category, message: 'Advice could not be loaded at this time' }
       }
+      return { status: 'error' as const, category, message: 'Advice could not be saved and will not be cached' }
+    }
+  })
+
+  const settled = await Promise.allSettled(categoryTasks)
+
+  for (const result of settled) {
+    if (result.status === 'fulfilled') {
+      const val = result.value
+      if (val.status === 'success') {
+        results.push({ status: 'success', record: val.record })
+      } else if (val.status === 'error') {
+        results.push({ status: 'error', category: val.category, message: val.message })
+        errors.push(val.category)
+      }
+      // skip → do nothing
+    } else {
+      // Promise rejected (shouldn't happen since we catch inside)
+      results.push({ status: 'error', category: 'unknown', message: 'Unexpected error' })
+      errors.push('unknown')
     }
   }
 
@@ -104,11 +99,11 @@ export async function getOrGenerateAdviceAction(
 }
 
 /**
- * Reconcile missing advice for a trip on page load.
- * Collects all missing categories and generates them in a SINGLE AI conversation.
- * Rate limiting is enforced by the LLM adapter (single enforcement point).
+ * Reconcile missing advice for a trip.
+ * Fires parallel per-category AI requests (in batches of AI_PARALLEL_REQUESTS)
+ * so progress updates incrementally and individual failures don't block others.
  *
- * Returns how many categories were generated, skipped, or errored.
+ * Rate limiting is enforced by the LLM adapter (single enforcement point).
  */
 export async function reconcileMissingAdviceAction(
   cacheKey: CacheKey
@@ -135,8 +130,11 @@ export async function reconcileMissingAdviceAction(
     const subQuestions = getSubQuestions(category)
 
     if (!cached) {
-      // Category not in DB at all
-      missingCategories.push({ category, subQuestions })
+      if (subQuestions.length > 0) {
+        missingCategories.push({ category, subQuestions })
+      } else {
+        skipped++
+      }
     } else {
       // Check if the cached record is stale (missing answers for current questions)
       const answers = cached.answers as Record<string, string> | null
@@ -145,7 +143,6 @@ export async function reconcileMissingAdviceAction(
       )
 
       if (!hasAllQuestions) {
-        // Stale record — delete it so it gets regenerated with all current questions
         console.log(
           `[reconcileMissingAdvice] Stale cache for "${category}" — missing answers for new questions. Deleting for regeneration.`
         )
@@ -161,19 +158,30 @@ export async function reconcileMissingAdviceAction(
     return { generated: 0, skipped, errors: 0, rateLimited: false }
   }
 
-  // Generate ALL missing categories in a single AI conversation
-  try {
-    const records = await LLMAdapter.generateAdviceBatch(cacheKey, missingCategories)
-    generated = records.length
-    errors = missingCategories.length - records.length
-  } catch (error: unknown) {
-    if (error instanceof AIRateLimitedError) {
-      rateLimited = true
+  // Fire parallel requests — process categories in parallel batches
+  const PARALLEL = parseInt(process.env.AI_PARALLEL_REQUESTS ?? '4', 10)
+  const results = await Promise.allSettled(
+    missingCategories.map((cat) =>
+      LLMAdapter.generateAdviceBatch(cacheKey, [cat])
+    )
+  )
+
+  for (const result of results) {
+    if (result.status === 'fulfilled' && result.value.length > 0) {
+      generated++
+    } else if (result.status === 'rejected') {
+      if (result.reason?.name === 'AIRateLimitedError') {
+        rateLimited = true
+      } else {
+        errors++
+      }
     } else {
-      console.error('[reconcileMissingAdvice] Batch generation failed:', error)
-      errors = missingCategories.length
+      errors++
     }
   }
+
+  // Limit concurrency log for awareness
+  void PARALLEL
 
   return { generated, skipped, errors, rateLimited }
 }
