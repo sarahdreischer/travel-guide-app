@@ -31,11 +31,7 @@ describe('ExpandedCard', () => {
     answers: {
       'Is driving recommended?': 'Yes, driving is highly recommended for exploring.',
       'Are roads easy to drive on?': 'Main roads are good, secondary roads can be rough.',
-      'Is rental car recommended?': 'Yes, a rental car gives you the most flexibility.',
       'Are mountain roads difficult?': 'Some mountain roads are steep and winding.',
-      'Is parking easy?': 'Parking is generally easy outside major cities.',
-      'Is parking widely available?': 'Yes, most places have parking options.',
-      'What are the parking rules?': 'Follow local signs; avoid parking on red curbs.',
     },
     generatedAt: new Date(),
   }
@@ -139,8 +135,8 @@ describe('ExpandedCard', () => {
     )
 
     const sections = screen.getAllByTestId('expanded-card-question-section')
-    // Transportation – Self Driving has 7 sub-questions
-    expect(sections).toHaveLength(7)
+    // Transportation – Self Driving has 3 sub-questions
+    expect(sections).toHaveLength(3)
   })
 
   it('renders "Not applicable" for missing answers (Req 6.3)', () => {
@@ -164,8 +160,8 @@ describe('ExpandedCard', () => {
     const notApplicableAnswers = answers.filter(
       (el) => el.textContent === 'Not applicable'
     )
-    // 6 out of 7 should be "Not applicable"
-    expect(notApplicableAnswers).toHaveLength(6)
+    // 2 out of 3 should be "Not applicable"
+    expect(notApplicableAnswers).toHaveLength(2)
   })
 
   it('shows loading skeletons for unanswered questions when isLoading is true (Req 6.5)', () => {
@@ -186,7 +182,7 @@ describe('ExpandedCard', () => {
 
     const skeletons = screen.getAllByTestId('expanded-card-skeleton')
     // 6 unanswered questions should show skeletons
-    expect(skeletons).toHaveLength(6)
+    expect(skeletons).toHaveLength(2)
   })
 
   it('shows loading skeletons for all questions when adviceRecord is null and isLoading is true', () => {
@@ -199,7 +195,7 @@ describe('ExpandedCard', () => {
     )
 
     const skeletons = screen.getAllByTestId('expanded-card-skeleton')
-    expect(skeletons).toHaveLength(7)
+    expect(skeletons).toHaveLength(3)
   })
 
   it('renders actual answers when available even while loading', () => {
@@ -211,10 +207,10 @@ describe('ExpandedCard', () => {
       />
     )
 
-    // All 7 answers are present, so no skeletons should show
+    // All 3 answers are present, so no skeletons should show
     expect(screen.queryByTestId('expanded-card-skeleton')).not.toBeInTheDocument()
     const answers = screen.getAllByTestId('expanded-card-answer')
-    expect(answers).toHaveLength(7)
+    expect(answers).toHaveLength(3)
   })
 
   it('renders VoteButtons when adviceId is provided and not loading (Req 7.1, 7.5)', () => {

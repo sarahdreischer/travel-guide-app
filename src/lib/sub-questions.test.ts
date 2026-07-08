@@ -12,11 +12,7 @@ describe('getSubQuestions', () => {
     expect(getSubQuestions('Transportation – Self Driving')).toEqual([
       'Is driving recommended?',
       'Are roads easy to drive on?',
-      'Is rental car recommended?',
       'Are mountain roads difficult?',
-      'Is parking easy?',
-      'Is parking widely available?',
-      'What are the parking rules?',
     ])
   })
 
@@ -35,6 +31,7 @@ describe('getSubQuestions', () => {
       'Should I book airport transport in advance?',
       'How much does airport transport cost on average?',
       'Are taxis or other transportation companies readily available?',
+      'Which transportation companies other than local taxis are widely used?',
     ])
   })
 
@@ -156,7 +153,7 @@ describe('getSubQuestions', () => {
     ])
   })
 
-  it('handles all 15 CATEGORIES without throwing', () => {
+  it('handles all CATEGORIES without throwing', () => {
     for (const category of CATEGORIES) {
       expect(() => getSubQuestions(category)).not.toThrow()
     }

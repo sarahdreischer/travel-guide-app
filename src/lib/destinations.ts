@@ -8,4 +8,5 @@ export {
   CONCISE_TOPICS,
   type ConciseTopic,
   CONCISE_TOPIC_MAPPING,
+  getSubQuestions,
 } from './travel-config'

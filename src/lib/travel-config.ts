@@ -35,8 +35,13 @@ export const CATEGORY_CONFIG = {
   'Transportation – Self Driving': [
     'Is driving recommended?',
     'Are roads easy to drive on?',
-    'Is rental car recommended?',
     'Are mountain roads difficult?',
+  ],
+  'Transportation - Car Rental': [
+    'Is rental car recommended?',
+    'What should I watch out for when renting a car?',
+  ],
+  'Transportation - Parking': [
     'Is parking easy?',
     'Is parking widely available?',
     'What are the parking rules?',
@@ -52,6 +57,7 @@ export const CATEGORY_CONFIG = {
     'Should I book airport transport in advance?',
     'How much does airport transport cost on average?',
     'Are taxis or other transportation companies readily available?',
+    'Which transportation companies other than local taxis are widely used?',
   ],
   'Accommodation': [
     'Which area should I stay in?',
@@ -154,11 +160,11 @@ export function getSubQuestions(category: string): string[] {
 
 export const CONCISE_TOPIC_MAPPING = {
   'Rental car': {
-    category: 'Transportation – Self Driving',
+    category: 'Transportation - Car Rental',
     question: 'Is rental car recommended?',
   },
   'Parking': {
-    category: 'Transportation – Self Driving',
+    category: 'Transportation - Parking',
     question: 'Is parking easy?',
   },
   'Public transport': {

@@ -168,6 +168,6 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
     // do not block the user's redirect.
   })
 
-  // 8. Redirect to trip page (must be outside try/catch)
-  redirect(`/home/${trip.id}`)
+  // 8. Redirect to the "generating advice" page which shows a loading animation
+  redirect(`/home/${trip.id}/generating`)
 }

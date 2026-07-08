@@ -10,7 +10,7 @@ import { AdviceStore, deriveMonthRange } from '@/lib/advice-store'
 import type { AdviceRecord } from '@/lib/advice-store'
 import { derivebudgetRange } from '@/lib/validators'
 import { reconcileMissingAdviceAction } from '@/actions/advice'
-import { CATEGORIES, CONCISE_TOPICS, CONCISE_TOPIC_MAPPING, type ConciseTopic } from '@/lib/destinations'
+import { CATEGORIES, CONCISE_TOPICS, CONCISE_TOPIC_MAPPING, type ConciseTopic, getSubQuestions } from '@/lib/destinations'
 import HomeCardGrid, { type CardData } from '@/components/HomeCardGrid'
 import TripSelector from '@/components/TripSelector'
 
@@ -81,10 +81,13 @@ export default async function HomePage({
     : []
 
   // Fetch all cached advice records for this trip
-  let adviceRecords = await AdviceStore.getForTrip(tripId)
+  const adviceRecords = await AdviceStore.getForTrip(tripId)
 
-  // Reconcile missing advice on page load if any categories are missing
-  if (adviceRecords.length < CATEGORIES.length) {
+  // Only count categories that have sub-questions defined (exclude empty ones like "Local Etiquette")
+  const categoriesWithQuestions = CATEGORIES.filter((c) => getSubQuestions(c).length > 0)
+  const hasMissingAdvice = adviceRecords.length < categoriesWithQuestions.length
+
+  if (hasMissingAdvice) {
     const { startMonth, endMonth } = deriveMonthRange(trip.startDate, trip.endDate)
     const cacheKey = {
       destination: trip.destination.toLowerCase(),
@@ -94,12 +97,8 @@ export default async function HomePage({
       budgetRange: derivebudgetRange(trip.budgetUsd),
     }
 
-    const result = await reconcileMissingAdviceAction(cacheKey)
-
-    if (result.generated > 0) {
-      // Re-fetch advice after generating new records
-      adviceRecords = await AdviceStore.getForTrip(tripId)
-    }
+    // Fire and forget — don't block the page render
+    reconcileMissingAdviceAction(cacheKey).catch(() => {})
   }
 
   // Build card data from advice records
@@ -123,6 +122,12 @@ export default async function HomePage({
       <h1 className="text-2xl font-bold text-gray-900 mb-6">
         {trip.destination} — Key Tips
       </h1>
+
+      {hasMissingAdvice && (
+        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          Some advice is still being generated. Refresh to check for updates.
+        </div>
+      )}
 
       {/* Responsive grid of 12 Concise Cards — Req 5.1, 5.2 */}
       <HomeCardGrid cards={cards} />

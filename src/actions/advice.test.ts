@@ -79,7 +79,7 @@ describe('getOrGenerateAdviceAction', () => {
 
     const result = await getOrGenerateAdviceAction(mockCacheKey)
 
-    expect(result.results).toHaveLength(15)
+    expect(result.results).toHaveLength(17)
     expect(result.errors).toHaveLength(0)
     result.results.forEach((r) => {
       expect(r.status).toBe('success')
@@ -99,9 +99,9 @@ describe('getOrGenerateAdviceAction', () => {
 
     const result = await getOrGenerateAdviceAction(mockCacheKey)
 
-    expect(result.results).toHaveLength(15)
+    expect(result.results).toHaveLength(17)
     expect(result.errors).toHaveLength(0)
-    expect(mockGenerateAdvice).toHaveBeenCalledTimes(15)
+    expect(mockGenerateAdvice).toHaveBeenCalledTimes(17)
     result.results.forEach((r) => {
       expect(r.status).toBe('success')
     })
@@ -121,7 +121,7 @@ describe('getOrGenerateAdviceAction', () => {
 
     const result = await getOrGenerateAdviceAction(mockCacheKey)
 
-    expect(result.results).toHaveLength(15)
+    expect(result.results).toHaveLength(17)
     expect(result.errors).toHaveLength(1)
     expect(result.errors[0]).toBe(CATEGORIES[0])
 
@@ -133,7 +133,7 @@ describe('getOrGenerateAdviceAction', () => {
 
     // Remaining 14 categories should succeed
     const successResults = result.results.filter((r) => r.status === 'success')
-    expect(successResults).toHaveLength(14)
+    expect(successResults).toHaveLength(16)
   })
 
   it('handles unexpected errors (e.g. write failures) gracefully', async () => {
@@ -153,7 +153,7 @@ describe('getOrGenerateAdviceAction', () => {
 
     const result = await getOrGenerateAdviceAction(mockCacheKey)
 
-    expect(result.results).toHaveLength(15)
+    expect(result.results).toHaveLength(17)
     expect(result.errors).toHaveLength(1)
     expect(result.errors[0]).toBe(CATEGORIES[1])
 
@@ -188,12 +188,12 @@ describe('getOrGenerateAdviceAction', () => {
 
     const result = await getOrGenerateAdviceAction(mockCacheKey)
 
-    expect(result.results).toHaveLength(15)
+    expect(result.results).toHaveLength(17)
     expect(result.errors).toHaveLength(1)
-    // 5 cached + 9 generated + 1 error = 15
+    // 5 cached + 11 generated + 1 error = 17
     const successCount = result.results.filter((r) => r.status === 'success').length
-    expect(successCount).toBe(14)
-    // LLM called 10 times (15 - 5 cached)
-    expect(mockGenerateAdvice).toHaveBeenCalledTimes(10)
+    expect(successCount).toBe(16)
+    // LLM called 12 times (17 - 5 cached)
+    expect(mockGenerateAdvice).toHaveBeenCalledTimes(12)
   })
 })
