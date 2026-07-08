@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+// Start scheduled reconciliation (server-side only, runs periodically)
+import '@/lib/scheduled-reconciliation'
+
 export const metadata: Metadata = {
-  title: "MVPTravel Reality",
+  title: "Travel Guide",
   description:
     "Real-world, practical travel advice for curated destinations — powered by AI.",
 };

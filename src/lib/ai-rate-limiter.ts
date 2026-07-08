@@ -122,3 +122,16 @@ export function getRateLimitStatus(): {
     cooldownRemainingSeconds,
   }
 }
+
+
+// ─── Periodic rate limit logger (every 5 minutes) ─────────────────────────────
+
+if (typeof globalThis !== 'undefined' && !(globalThis as Record<string, unknown>).__rateLimitLoggerStarted) {
+  (globalThis as Record<string, unknown>).__rateLimitLoggerStarted = true
+  setInterval(() => {
+    const status = getRateLimitStatus()
+    console.log(
+      `[AI Rate Limit] ${new Date().toISOString()} — minute: ${status.minuteCount}/${status.maxPerMinute}, day: ${status.dayCount}/${status.maxPerDay}, cooldown: ${status.inCooldown}`
+    )
+  }, 5 * 60 * 1000)
+}
