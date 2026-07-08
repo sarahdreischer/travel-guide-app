@@ -23,6 +23,7 @@ export default async function GeneratingPage({
     <GeneratingClient
       tripId={tripId}
       destination={trip.destination}
+      timeoutSeconds={parseInt(process.env.GENERATING_TRIP_ADVICE_TIMEOUT_SECONDS ?? '15', 10)}
     />
   )
 }

@@ -3,9 +3,10 @@ import { notFound } from 'next/navigation'
 import { db } from '@/db'
 import { trips } from '@/db/schema'
 import { eq } from 'drizzle-orm'
-import { AdviceStore } from '@/lib/advice-store'
-import { CATEGORIES, type Category } from '@/lib/destinations'
-import { getSubQuestions } from '@/lib/sub-questions'
+import { AdviceStore, deriveMonthRange } from '@/lib/advice-store'
+import { CATEGORIES, type Category, getSubQuestions } from '@/lib/destinations'
+import { derivebudgetRange } from '@/lib/validators'
+import { reconcileMissingAdviceAction } from '@/actions/advice'
 import { findAnswer } from '@/lib/answer-lookup'
 
 /**
@@ -22,7 +23,23 @@ export default async function ComprehensivePage({
   const [trip] = await db.select().from(trips).where(eq(trips.id, tripId)).limit(1)
   if (!trip) notFound()
 
-  const adviceRecords = await AdviceStore.getForTrip(tripId)
+  // Fetch cached advice
+  let adviceRecords = await AdviceStore.getForTrip(tripId)
+
+  // Reconcile missing categories (awaited so data is available on render)
+  const categoriesWithQuestions = CATEGORIES.filter((c) => getSubQuestions(c).length > 0)
+  if (adviceRecords.length < categoriesWithQuestions.length) {
+    const { startMonth, endMonth } = deriveMonthRange(trip.startDate, trip.endDate)
+    const cacheKey = {
+      destination: trip.destination.toLowerCase(),
+      startMonth,
+      endMonth,
+      travellerType: trip.travelMode.toLowerCase(),
+      budgetRange: derivebudgetRange(trip.budgetUsd),
+    }
+    await reconcileMissingAdviceAction(cacheKey)
+    adviceRecords = await AdviceStore.getForTrip(tripId)
+  }
 
   // Index by category
   const byCategory = new Map<string, Record<string, string>>()

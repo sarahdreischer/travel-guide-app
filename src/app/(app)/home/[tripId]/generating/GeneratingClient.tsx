@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -14,69 +14,91 @@ const LOADING_MESSAGES = [
   'Evaluating safety information…',
   'Gathering weather forecasts…',
   'Discovering hidden gems and activities…',
+  'Reviewing local safety tips…',
+  'Checking laundry options nearby…',
+  'Almost there…',
 ]
+
+/**
+ * Maximum seconds to wait on this page before redirecting to the trip home.
+ * Configurable via data attribute from server, defaults to 15 seconds.
+ */
+const DEFAULT_TIMEOUT_SECONDS = 15
 
 interface GeneratingClientProps {
   tripId: string
   destination: string
+  timeoutSeconds?: number
 }
 
-export default function GeneratingClient({ tripId, destination }: GeneratingClientProps) {
+export default function GeneratingClient({
+  tripId,
+  destination,
+  timeoutSeconds = DEFAULT_TIMEOUT_SECONDS,
+}: GeneratingClientProps) {
   const router = useRouter()
   const [messageIndex, setMessageIndex] = useState(0)
-  const [progress, setProgress] = useState(0)
+  const [elapsed, setElapsed] = useState(0)
   const [failed, setFailed] = useState(false)
+  const [complete, setComplete] = useState(false)
+  const redirected = useRef(false)
 
-  // Cycle through loading messages
+  const progress = Math.min(Math.round((elapsed / timeoutSeconds) * 100), 99)
+
+  // Cycle through loading messages faster
   useEffect(() => {
     const interval = setInterval(() => {
       setMessageIndex((i) => (i + 1) % LOADING_MESSAGES.length)
-    }, 3000)
+    }, 2000)
     return () => clearInterval(interval)
   }, [])
 
-  // Poll for advice completion
+  // Elapsed timer + hard timeout redirect
   useEffect(() => {
-    const maxPolls = 60 // 60 × 2s = 2 minutes max wait
+    const interval = setInterval(() => {
+      setElapsed((e) => {
+        const next = e + 1
+        if (next >= timeoutSeconds && !redirected.current) {
+          redirected.current = true
+          router.replace(`/home/${tripId}`)
+        }
+        return next
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [timeoutSeconds, tripId, router])
+
+  // Poll for completion — redirect immediately if done early
+  useEffect(() => {
     let cancelled = false
-    let currentPoll = 0
 
     const poll = async () => {
-      if (cancelled) return
+      if (cancelled || redirected.current) return
 
       try {
         const res = await fetch(`/api/advice-status/${tripId}`)
-        if (!res.ok) throw new Error('Failed to check status')
-
+        if (!res.ok) throw new Error('status check failed')
         const data = await res.json()
-        const pct = Math.round((data.ready / data.total) * 100)
-        setProgress(pct)
 
         if (data.complete) {
-          // All done — redirect to the trip home
-          router.replace(`/home/${tripId}`)
-          return
-        }
-
-        currentPoll++
-        if (currentPoll >= maxPolls) {
-          // Timed out — go to trip page with whatever is available
-          router.replace(`/home/${tripId}`)
+          setComplete(true)
+          if (!redirected.current) {
+            redirected.current = true
+            router.replace(`/home/${tripId}`)
+          }
           return
         }
       } catch {
-        setFailed(true)
-        return
+        // Don't fail — timeout will handle the redirect
       }
 
-      // Poll again after 2 seconds (faster feedback)
-      if (!cancelled) {
-        setTimeout(poll, 2000)
+      if (!cancelled && !redirected.current) {
+        setTimeout(poll, 3000)
       }
     }
 
-    // Start polling immediately
-    const timer = setTimeout(poll, 1000)
+    // Start polling after 3 seconds (give AI time to start)
+    const timer = setTimeout(poll, 3000)
     return () => {
       cancelled = true
       clearTimeout(timer)
@@ -89,11 +111,11 @@ export default function GeneratingClient({ tripId, destination }: GeneratingClie
         <div className="max-w-md">
           <div className="mb-4 text-4xl">⚠️</div>
           <h1 className="text-xl font-bold text-gray-900 mb-2">
-            Couldn't generate travel advice
+            Couldn&apos;t generate travel advice
           </h1>
           <p className="text-sm text-gray-600 mb-6">
             Your trip to <span className="font-medium">{destination}</span> was saved successfully,
-            but we couldn't fetch the AI-generated advice right now. Please check back later —
+            but we couldn&apos;t fetch the AI-generated advice right now. Please check back later —
             advice will be generated on your next visit.
           </p>
           <Link
@@ -120,17 +142,19 @@ export default function GeneratingClient({ tripId, destination }: GeneratingClie
         </h1>
 
         <p className="text-sm text-gray-600 mb-4 h-5 transition-opacity duration-500">
-          {LOADING_MESSAGES[messageIndex]}
+          {complete ? 'Ready! Redirecting…' : LOADING_MESSAGES[messageIndex]}
         </p>
 
-        {/* Progress bar */}
+        {/* Progress bar — based on elapsed time, smooth animation */}
         <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
           <div
-            className="bg-blue-600 h-2 rounded-full transition-all duration-700 ease-out"
-            style={{ width: `${Math.max(progress, 5)}%` }}
+            className="bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-linear"
+            style={{ width: `${complete ? 100 : Math.max(progress, 5)}%` }}
           />
         </div>
-        <p className="text-xs text-gray-500">{progress}% complete</p>
+        <p className="text-xs text-gray-500">
+          {complete ? '100% complete' : `${progress}% complete`}
+        </p>
       </div>
     </main>
   )

@@ -85,12 +85,12 @@ export default async function HomePage({
   // Fetch all cached advice records for this trip
   const adviceRecords = await AdviceStore.getForTrip(tripId)
 
-  // Only count categories that have sub-questions defined (exclude empty ones like "Local Etiquette")
+  // Only count categories that have sub-questions defined
   const categoriesWithQuestions = CATEGORIES.filter((c) => getSubQuestions(c).length > 0)
   const hasMissingAdvice = adviceRecords.length < categoriesWithQuestions.length
 
+  // If missing, await reconciliation so answers are available on first render
   if (hasMissingAdvice) {
-    // Don't block the page — trigger reconciliation in background
     const { startMonth, endMonth } = deriveMonthRange(trip.startDate, trip.endDate)
     const cacheKey = {
       destination: trip.destination.toLowerCase(),
@@ -100,11 +100,16 @@ export default async function HomePage({
       budgetRange: derivebudgetRange(trip.budgetUsd),
     }
 
-    reconcileMissingAdviceAction(cacheKey).catch(() => {})
+    await reconcileMissingAdviceAction(cacheKey)
   }
 
+  // Re-fetch after reconciliation to get latest data
+  const finalAdviceRecords = hasMissingAdvice
+    ? await AdviceStore.getForTrip(tripId)
+    : adviceRecords
+
   // Build card data from advice records
-  const cards = buildCards(adviceRecords)
+  const cards = buildCards(finalAdviceRecords)
 
   return (
     <main className="p-4 max-w-4xl mx-auto">
@@ -125,7 +130,7 @@ export default async function HomePage({
         {trip.destination} — Key Tips
       </h1>
 
-      {hasMissingAdvice && (
+      {finalAdviceRecords.length < categoriesWithQuestions.length && (
         <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
           Some advice is still being generated. Refresh to check for updates.
         </div>
