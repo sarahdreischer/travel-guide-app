@@ -124,15 +124,15 @@ describe('getOrGenerateAdviceAction', () => {
 
     expect(result.results).toHaveLength(17)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0]).toBe(CATEGORIES[0])
 
-    const errorResult = result.results[0]
-    expect(errorResult.status).toBe('error')
-    if (errorResult.status === 'error') {
-      expect(errorResult.message).toBe('Advice could not be loaded at this time')
+    // One category should have the timeout error
+    const errorResults = result.results.filter((r) => r.status === 'error')
+    expect(errorResults).toHaveLength(1)
+    if (errorResults[0].status === 'error') {
+      expect(errorResults[0].message).toBe('Advice could not be loaded at this time')
     }
 
-    // Remaining 14 categories should succeed
+    // Remaining categories should succeed
     const successResults = result.results.filter((r) => r.status === 'success')
     expect(successResults).toHaveLength(16)
   })
@@ -156,12 +156,12 @@ describe('getOrGenerateAdviceAction', () => {
 
     expect(result.results).toHaveLength(17)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0]).toBe(CATEGORIES[1])
 
-    const errorResult = result.results[1]
-    expect(errorResult.status).toBe('error')
-    if (errorResult.status === 'error') {
-      expect(errorResult.message).toBe(
+    // One category should have the write failure error
+    const errorResults = result.results.filter((r) => r.status === 'error')
+    expect(errorResults).toHaveLength(1)
+    if (errorResults[0].status === 'error') {
+      expect(errorResults[0].message).toBe(
         'Advice could not be saved and will not be cached'
       )
     }

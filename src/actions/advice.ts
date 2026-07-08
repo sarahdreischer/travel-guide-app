@@ -42,21 +42,28 @@ export async function getOrGenerateAdviceAction(
   const results: CategoryResult[] = []
   const errors: string[] = []
 
-  // Fire all categories in parallel for speed
-  const categoryTasks = CATEGORIES.map(async (category) => {
+  // Determine which categories power the concise home page cards (priority)
+  const { CONCISE_TOPIC_MAPPING } = await import('@/lib/travel-config')
+  const conciseCategories: Set<string> = new Set(
+    Object.values(CONCISE_TOPIC_MAPPING).map((m) => m.category)
+  )
+
+  // Split categories into priority (concise) and remaining (comprehensive)
+  const priorityCategories = CATEGORIES.filter((c) => conciseCategories.has(c))
+  const remainingCategories = CATEGORIES.filter((c) => !conciseCategories.has(c))
+
+  // Helper to generate a single category
+  const generateCategory = async (category: string) => {
     try {
-      // Check cache first
       const cached = await AdviceStore.findByCacheKey(cacheKey, category)
       if (cached) {
         return { status: 'success' as const, record: cached, category }
       }
 
-      // Check rate limit
       if (!canCallAI()) {
         return { status: 'error' as const, category, message: 'Rate limited — try again later' }
       }
 
-      // Generate via LLM
       const subQuestions = getSubQuestions(category)
       if (subQuestions.length === 0) {
         return { status: 'skip' as const, category }
@@ -74,11 +81,20 @@ export async function getOrGenerateAdviceAction(
       }
       return { status: 'error' as const, category, message: 'Advice could not be saved and will not be cached' }
     }
-  })
+  }
 
-  const settled = await Promise.allSettled(categoryTasks)
+  // Phase 1: Fetch concise/priority categories in parallel (these power the home page)
+  const prioritySettled = await Promise.allSettled(
+    priorityCategories.map(generateCategory)
+  )
 
-  for (const result of settled) {
+  // Phase 2: Fetch remaining categories in parallel (comprehensive view)
+  const remainingSettled = await Promise.allSettled(
+    remainingCategories.map(generateCategory)
+  )
+
+  // Collect results
+  for (const result of [...prioritySettled, ...remainingSettled]) {
     if (result.status === 'fulfilled') {
       const val = result.value
       if (val.status === 'success') {
@@ -87,9 +103,7 @@ export async function getOrGenerateAdviceAction(
         results.push({ status: 'error', category: val.category, message: val.message })
         errors.push(val.category)
       }
-      // skip → do nothing
     } else {
-      // Promise rejected (shouldn't happen since we catch inside)
       results.push({ status: 'error', category: 'unknown', message: 'Unexpected error' })
       errors.push('unknown')
     }
