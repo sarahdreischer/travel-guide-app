@@ -46,7 +46,7 @@ jest.mock('@/lib/ai-rate-limiter', () => ({
 
 const mockCacheKey: CacheKey = {
   destination: 'costa rica',
-  month: 'january',
+  startMonth: 'january', endMonth: 'january',
   travellerType: 'solo',
   budgetRange: 'mid',
 }
@@ -55,7 +55,7 @@ function makeMockRecord(category: string): AdviceRecord {
   return {
     id: `id-${category}`,
     destination: 'costa rica',
-    month: 'january',
+    startMonth: 'january', endMonth: 'january',
     travellerType: 'solo',
     budgetRange: 'mid',
     category,

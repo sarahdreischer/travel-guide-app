@@ -36,7 +36,7 @@ const mockSave = AdviceStore.save as jest.MockedFunction<typeof AdviceStore.save
 describe('LLMAdapter', () => {
   const sampleCacheKey: CacheKey = {
     destination: 'costa rica',
-    month: 'january',
+    startMonth: 'january', endMonth: 'january',
     travellerType: 'solo',
     budgetRange: 'mid',
   }
@@ -60,7 +60,7 @@ describe('LLMAdapter', () => {
       const savedRecord = {
         id: 'abc-123',
         destination: 'costa rica',
-        month: 'january',
+        startMonth: 'january', endMonth: 'january',
         travellerType: 'solo',
         budgetRange: 'mid',
         category: 'Transportation – Self Driving',
@@ -85,7 +85,7 @@ describe('LLMAdapter', () => {
       expect(mockGenerateObject).toHaveBeenCalledTimes(1)
       expect(mockSave).toHaveBeenCalledWith({
         destination: 'costa rica',
-        month: 'january',
+        startMonth: 'january', endMonth: 'january',
         travellerType: 'solo',
         budgetRange: 'mid',
         category: 'Transportation – Self Driving',

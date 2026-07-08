@@ -77,7 +77,8 @@ export const adviceCache = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     destination: citext('destination').notNull(),
-    month: citext('month').notNull(),
+    startMonth: citext('start_month').notNull(),
+    endMonth: citext('end_month').notNull(),
     travellerType: citext('traveller_type').notNull(),
     budgetRange: text('budget_range').notNull(), // 'budget' | 'mid' | 'luxury'
     category: text('category').notNull(),
@@ -87,7 +88,8 @@ export const adviceCache = pgTable(
   (t) => ({
     cacheKeyIdx: uniqueIndex('advice_cache_key_idx').on(
       t.destination,
-      t.month,
+      t.startMonth,
+      t.endMonth,
       t.travellerType,
       t.budgetRange,
       t.category,

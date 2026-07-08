@@ -6,7 +6,7 @@ import { db } from '@/db'
 import { trips } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { AuthService } from '@/lib/auth'
-import { AdviceStore } from '@/lib/advice-store'
+import { AdviceStore, deriveMonthRange } from '@/lib/advice-store'
 import type { AdviceRecord } from '@/lib/advice-store'
 import { derivebudgetRange } from '@/lib/validators'
 import { reconcileMissingAdviceAction } from '@/actions/advice'
@@ -85,10 +85,11 @@ export default async function HomePage({
 
   // Reconcile missing advice on page load if any categories are missing
   if (adviceRecords.length < CATEGORIES.length) {
-    const month = new Date(trip.startDate).toLocaleString('en', { month: 'long' }).toLowerCase()
+    const { startMonth, endMonth } = deriveMonthRange(trip.startDate, trip.endDate)
     const cacheKey = {
       destination: trip.destination.toLowerCase(),
-      month,
+      startMonth,
+      endMonth,
       travellerType: trip.travelMode.toLowerCase(),
       budgetRange: derivebudgetRange(trip.budgetUsd),
     }

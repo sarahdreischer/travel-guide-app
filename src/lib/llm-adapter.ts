@@ -36,7 +36,7 @@ export type CategoryQuestions = {
 const inFlightBatchRequests = new Map<string, Promise<AdviceRecord[]>>()
 
 function buildBatchKey(cacheKey: CacheKey): string {
-  return `${cacheKey.destination}|${cacheKey.month}|${cacheKey.travellerType}|${cacheKey.budgetRange}`
+  return `${cacheKey.destination}|${cacheKey.startMonth}|${cacheKey.endMonth}|${cacheKey.travellerType}|${cacheKey.budgetRange}`
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -70,7 +70,7 @@ function buildBatchPrompt(
 
 Trip context:
 - Destination: ${cacheKey.destination}
-- Travel Month: ${cacheKey.month}
+- Travel Month(s): ${cacheKey.startMonth === cacheKey.endMonth ? cacheKey.startMonth : `${cacheKey.startMonth} to ${cacheKey.endMonth}`}
 - Traveller Type: ${cacheKey.travellerType}
 - Budget Range: ${describeBudgetRange(cacheKey.budgetRange)}
 
@@ -128,19 +128,30 @@ async function executeBatchAICall(
     console.log('[LLM_Adapter] ◀ AI RESPONSE:', JSON.stringify(batchAnswers, null, 2))
 
     // Persist each category's answers as separate rows (upsert)
+    // AI may return category names with slightly different punctuation (e.g. regular
+    // hyphen instead of en-dash), so we do a normalized lookup.
     const records: AdviceRecord[] = []
+    const normalizeKey = (s: string) => s.toLowerCase().replace(/[\u2013\u2014-]/g, '-').replace(/\s+/g, ' ').trim()
+    const responseKeyMap = new Map<string, Record<string, string>>()
+    for (const [key, value] of Object.entries(batchAnswers)) {
+      responseKeyMap.set(normalizeKey(key), value as Record<string, string>)
+    }
+
     for (const cat of categories) {
-      const answers = batchAnswers[cat.category]
+      const answers = responseKeyMap.get(normalizeKey(cat.category))
       if (answers && Object.keys(answers).length > 0) {
         const record = await AdviceStore.save({
           destination: cacheKey.destination,
-          month: cacheKey.month,
+          startMonth: cacheKey.startMonth,
+          endMonth: cacheKey.endMonth,
           travellerType: cacheKey.travellerType,
           budgetRange: cacheKey.budgetRange,
           category: cat.category,
           answers,
         })
         records.push(record)
+      } else {
+        console.warn(`[LLM_Adapter] No answers found in AI response for category "${cat.category}". Available keys: ${[...responseKeyMap.keys()].join(', ')}`)
       }
     }
 

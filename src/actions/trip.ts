@@ -8,6 +8,7 @@ import { DESTINATIONS } from '@/lib/destinations'
 import { db } from '@/db'
 import { trips } from '@/db/schema'
 import { getOrGenerateAdviceAction } from '@/actions/advice'
+import { deriveMonthRange } from '@/lib/advice-store'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -35,13 +36,6 @@ const VALID_TRAVEL_STYLES = [
   'Digital nomad',
   'Adventure',
   'Beach holiday',
-] as const
-
-// ─── Months ───────────────────────────────────────────────────────────────────
-
-const MONTH_NAMES = [
-  'january', 'february', 'march', 'april', 'may', 'june',
-  'july', 'august', 'september', 'october', 'november', 'december',
 ] as const
 
 // ─── Server Action ────────────────────────────────────────────────────────────
@@ -159,10 +153,11 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
     .returning({ id: trips.id })
 
   // 6. Derive cache key
-  const month = MONTH_NAMES[startDate!.getMonth()]
+  const { startMonth, endMonth } = deriveMonthRange(startDateStr!, endDateStr!)
   const cacheKey = {
     destination: destination!.toLowerCase(),
-    month,
+    startMonth,
+    endMonth,
     travellerType: travelMode!.toLowerCase(),
     budgetRange: derivebudgetRange(budget!),
   }

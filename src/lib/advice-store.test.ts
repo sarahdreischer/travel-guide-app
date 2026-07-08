@@ -82,7 +82,7 @@ describe('AdviceStore', () => {
     it('returns null when no matching record exists', async () => {
       const key: CacheKey = {
         destination: 'costa rica',
-        month: 'january',
+        startMonth: 'january', endMonth: 'january',
         travellerType: 'solo',
         budgetRange: 'mid',
       }
@@ -97,7 +97,7 @@ describe('AdviceStore', () => {
       const adviceRow = {
         id: '123',
         destination: 'costa rica',
-        month: 'january',
+        startMonth: 'january', endMonth: 'january',
         travellerType: 'solo',
         budgetRange: 'mid',
         category: 'food',
@@ -109,7 +109,7 @@ describe('AdviceStore', () => {
 
       const key: CacheKey = {
         destination: 'costa rica',
-        month: 'january',
+        startMonth: 'january', endMonth: 'january',
         travellerType: 'solo',
         budgetRange: 'mid',
       }
@@ -124,7 +124,7 @@ describe('AdviceStore', () => {
     it('inserts a new advice record and returns it', async () => {
       const newAdvice: NewAdviceRecord = {
         destination: 'mallorca',
-        month: 'july',
+        startMonth: 'july', endMonth: 'july',
         travellerType: 'couple',
         budgetRange: 'luxury',
         category: 'weather',
@@ -166,7 +166,7 @@ describe('AdviceStore', () => {
         {
           id: 'a1',
           destination: 'costa rica',
-          month: 'march',
+          startMonth: 'march', endMonth: 'march',
           travellerType: 'solo',
           budgetRange: 'mid',
           category: 'food',
@@ -176,7 +176,7 @@ describe('AdviceStore', () => {
         {
           id: 'a2',
           destination: 'costa rica',
-          month: 'march',
+          startMonth: 'march', endMonth: 'march',
           travellerType: 'solo',
           budgetRange: 'mid',
           category: 'safety',

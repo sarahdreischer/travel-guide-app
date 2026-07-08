@@ -9,9 +9,22 @@ import { derivebudgetRange } from '@/lib/validators'
 
 export type CacheKey = {
   destination: string // normalised to lower-case
-  month: string // e.g. "january"
+  startMonth: string // e.g. "july"
+  endMonth: string // e.g. "august" (same as startMonth for single-month trips)
   travellerType: string // travel mode
   budgetRange: string // "budget" | "mid" | "luxury"
+}
+
+/**
+ * Derive the month range from start and end dates.
+ */
+export function deriveMonthRange(startDate: string | Date, endDate: string | Date): { startMonth: string; endMonth: string } {
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  return {
+    startMonth: start.toLocaleString('en', { month: 'long' }).toLowerCase(),
+    endMonth: end.toLocaleString('en', { month: 'long' }).toLowerCase(),
+  }
 }
 
 export type AdviceRecord = AdviceCache
@@ -33,7 +46,8 @@ async function findByCacheKey(key: CacheKey, category: string): Promise<AdviceRe
     .where(
       and(
         eq(adviceCache.destination, key.destination),
-        eq(adviceCache.month, key.month),
+        eq(adviceCache.startMonth, key.startMonth),
+        eq(adviceCache.endMonth, key.endMonth),
         eq(adviceCache.travellerType, key.travellerType),
         eq(adviceCache.budgetRange, key.budgetRange),
         eq(adviceCache.category, category),
@@ -58,7 +72,8 @@ async function save(advice: NewAdviceRecord): Promise<AdviceRecord> {
     .onConflictDoNothing({
       target: [
         adviceCache.destination,
-        adviceCache.month,
+        adviceCache.startMonth,
+        adviceCache.endMonth,
         adviceCache.travellerType,
         adviceCache.budgetRange,
         adviceCache.category,
@@ -71,7 +86,8 @@ async function save(advice: NewAdviceRecord): Promise<AdviceRecord> {
     const existing = await findByCacheKey(
       {
         destination: advice.destination as string,
-        month: advice.month as string,
+        startMonth: advice.startMonth as string,
+        endMonth: advice.endMonth as string,
         travellerType: advice.travellerType as string,
         budgetRange: advice.budgetRange as string,
       },
@@ -99,7 +115,7 @@ async function getForTrip(tripId: string): Promise<AdviceRecord[]> {
   }
 
   // Derive cache key components from trip
-  const month = new Date(trip.startDate).toLocaleString('en', { month: 'long' }).toLowerCase()
+  const { startMonth, endMonth } = deriveMonthRange(trip.startDate, trip.endDate)
   const budgetRange = derivebudgetRange(trip.budgetUsd)
   const destination = trip.destination.toLowerCase()
   const travellerType = trip.travelMode.toLowerCase()
@@ -111,7 +127,8 @@ async function getForTrip(tripId: string): Promise<AdviceRecord[]> {
     .where(
       and(
         eq(adviceCache.destination, destination),
-        eq(adviceCache.month, month),
+        eq(adviceCache.startMonth, startMonth),
+        eq(adviceCache.endMonth, endMonth),
         eq(adviceCache.travellerType, travellerType),
         eq(adviceCache.budgetRange, budgetRange),
       ),
@@ -130,7 +147,8 @@ async function deleteByCacheKey(key: CacheKey, category: string): Promise<void> 
     .where(
       and(
         eq(adviceCache.destination, key.destination),
-        eq(adviceCache.month, key.month),
+        eq(adviceCache.startMonth, key.startMonth),
+        eq(adviceCache.endMonth, key.endMonth),
         eq(adviceCache.travellerType, key.travellerType),
         eq(adviceCache.budgetRange, key.budgetRange),
         eq(adviceCache.category, category),
