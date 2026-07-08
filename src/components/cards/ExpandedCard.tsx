@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { getSubQuestions } from '@/lib/sub-questions'
+import { findAnswer } from '@/lib/answer-lookup'
 import type { Category } from '@/lib/destinations'
 import type { AdviceCache } from '@/db/schema'
 import VoteButtons from '@/components/voting/VoteButtons'
@@ -30,7 +31,7 @@ function getRecommendedStatus(
   const firstQuestion = subQuestions[0]
   if (!firstQuestion) return 'Unknown'
 
-  const answer = answers[firstQuestion]
+  const answer = findAnswer(answers, firstQuestion)
   if (!answer) return 'Unknown'
 
   const lowerAnswer = answer.toLowerCase()
@@ -103,7 +104,7 @@ export default function ExpandedCard({
       {/* Sub-questions section */}
       <div className="space-y-3" data-testid="expanded-card-questions">
         {subQuestions.map((question) => {
-          const answer = answers?.[question]
+          const answer = findAnswer(answers, question)
           const hasAnswer = answer !== undefined && answer !== null && answer !== ''
 
           return (

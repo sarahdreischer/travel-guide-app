@@ -7,6 +7,7 @@ import { LLMAdapter, AdviceTimeoutError, AIRateLimitedError } from '@/lib/llm-ad
 import { getSubQuestions } from '@/lib/sub-questions'
 import { CATEGORIES } from '@/lib/destinations'
 import { canCallAI, getRateLimitStatus } from '@/lib/ai-rate-limiter'
+import { findAnswer } from '@/lib/answer-lookup'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -140,7 +141,7 @@ export async function reconcileMissingAdviceAction(
       // Check if the cached record is stale (missing answers for current questions)
       const answers = cached.answers as Record<string, string> | null
       const hasAllQuestions = subQuestions.length === 0 || (
-        answers && subQuestions.every((q) => q in answers)
+        answers && subQuestions.every((q) => findAnswer(answers, q) !== undefined)
       )
 
       if (!hasAllQuestions) {

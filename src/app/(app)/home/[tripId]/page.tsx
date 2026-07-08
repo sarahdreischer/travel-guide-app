@@ -14,6 +14,8 @@ import { CATEGORIES, CONCISE_TOPICS, CONCISE_TOPIC_MAPPING, type ConciseTopic, g
 import HomeCardGrid, { type CardData } from '@/components/HomeCardGrid'
 import TripSelector from '@/components/TripSelector'
 
+import { findAnswer } from '@/lib/answer-lookup'
+
 /**
  * Derive a one-sentence summary from the full advice answer text.
  * Takes the first sentence (ending with . ! or ?) to avoid blocking the page
@@ -41,7 +43,7 @@ function buildCards(adviceRecords: AdviceRecord[]): CardData[] {
     const mapping = CONCISE_TOPIC_MAPPING[topic]
     const record = byCategory.get(mapping.category)
     const answers = record?.answers as Record<string, string> | null | undefined
-    const fullAnswer = answers?.[mapping.question] ?? null
+    const fullAnswer = findAnswer(answers, mapping.question) ?? null
 
     return {
       topic,

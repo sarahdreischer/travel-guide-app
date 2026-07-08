@@ -134,8 +134,8 @@ export const CATEGORY_CONFIG = {
   'Local Etiquette': [] as string[],
   'Miscellaneous': [
     'What are things I wish I had known?',
-    'Where can I easily by alcoholic drinks?',
-    'Are acoholic drinks highly taxed?',
+    'Where can I easily buy alcoholic drinks?',
+    'Are alcoholic drinks highly taxed?',
   ],
 } as const satisfies Record<string, readonly string[]>
 

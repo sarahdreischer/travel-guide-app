@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm'
 import { AdviceStore } from '@/lib/advice-store'
 import { CATEGORIES, type Category } from '@/lib/destinations'
 import { getSubQuestions } from '@/lib/sub-questions'
+import { findAnswer } from '@/lib/answer-lookup'
 
 /**
  * Comprehensive Advice page — shows ALL categories with their full Q&A
@@ -75,7 +76,7 @@ export default async function ComprehensivePage({
                     </thead>
                     <tbody>
                       {subQuestions.map((question) => {
-                        const answer = answers?.[question]
+                        const answer = findAnswer(answers, question)
                         return (
                           <tr key={question} className="border-b border-gray-100 hover:bg-gray-50">
                             <td className="py-2 px-3 text-gray-800 font-medium align-top">
