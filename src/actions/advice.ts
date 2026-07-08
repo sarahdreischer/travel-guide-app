@@ -126,16 +126,33 @@ export async function reconcileMissingAdviceAction(
     return { generated: 0, skipped: 0, errors: 0, rateLimited: true }
   }
 
-  // Collect all missing categories
+  // Collect all missing or stale categories
   const missingCategories: { category: string; subQuestions: string[] }[] = []
 
   for (const category of CATEGORIES) {
     const cached = await AdviceStore.findByCacheKey(cacheKey, category)
-    if (cached) {
-      skipped++
-    } else {
-      const subQuestions = getSubQuestions(category)
+    const subQuestions = getSubQuestions(category)
+
+    if (!cached) {
+      // Category not in DB at all
       missingCategories.push({ category, subQuestions })
+    } else {
+      // Check if the cached record is stale (missing answers for current questions)
+      const answers = cached.answers as Record<string, string> | null
+      const hasAllQuestions = subQuestions.length === 0 || (
+        answers && subQuestions.every((q) => q in answers)
+      )
+
+      if (!hasAllQuestions) {
+        // Stale record — delete it so it gets regenerated with all current questions
+        console.log(
+          `[reconcileMissingAdvice] Stale cache for "${category}" — missing answers for new questions. Deleting for regeneration.`
+        )
+        await AdviceStore.deleteByCacheKey(cacheKey, category)
+        missingCategories.push({ category, subQuestions })
+      } else {
+        skipped++
+      }
     }
   }
 

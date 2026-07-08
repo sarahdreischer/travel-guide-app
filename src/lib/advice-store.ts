@@ -120,6 +120,24 @@ async function getForTrip(tripId: string): Promise<AdviceRecord[]> {
   return rows
 }
 
+/**
+ * Delete a cached advice record by cache key + category.
+ * Used when a record is stale (missing answers for newly added questions).
+ */
+async function deleteByCacheKey(key: CacheKey, category: string): Promise<void> {
+  await db
+    .delete(adviceCache)
+    .where(
+      and(
+        eq(adviceCache.destination, key.destination),
+        eq(adviceCache.month, key.month),
+        eq(adviceCache.travellerType, key.travellerType),
+        eq(adviceCache.budgetRange, key.budgetRange),
+        eq(adviceCache.category, category),
+      ),
+    )
+}
+
 // ─── Export ───────────────────────────────────────────────────────────────────
 
-export const AdviceStore = { findByCacheKey, save, getForTrip }
+export const AdviceStore = { findByCacheKey, save, getForTrip, deleteByCacheKey }

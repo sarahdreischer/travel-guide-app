@@ -41,7 +41,7 @@ export default async function ComprehensivePage({
       </div>
 
       <h1 className="text-2xl font-bold text-gray-900 mb-2">
-        {trip.destination} — Comprehensive Travel Advice
+        {trip.destination} — Full Travel Advice
       </h1>
       <p className="text-sm text-gray-600 mb-8">
         {trip.startDate} to {trip.endDate} · {trip.travelMode} · {trip.travelStyle}

@@ -30,7 +30,7 @@ describe('ExpandedCard', () => {
     category,
     answers: {
       'Is driving recommended?': 'Yes, driving is highly recommended for exploring.',
-      'Are roads in good condition?': 'Main roads are good, secondary roads can be rough.',
+      'Are roads easy to drive on?': 'Main roads are good, secondary roads can be rough.',
       'Is rental car recommended?': 'Yes, a rental car gives you the most flexibility.',
       'Are mountain roads difficult?': 'Some mountain roads are steep and winding.',
       'Is parking easy?': 'Parking is generally easy outside major cities.',
