@@ -1,7 +1,6 @@
 {
-  "/(app)/destinations/page": "app/(app)/destinations/page.js",
-  "/(app)/trip/new/page": "app/(app)/trip/new/page.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(setup)/setup/page": "app/(setup)/setup/page.js",
   "/(app)/home/[tripId]/page": "app/(app)/home/[tripId]/page.js",
-  "/(app)/home/[tripId]/comprehensive/page": "app/(app)/home/[tripId]/comprehensive/page.js",
-  "/(app)/profile/page": "app/(app)/profile/page.js"
+  "/(app)/home/page": "app/(app)/home/page.js"
 }

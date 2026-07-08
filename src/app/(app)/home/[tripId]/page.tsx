@@ -74,7 +74,7 @@ export default async function HomePage({
   // Fetch all user trips for the trip selector
   const userTrips = user
     ? await db
-        .select({ id: trips.id, destination: trips.destination, startDate: trips.startDate })
+        .select({ id: trips.id, destination: trips.destination, startDate: trips.startDate, endDate: trips.endDate })
         .from(trips)
         .where(eq(trips.userId, user.id))
         .orderBy(desc(trips.createdAt))
@@ -113,13 +113,14 @@ export default async function HomePage({
             id: t.id,
             destination: t.destination,
             startDate: t.startDate,
+            endDate: t.endDate,
           }))}
           currentTripId={tripId}
         />
       )}
 
       <h1 className="text-2xl font-bold text-gray-900 mb-6">
-        {trip.destination} — Travel Advice
+        {trip.destination} — Key Tips
       </h1>
 
       {/* Responsive grid of 12 Concise Cards — Req 5.1, 5.2 */}
@@ -131,7 +132,7 @@ export default async function HomePage({
           href={`/home/${tripId}/comprehensive`}
           className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-center text-white font-medium hover:bg-blue-700 transition-colors"
         >
-          View Comprehensive Advice
+          View full advice
         </Link>
         <Link
           href="/trip/new"

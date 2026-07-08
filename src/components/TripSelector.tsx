@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 
 interface TripSelectorProps {
-  trips: { id: string; destination: string; startDate: string }[]
+  trips: { id: string; destination: string; startDate: string; endDate: string }[]
   currentTripId: string
 }
 
@@ -34,7 +34,7 @@ export default function TripSelector({ trips, currentTripId }: TripSelectorProps
       >
         {trips.map((trip) => (
           <option key={trip.id} value={trip.id}>
-            {trip.destination} ({trip.startDate})
+            {trip.destination} ({trip.startDate} – {trip.endDate})
           </option>
         ))}
       </select>

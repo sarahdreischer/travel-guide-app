@@ -31,6 +31,16 @@ export async function loginAction(
     maxAge: 86400, // 24 hours
   })
 
+  // Set setup_complete cookie so middleware doesn't redirect to /setup
+  // (login is only possible for users who already have accounts = setup complete)
+  cookieStore.set('setup_complete', 'true', {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 86400,
+  })
+
   redirect('/home')
 }
 
@@ -43,6 +53,7 @@ export async function logoutAction(): Promise<void> {
   }
 
   cookieStore.delete('session_token')
+  cookieStore.delete('setup_complete')
 
   redirect('/login')
 }
