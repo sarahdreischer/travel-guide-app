@@ -122,11 +122,12 @@ async function executeBatchAICall(
       prompt,
     }, null, 2))
 
+    const timeoutMs = parseInt(process.env.AI_BATCH_TIMEOUT_MS ?? '90000', 10)
     const { object: batchAnswers } = await generateObject({
       model: getModel(),
       prompt,
       schema: z.record(z.string(), z.record(z.string(), z.string())),
-      abortSignal: AbortSignal.timeout(60_000), // longer timeout for batch
+      abortSignal: AbortSignal.timeout(timeoutMs),
     })
 
     console.log('[LLM_Adapter] ◀ AI RESPONSE:', JSON.stringify(batchAnswers, null, 2))
