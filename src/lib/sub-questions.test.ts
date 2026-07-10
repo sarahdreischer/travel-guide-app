@@ -16,6 +16,16 @@ describe('getSubQuestions', () => {
     ])
   })
 
+  it('returns the correct sub-questions for Transportation - Car Rental', () => {
+    expect(getSubQuestions('Transportation - Car Rental')).toEqual([
+      'Is rental car recommended?',
+      'What should I watch out for when renting a car?',
+      'How much do car rentals cost on average?',
+      'What type of car is recommended for rental?',
+      'Which providers are best for car rentals?',
+    ])
+  })
+
   it('returns the correct sub-questions for Transportation – Public Transport', () => {
     expect(getSubQuestions('Transportation – Public Transport')).toEqual([
       'Is public transport sufficient?',
@@ -55,7 +65,7 @@ describe('getSubQuestions', () => {
   it('returns the correct sub-questions for Connectivity', () => {
     expect(getSubQuestions('Connectivity')).toEqual([
       'Should I buy an eSIM?',
-      'Which eSIM provider is best?',
+      'Which eSIM provider offers the best prices?',
       'How reliable is mobile data?',
       'Is Wi-Fi generally reliable?',
       'Is the destination suitable for remote work?',
@@ -138,7 +148,10 @@ describe('getSubQuestions', () => {
   })
 
   it('returns an empty array for Local Etiquette (TBD)', () => {
-    expect(getSubQuestions('Local Etiquette')).toEqual([])
+    expect(getSubQuestions('Local Etiquette')).toEqual([
+      'What are common ways to greet people?',
+      'What is taboo?',
+    ])
   })
 
   it('does NOT throw for Local Etiquette', () => {

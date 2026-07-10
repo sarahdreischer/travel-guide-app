@@ -40,6 +40,9 @@ export const CATEGORY_CONFIG = {
   'Transportation - Car Rental': [
     'Is rental car recommended?',
     'What should I watch out for when renting a car?',
+    'How much do car rentals cost on average?',
+    'What type of car is recommended for rental?',
+    'Which providers are best for car rentals?',
   ],
   'Transportation - Parking': [
     'Is parking easy?',
@@ -72,7 +75,7 @@ export const CATEGORY_CONFIG = {
   ],
   'Connectivity': [
     'Should I buy an eSIM?',
-    'Which eSIM provider is best?',
+    'Which eSIM provider offers the best prices?',
     'How reliable is mobile data?',
     'Is Wi-Fi generally reliable?',
     'Is the destination suitable for remote work?',
@@ -131,7 +134,10 @@ export const CATEGORY_CONFIG = {
     'Is it safe at night?',
     'Is it safe for women to walk around alone?',
   ],
-  'Local Etiquette': [] as string[],
+  'Local Etiquette': [
+    'What are common ways to greet people?',
+    'What is taboo?',
+  ] as string[],
   'Miscellaneous': [
     'What are things I wish I had known?',
     'Where can I easily buy alcoholic drinks?',
