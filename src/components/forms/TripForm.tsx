@@ -169,6 +169,7 @@ function Step1({
   }, [])
 
   const duration = getDuration(form.startDate, form.endDate)
+  const today = new Date().toISOString().split('T')[0]
 
   return (
     <div className="form-stack">
@@ -259,6 +260,7 @@ function Step1({
             className="field-input"
             aria-label="Start date"
             value={form.startDate}
+            min={today}
             aria-describedby={errors?.startDate ? 'start-date-error' : undefined}
             onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
           />
@@ -270,7 +272,7 @@ function Step1({
             className="field-input"
             aria-label="End date"
             value={form.endDate}
-            min={form.startDate || undefined}
+            min={form.startDate || today}
             aria-describedby={errors?.endDate ? 'end-date-error' : undefined}
             onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
           />
