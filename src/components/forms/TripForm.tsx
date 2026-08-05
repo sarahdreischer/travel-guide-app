@@ -1,217 +1,579 @@
 'use client'
 
-import { useActionState } from 'react'
-import { useFormStatus } from 'react-dom'
+import { useState, useRef, useEffect, useTransition } from 'react'
 import { DESTINATIONS } from '@/lib/destinations'
 import { createTripAction, CreateTripResult } from '@/actions/trip'
 
-const TRAVEL_MODES = ['Solo', 'Friends', 'Couple', 'Family'] as const
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+// Must match VALID_TRAVEL_MODES in actions/trip.ts
+const PARTY_OPTIONS = ['Solo', 'Couple', 'Friends', 'Family'] as const
+
+// Must match VALID_TRAVEL_STYLES in actions/trip.ts
 const TRAVEL_STYLES = [
-  'Backpacking',
-  'All inclusive',
-  'Digital nomad',
   'Adventure',
-  'Beach holiday',
+  'Relaxed',
+  'Cultural',
+  'Luxury',
+  'Budget',
+  'Family',
 ] as const
-const ACTIVITY_OPTIONS = ['Hiking', 'Swimming', 'Surfing', 'Bodyboarding'] as const
 
-function SubmitButton() {
-  const { pending } = useFormStatus()
+const ACTIVITY_OPTIONS = [
+  'Hiking', 'Swimming', 'Surfing', 'Cycling', 'Snorkelling',
+  'Rock climbing', 'Yoga', 'Museums', 'Food tours', 'Nightlife',
+  'Photography', 'Wildlife', 'Sailing', 'Skiing',
+] as const
 
+const STEPS = [
+  { label: 'Where & When' },
+  { label: 'Your trip' },
+  { label: 'Interests' },
+]
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface WizardData {
+  destination: string
+  startDate: string
+  endDate: string
+  party: string       // maps to travelMode
+  budget: string
+  travelStyle: string
+  activities: string[]
+}
+
+const EMPTY: WizardData = {
+  destination: '',
+  startDate: '',
+  endDate: '',
+  party: '',
+  budget: '',
+  travelStyle: '',
+  activities: [],
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function getDuration(start: string, end: string): string {
+  if (!start || !end) return ''
+  const diff = (new Date(end).getTime() - new Date(start).getTime()) / 86400000
+  if (diff <= 0) return ''
+  return `${Math.round(diff)} night${diff !== 1 ? 's' : ''}`
+}
+
+function fmtDate(iso: string): string {
+  if (!iso) return ''
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
+
+function IconArrowLeft() {
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      aria-disabled={pending}
-      className="min-h-[44px] min-w-[44px] w-full rounded-md bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
     >
-      {pending ? 'Creating trip…' : 'Create Trip'}
-    </button>
+      <path d="M19 12H5M12 5l-7 7 7 7" />
+    </svg>
   )
 }
 
-export default function TripForm() {
-  const [state, formAction] = useActionState<CreateTripResult | null, FormData>(
-    async (_prev, formData) => {
-      return await createTripAction(formData)
-    },
-    null
-  )
+// ─── Step 1: Where & When ─────────────────────────────────────────────────────
 
-  const errors = state && !state.success ? state.errors : undefined
+function Step1({
+  form,
+  setForm,
+  errors,
+}: {
+  form: WizardData
+  setForm: React.Dispatch<React.SetStateAction<WizardData>>
+  errors?: { destination?: string; startDate?: string; endDate?: string; travelMode?: string }
+}) {
+  const [query, setQuery] = useState(form.destination)
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  const filtered =
+    query.length > 0
+      ? [...DESTINATIONS]
+          .filter((d) => d.toLowerCase().includes(query.toLowerCase()))
+          .slice(0, 7)
+      : []
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
+
+  const duration = getDuration(form.startDate, form.endDate)
 
   return (
-    <form action={formAction} className="space-y-5">
+    <div className="form-stack">
       {/* Destination */}
-      <div>
-        <label htmlFor="destination" className="block text-sm font-medium text-gray-700">
+      <div className="field-block">
+        <label className="field-label" htmlFor="dest-input">
           Destination
         </label>
-        <select
-          id="destination"
-          name="destination"
-          required
-          className="mt-1 block min-h-[44px] min-w-[44px] w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          aria-describedby={errors?.destination ? 'destination-error' : undefined}
-        >
-          <option value="">Select a destination</option>
-          {DESTINATIONS.map((dest) => (
-            <option key={dest} value={dest}>
-              {dest}
-            </option>
-          ))}
-        </select>
+        <div className="dest-wrapper" ref={wrapRef}>
+          <input
+            id="dest-input"
+            type="text"
+            className="field-input"
+            placeholder="Country or city"
+            autoComplete="off"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setForm((f) => ({ ...f, destination: '' }))
+              setOpen(true)
+            }}
+            onFocus={() => setOpen(true)}
+            aria-autocomplete="list"
+            aria-expanded={open && filtered.length > 0}
+            aria-describedby={errors?.destination ? 'dest-error' : undefined}
+          />
+          {open && filtered.length > 0 && (
+            <ul className="dest-dropdown" role="listbox" aria-label="Destinations">
+              {filtered.map((d) => (
+                <li
+                  key={d}
+                  className="dest-item"
+                  role="option"
+                  aria-selected={form.destination === d}
+                  onMouseDown={() => {
+                    setForm((f) => ({ ...f, destination: d }))
+                    setQuery(d)
+                    setOpen(false)
+                  }}
+                >
+                  {d}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         {errors?.destination && (
-          <p id="destination-error" role="alert" className="mt-1 text-sm text-red-600">
+          <p id="dest-error" role="alert" className="field-error">
             {errors.destination}
           </p>
         )}
       </div>
 
-      {/* Start Date */}
-      <div>
-        <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
-          Start date
-        </label>
-        <input
-          id="startDate"
-          name="startDate"
-          type="date"
-          required
-          className="mt-1 block min-h-[44px] min-w-[44px] w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          aria-describedby={errors?.startDate ? 'startDate-error' : undefined}
-        />
-        {errors?.startDate && (
-          <p id="startDate-error" role="alert" className="mt-1 text-sm text-red-600">
-            {errors.startDate}
-          </p>
-        )}
-      </div>
-
-      {/* End Date */}
-      <div>
-        <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
-          End date
-        </label>
-        <input
-          id="endDate"
-          name="endDate"
-          type="date"
-          required
-          className="mt-1 block min-h-[44px] min-w-[44px] w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          aria-describedby={errors?.endDate ? 'endDate-error' : undefined}
-        />
-        {errors?.endDate && (
-          <p id="endDate-error" role="alert" className="mt-1 text-sm text-red-600">
-            {errors.endDate}
-          </p>
-        )}
-      </div>
-
-      {/* Travel Mode */}
-      <div>
-        <label htmlFor="travelMode" className="block text-sm font-medium text-gray-700">
-          Travel mode
-        </label>
-        <select
-          id="travelMode"
-          name="travelMode"
-          required
-          className="mt-1 block min-h-[44px] min-w-[44px] w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          aria-describedby={errors?.travelMode ? 'travelMode-error' : undefined}
+      {/* Travelling as (maps to travelMode) */}
+      <div className="field-block">
+        <label className="field-label">Travelling as</label>
+        <div
+          className="chip-group"
+          role="group"
+          aria-label="Travel party"
+          aria-describedby={errors?.travelMode ? 'party-error' : undefined}
         >
-          <option value="">Select travel mode</option>
-          {TRAVEL_MODES.map((mode) => (
-            <option key={mode} value={mode}>
-              {mode}
-            </option>
+          {PARTY_OPTIONS.map((p) => (
+            <button
+              key={p}
+              type="button"
+              className={`chip ${form.party === p ? 'chip-on' : 'chip-idle'}`}
+              aria-pressed={form.party === p}
+              onClick={() => setForm((f) => ({ ...f, party: p }))}
+            >
+              {p}
+            </button>
           ))}
-        </select>
+        </div>
         {errors?.travelMode && (
-          <p id="travelMode-error" role="alert" className="mt-1 text-sm text-red-600">
+          <p id="party-error" role="alert" className="field-error">
             {errors.travelMode}
           </p>
         )}
       </div>
 
+      {/* Dates */}
+      <div className="field-block">
+        <label className="field-label">Travel dates</label>
+        <div className="date-row">
+          <input
+            type="date"
+            className="field-input"
+            aria-label="Start date"
+            value={form.startDate}
+            aria-describedby={errors?.startDate ? 'start-date-error' : undefined}
+            onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
+          />
+          <span className="date-row-sep" aria-hidden="true">
+            →
+          </span>
+          <input
+            type="date"
+            className="field-input"
+            aria-label="End date"
+            value={form.endDate}
+            min={form.startDate || undefined}
+            aria-describedby={errors?.endDate ? 'end-date-error' : undefined}
+            onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
+          />
+        </div>
+        {duration && (
+          <p className="duration-tag" aria-live="polite">
+            {duration}
+          </p>
+        )}
+        {errors?.startDate && (
+          <p id="start-date-error" role="alert" className="field-error">
+            {errors.startDate}
+          </p>
+        )}
+        {errors?.endDate && (
+          <p id="end-date-error" role="alert" className="field-error">
+            {errors.endDate}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Step 2: Your trip ────────────────────────────────────────────────────────
+
+function Step2({
+  form,
+  setForm,
+  errors,
+}: {
+  form: WizardData
+  setForm: React.Dispatch<React.SetStateAction<WizardData>>
+  errors?: { budget?: string; travelStyle?: string }
+}) {
+  return (
+    <div className="form-stack">
       {/* Budget */}
-      <div>
-        <label htmlFor="budget" className="block text-sm font-medium text-gray-700">
-          Budget (USD)
+      <div className="field-block">
+        <label className="field-label" htmlFor="budget-input">
+          Approximate budget
+          <span className="field-label-note">— optional</span>
         </label>
-        <input
-          id="budget"
-          name="budget"
-          type="number"
-          min={1}
-          max={1000000}
-          required
-          className="mt-1 block min-h-[44px] min-w-[44px] w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          aria-describedby={errors?.budget ? 'budget-error' : undefined}
-        />
+        <div className="budget-wrapper">
+          <span className="budget-prefix" aria-hidden="true">
+            $
+          </span>
+          <input
+            id="budget-input"
+            type="text"
+            inputMode="numeric"
+            className="field-input budget-input"
+            placeholder="0"
+            value={form.budget}
+            aria-describedby={errors?.budget ? 'budget-error' : undefined}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, budget: e.target.value.replace(/\D/g, '') }))
+            }
+          />
+          <span className="budget-suffix" aria-hidden="true">
+            USD
+          </span>
+        </div>
+        <p className="field-hint">Used to tailor cost advice and recommendations.</p>
         {errors?.budget && (
-          <p id="budget-error" role="alert" className="mt-1 text-sm text-red-600">
+          <p id="budget-error" role="alert" className="field-error">
             {errors.budget}
           </p>
         )}
       </div>
 
-      {/* Travel Style */}
-      <div>
-        <label htmlFor="travelStyle" className="block text-sm font-medium text-gray-700">
+      {/* Travel style */}
+      <div className="field-block">
+        <label className="field-label">
           Travel style
+          <span className="field-label-note">— pick one</span>
         </label>
-        <select
-          id="travelStyle"
-          name="travelStyle"
-          required
-          className="mt-1 block min-h-[44px] min-w-[44px] w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          aria-describedby={errors?.travelStyle ? 'travelStyle-error' : undefined}
+        <div
+          className="chip-group"
+          role="group"
+          aria-label="Travel style"
+          aria-describedby={errors?.travelStyle ? 'style-error' : undefined}
         >
-          <option value="">Select travel style</option>
-          {TRAVEL_STYLES.map((style) => (
-            <option key={style} value={style}>
-              {style}
-            </option>
+          {TRAVEL_STYLES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className={`chip ${form.travelStyle === s ? 'chip-on' : 'chip-idle'}`}
+              aria-pressed={form.travelStyle === s}
+              onClick={() => setForm((f) => ({ ...f, travelStyle: s }))}
+            >
+              {s}
+            </button>
           ))}
-        </select>
+        </div>
         {errors?.travelStyle && (
-          <p id="travelStyle-error" role="alert" className="mt-1 text-sm text-red-600">
+          <p id="style-error" role="alert" className="field-error">
             {errors.travelStyle}
           </p>
         )}
       </div>
+    </div>
+  )
+}
 
-      {/* Activity Preferences */}
-      <fieldset>
-        <legend className="block text-sm font-medium text-gray-700">
+// ─── Step 3: Interests ────────────────────────────────────────────────────────
+
+function Step3({
+  form,
+  setForm,
+  errors,
+}: {
+  form: WizardData
+  setForm: React.Dispatch<React.SetStateAction<WizardData>>
+  errors?: { activityPreferences?: string }
+}) {
+  const toggleActivity = (a: string) => {
+    setForm((f) => ({
+      ...f,
+      activities: f.activities.includes(a)
+        ? f.activities.filter((x) => x !== a)
+        : [...f.activities, a],
+    }))
+  }
+
+  const duration = getDuration(form.startDate, form.endDate)
+
+  return (
+    <div className="form-stack">
+      {/* Activities */}
+      <div className="field-block">
+        <label className="field-label">
           Activity preferences
-        </legend>
-        <p className="mt-1 text-xs text-gray-600">Select at least one</p>
-        <div className="mt-2 space-y-2" aria-describedby={errors?.activityPreferences ? 'activityPreferences-error' : undefined}>
-          {ACTIVITY_OPTIONS.map((activity) => (
-            <label
-              key={activity}
-              className="flex items-center gap-3 min-h-[44px] min-w-[44px] cursor-pointer"
+          <span className="field-label-note">— select at least one</span>
+        </label>
+        <div
+          className="chip-group"
+          role="group"
+          aria-label="Activity preferences"
+          aria-describedby={errors?.activityPreferences ? 'activities-error' : undefined}
+        >
+          {ACTIVITY_OPTIONS.map((a) => (
+            <button
+              key={a}
+              type="button"
+              className={`chip ${form.activities.includes(a) ? 'chip-on' : 'chip-idle'}`}
+              aria-pressed={form.activities.includes(a)}
+              onClick={() => toggleActivity(a)}
             >
-              <input
-                type="checkbox"
-                name="activityPreferences"
-                value={activity}
-                className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-700">{activity}</span>
-            </label>
+              {a}
+            </button>
           ))}
         </div>
         {errors?.activityPreferences && (
-          <p id="activityPreferences-error" role="alert" className="mt-1 text-sm text-red-600">
+          <p id="activities-error" role="alert" className="field-error">
             {errors.activityPreferences}
           </p>
         )}
-      </fieldset>
+      </div>
 
-      <SubmitButton />
-    </form>
+      {/* Trip summary */}
+      {form.destination && (
+        <div className="summary-panel" aria-label="Trip summary">
+          <p className="summary-header">Trip summary</p>
+
+          <div className="summary-row">
+            <span className="summary-key">Destination</span>
+            <span className="summary-val">{form.destination}</span>
+          </div>
+
+          <div className="summary-row">
+            <span className="summary-key">Dates</span>
+            <span className="summary-val">
+              {fmtDate(form.startDate)} – {fmtDate(form.endDate)}
+              {duration && (
+                <span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {duration}</span>
+              )}
+            </span>
+          </div>
+
+          {form.party && (
+            <div className="summary-row">
+              <span className="summary-key">Party</span>
+              <span className="summary-val">{form.party}</span>
+            </div>
+          )}
+
+          {form.travelStyle && (
+            <div className="summary-row">
+              <span className="summary-key">Style</span>
+              <span className="summary-val">{form.travelStyle}</span>
+            </div>
+          )}
+
+          {form.budget && (
+            <div className="summary-row">
+              <span className="summary-key">Budget</span>
+              <span className="summary-val">
+                ${parseInt(form.budget).toLocaleString()} USD
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Main wizard component ────────────────────────────────────────────────────
+
+export default function TripForm() {
+  const [step, setStep] = useState(1)
+  const [form, setForm] = useState<WizardData>(EMPTY)
+  const [serverErrors, setServerErrors] = useState<CreateTripResult & { success: false } | null>(
+    null
+  )
+  const [isPending, startTransition] = useTransition()
+
+  // Step 1 can advance when destination + party + valid date range are set
+  const canAdvance1 =
+    form.destination !== '' &&
+    form.party !== '' &&
+    form.startDate !== '' &&
+    form.endDate !== '' &&
+    new Date(form.endDate) > new Date(form.startDate)
+
+  // Step 2 can advance when travel style is chosen
+  const canAdvance2 = form.travelStyle !== ''
+
+  // Step 3 can submit when at least one activity is selected
+  const canSubmit = form.activities.length > 0
+
+  const canContinue =
+    step === 1 ? canAdvance1 : step === 2 ? canAdvance2 : canSubmit
+
+  function handleNext() {
+    if (step < STEPS.length) setStep((s) => s + 1)
+  }
+
+  function handleBack() {
+    if (step > 1) setStep((s) => s - 1)
+  }
+
+  function handleSubmit() {
+    const formData = new FormData()
+    formData.set('destination', form.destination)
+    formData.set('startDate', form.startDate)
+    formData.set('endDate', form.endDate)
+    formData.set('travelMode', form.party) // party maps to travelMode
+    formData.set('budget', form.budget || '1000') // default $1,000 if not set
+    formData.set('travelStyle', form.travelStyle)
+    for (const a of form.activities) {
+      formData.append('activityPreferences', a)
+    }
+
+    startTransition(async () => {
+      const result = await createTripAction(formData)
+      // createTripAction redirects on success — if we get a result, it has errors
+      if (result && !result.success) {
+        setServerErrors(result)
+        // Surface field errors on the relevant step
+        const e = result.errors
+        if (e.destination || e.startDate || e.endDate || e.travelMode) {
+          setStep(1)
+        } else if (e.budget || e.travelStyle) {
+          setStep(2)
+        }
+      }
+    })
+  }
+
+  const errors = serverErrors?.errors
+
+  return (
+    <div className="wizard-shell">
+      {/* Header */}
+      <header className="wizard-header">
+        {step > 1 ? (
+          <button
+            className="wizard-back-btn"
+            onClick={handleBack}
+            aria-label="Back to previous step"
+          >
+            <IconArrowLeft />
+          </button>
+        ) : (
+          <div style={{ width: 36 }} />
+        )}
+
+        <div className="step-counter" aria-label={`Step ${step} of ${STEPS.length}`}>
+          <span className="step-counter-current">{step}</span>
+          <span className="step-counter-sep" aria-hidden="true">
+            of
+          </span>
+          <span className="step-counter-total">{STEPS.length}</span>
+        </div>
+
+        <div style={{ width: 36 }} />
+      </header>
+
+      {/* Progress bar */}
+      <div
+        className="wizard-progress-track"
+        role="progressbar"
+        aria-valuenow={step}
+        aria-valuemin={1}
+        aria-valuemax={STEPS.length}
+        aria-label="Form progress"
+      >
+        <div
+          className="wizard-progress-fill"
+          style={{ width: `${(step / STEPS.length) * 100}%` }}
+        />
+      </div>
+
+      {/* Step content */}
+      <main className="wizard-step-content">
+        <div className="wizard-step-heading">
+          <p className="wizard-step-eyebrow">Step {step}</p>
+          <h1 className="wizard-step-title">{STEPS[step - 1].label}</h1>
+        </div>
+
+        {step === 1 && (
+          <Step1 form={form} setForm={setForm} errors={errors} />
+        )}
+        {step === 2 && (
+          <Step2 form={form} setForm={setForm} errors={errors} />
+        )}
+        {step === 3 && (
+          <Step3 form={form} setForm={setForm} errors={errors} />
+        )}
+      </main>
+
+      {/* Sticky footer */}
+      <footer className="wizard-footer">
+        <button
+          className="wizard-btn-primary"
+          disabled={!canContinue || isPending}
+          aria-disabled={!canContinue || isPending}
+          onClick={step < STEPS.length ? handleNext : handleSubmit}
+        >
+          {isPending
+            ? 'Creating trip…'
+            : step < STEPS.length
+            ? 'Continue'
+            : 'Generate travel advice'}
+        </button>
+      </footer>
+    </div>
   )
 }

@@ -3,57 +3,89 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+function IconGlobe() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  )
+}
+
+function IconPlus() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  )
+}
+
+function IconUser() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  )
+}
+
 const navItems = [
-  {
-    label: 'Destinations',
-    href: '/destinations',
-    icon: '🌍',
-  },
-  {
-    label: 'New Trip',
-    href: '/trip/new',
-    icon: '✈️',
-  },
-  {
-    label: 'Profile',
-    href: '/profile',
-    icon: '👤',
-  },
+  { label: 'Destinations', href: '/destinations', Icon: IconGlobe },
+  { label: 'New trip',     href: '/trip/new',     Icon: IconPlus  },
+  { label: 'Profile',      href: '/profile',      Icon: IconUser  },
 ]
 
 export default function AppNav() {
   const pathname = usePathname()
 
   return (
-    <nav
-      className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white"
-      aria-label="Main navigation"
-    >
-      <ul className="flex items-center justify-around">
-        {navItems.map((item) => {
-          const isActive =
-            pathname === item.href || pathname.startsWith(item.href + '/')
-
+    <nav className="app-nav" aria-label="Main navigation">
+      {/* inner row constrained to the same max-width as the content */}
+      <div className="app-nav-inner">
+        {navItems.map(({ label, href, Icon }) => {
+          const isActive = pathname === href || pathname.startsWith(href + '/')
           return (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center px-3 py-2 text-xs transition-colors ${
-                  isActive
-                    ? 'text-blue-600 font-semibold'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                <span className="text-lg" aria-hidden="true">
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </Link>
-            </li>
+            <Link
+              key={href}
+              href={href}
+              className={`app-nav-item${isActive ? ' app-nav-item-active' : ''}`}
+              aria-current={isActive ? 'page' : undefined}
+            >
+              <Icon />
+              <span>{label}</span>
+            </Link>
           )
         })}
-      </ul>
+      </div>
     </nav>
   )
 }

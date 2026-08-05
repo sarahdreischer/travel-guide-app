@@ -30,12 +30,12 @@ export type CreateTripResult =
 
 const VALID_TRAVEL_MODES = ['Solo', 'Friends', 'Couple', 'Family'] as const
 const VALID_TRAVEL_STYLES = [
-  'Backpacking',
-  'Luxury',
-  'All inclusive',
-  'Digital nomad',
   'Adventure',
-  'Beach holiday',
+  'Relaxed',
+  'Cultural',
+  'Luxury',
+  'Budget',
+  'Family',
 ] as const
 
 // ─── Server Action ────────────────────────────────────────────────────────────

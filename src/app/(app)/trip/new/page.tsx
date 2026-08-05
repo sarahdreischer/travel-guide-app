@@ -1,10 +1,9 @@
 import TripForm from '@/components/forms/TripForm'
 
+/**
+ * New trip page — renders the 3-step wizard.
+ * The wizard manages its own full-height shell layout.
+ */
 export default function NewTripPage() {
-  return (
-    <main className="mx-auto max-w-lg px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">Add Travel Destination</h1>
-      <TripForm />
-    </main>
-  )
+  return <TripForm />
 }
