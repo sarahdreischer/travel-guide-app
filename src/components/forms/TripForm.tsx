@@ -8,7 +8,6 @@ import { createTripAction, CreateTripResult } from '@/actions/trip'
 const TRAVEL_MODES = ['Solo', 'Friends', 'Couple', 'Family'] as const
 const TRAVEL_STYLES = [
   'Backpacking',
-  'Luxury',
   'All inclusive',
   'Digital nomad',
   'Adventure',
