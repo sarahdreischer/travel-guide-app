@@ -5,40 +5,118 @@
 /*
   Base styles — designed for 375px mobile-first (Requirement 10.1, 10.4).
   Override at sm (600px), md (768px), lg (1024px), xl (1280px), 2xl (1920px).
+
+  Design system: "Ocean & Sand" — deep ocean navy primary, warm sand neutrals,
+  amber accent. Tokens are HSL channel triples consumed via hsl(var(--token)).
 */
 
-:root {
-  --foreground: #171717;
-  --background: #ffffff;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --foreground: #ededed;
-    --background: #0a0a0a;
+    /* Neutrals — warm sand background, ink foreground */
+    --background: 40 38% 95%;
+    --foreground: 222 24% 14%;
+
+    /* Surfaces */
+    --card: 40 40% 99%;
+    --card-foreground: 222 24% 14%;
+    --popover: 40 40% 99%;
+    --popover-foreground: 222 24% 14%;
+
+    /* Primary — deep ocean navy */
+    --primary: 221 46% 20%;
+    --primary-foreground: 40 40% 96%;
+
+    /* Secondary — soft sand */
+    --secondary: 40 28% 90%;
+    --secondary-foreground: 221 46% 22%;
+
+    /* Muted — stone */
+    --muted: 40 24% 91%;
+    --muted-foreground: 38 10% 42%;
+
+    /* Accent — warm amber */
+    --accent: 34 68% 60%;
+    --accent-foreground: 222 40% 14%;
+
+    /* Destructive */
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 40 40% 97%;
+
+    /* Lines & focus */
+    --border: 40 20% 85%;
+    --input: 40 20% 85%;
+    --ring: 221 46% 30%;
+
+    /* Charts */
+    --chart-1: 221 46% 30%;
+    --chart-2: 34 68% 55%;
+    --chart-3: 190 40% 40%;
+    --chart-4: 38 42% 62%;
+    --chart-5: 222 24% 24%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 221 42% 9%;
+    --foreground: 40 38% 94%;
+
+    --card: 221 38% 12%;
+    --card-foreground: 40 38% 94%;
+    --popover: 221 38% 12%;
+    --popover-foreground: 40 38% 94%;
+
+    --primary: 34 68% 60%;
+    --primary-foreground: 221 42% 10%;
+
+    --secondary: 221 30% 18%;
+    --secondary-foreground: 40 38% 94%;
+
+    --muted: 221 26% 18%;
+    --muted-foreground: 40 14% 66%;
+
+    --accent: 221 34% 24%;
+    --accent-foreground: 40 38% 94%;
+
+    --destructive: 0 62% 52%;
+    --destructive-foreground: 40 38% 96%;
+
+    --border: 221 24% 22%;
+    --input: 221 24% 24%;
+    --ring: 34 68% 55%;
+
+    --chart-1: 34 68% 60%;
+    --chart-2: 40 42% 70%;
+    --chart-3: 190 44% 55%;
+    --chart-4: 221 40% 55%;
+    --chart-5: 40 38% 90%;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    sans-serif;
-  /* Prevent horizontal overflow on mobile (Requirement 10.1) */
-  overflow-x: hidden;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply bg-background font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* Prevent horizontal overflow on mobile (Requirement 10.1) */
+    overflow-x: hidden;
+  }
 }
 
-/* Ensure minimum 44×44px touch targets on interactive elements (Requirement 10.5) */
-button,
-a,
-input,
-select,
-textarea {
-  min-height: 44px;
+/*
+  Ensure minimum 44px touch targets on genuine form controls (Requirement 10.5).
+  Deliberately excludes <a>: inline text links should not be forced to 44px tall.
+  Navigation links set their own touch target where needed.
+*/
+@layer base {
+  button,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+  }
 }
