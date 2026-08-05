@@ -64,6 +64,7 @@ export const trips = pgTable('trips', {
   startDate: date('start_date').notNull(),
   endDate: date('end_date').notNull(),
   travelMode: text('travel_mode').notNull(),
+  transportMode: text('transport_mode'), // 'fly' | 'drive' | 'rail' | 'sail' — nullable for legacy rows
   budgetUsd: integer('budget_usd').notNull(),
   travelStyle: text('travel_style').notNull(),
   activityPreferences: text('activity_preferences').array().notNull(),

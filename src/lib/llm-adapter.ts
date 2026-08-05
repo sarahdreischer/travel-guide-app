@@ -66,13 +66,17 @@ function buildBatchPrompt(
     })
     .join('\n\n')
 
+  const transportLine = cacheKey.transportMode
+    ? `\n- Primary Transport Mode: ${cacheKey.transportMode}`
+    : ''
+
   return `You are a concise travel advice expert. Give short, practical answers (1–2 sentences max per question). No filler.
 
 Trip context:
 - Destination: ${cacheKey.destination}
 - Travel Month(s): ${cacheKey.startMonth === cacheKey.endMonth ? cacheKey.startMonth : `${cacheKey.startMonth} to ${cacheKey.endMonth}`}
 - Traveller Type: ${cacheKey.travellerType}
-- Budget Range: ${describeBudgetRange(cacheKey.budgetRange)}
+- Budget Range: ${describeBudgetRange(cacheKey.budgetRange)}${transportLine}
 
 Answer ALL questions below grouped by category. Return a JSON object where:
 - Top-level keys MUST be the EXACT category names as written below (copy them verbatim, including dashes and special characters)

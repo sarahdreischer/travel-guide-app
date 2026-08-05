@@ -9,6 +9,51 @@ import { createTripAction, CreateTripResult } from '@/actions/trip'
 // Must match VALID_TRAVEL_MODES in actions/trip.ts
 const PARTY_OPTIONS = ['Solo', 'Couple', 'Friends', 'Family'] as const
 
+// Must match VALID_TRANSPORT_MODES in actions/trip.ts
+const TRANSPORT_MODES = [
+  {
+    id: 'fly',
+    label: 'Fly',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 4c-1 0-2 .5-2.5 1L13 8.8 4.8 6.2l-1.9 1.9L8 12l-3 3H3l-1 1.5L5 18l1.5 2L8 19l1-1v-2l3-3 3.2 4.2 1.9-1.9z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'drive',
+    label: 'Drive',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-4h10l2 4h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2" />
+        <circle cx="7.5" cy="17.5" r="2.5" />
+        <circle cx="16.5" cy="17.5" r="2.5" />
+      </svg>
+    ),
+  },
+  {
+    id: 'rail',
+    label: 'Rail',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="4" y="3" width="16" height="13" rx="2" />
+        <path d="M4 11h16M12 3v10M8 20l4-3 4 3" />
+        <circle cx="8.5" cy="17" r="1" />
+        <circle cx="15.5" cy="17" r="1" />
+      </svg>
+    ),
+  },
+  {
+    id: 'sail',
+    label: 'Sail',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M3 17h18M12 3v14M12 3C7 7 5 13 5 17h7M12 3c5 4 7 10 7 14h-7" />
+      </svg>
+    ),
+  },
+] as const
+
 // Must match VALID_TRAVEL_STYLES in actions/trip.ts
 const TRAVEL_STYLES = [
   'Adventure',
@@ -37,7 +82,8 @@ interface WizardData {
   destination: string
   startDate: string
   endDate: string
-  party: string       // maps to travelMode
+  party: string        // maps to travelMode (Solo/Couple/Friends/Family)
+  transportMode: string // fly | drive | rail | sail
   budget: string
   travelStyle: string
   activities: string[]
@@ -48,6 +94,7 @@ const EMPTY: WizardData = {
   startDate: '',
   endDate: '',
   party: '',
+  transportMode: '',
   budget: '',
   travelStyle: '',
   activities: [],
@@ -259,10 +306,38 @@ function Step2({
 }: {
   form: WizardData
   setForm: React.Dispatch<React.SetStateAction<WizardData>>
-  errors?: { budget?: string; travelStyle?: string }
+  errors?: { budget?: string; travelStyle?: string; transportMode?: string }
 }) {
   return (
     <div className="form-stack">
+      {/* Primary travel mode */}
+      <div className="field-block">
+        <label className="field-label">Primary travel mode</label>
+        <div
+          className="mode-grid"
+          role="group"
+          aria-label="Primary travel mode"
+          aria-describedby={errors?.transportMode ? 'transport-error' : undefined}
+        >
+          {TRANSPORT_MODES.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              className={`mode-btn ${form.transportMode === m.id ? 'mode-btn-on' : 'mode-btn-idle'}`}
+              aria-pressed={form.transportMode === m.id}
+              onClick={() => setForm((f) => ({ ...f, transportMode: m.id }))}
+            >
+              {m.icon}
+              <span className="mode-label">{m.label}</span>
+            </button>
+          ))}
+        </div>
+        {errors?.transportMode && (
+          <p id="transport-error" role="alert" className="field-error">
+            {errors.transportMode}
+          </p>
+        )}
+      </div>
       {/* Budget */}
       <div className="field-block">
         <label className="field-label" htmlFor="budget-input">
@@ -413,6 +488,15 @@ function Step3({
             </div>
           )}
 
+          {form.transportMode && (
+            <div className="summary-row">
+              <span className="summary-key">Getting there</span>
+              <span className="summary-val" style={{ textTransform: 'capitalize' }}>
+                {form.transportMode}
+              </span>
+            </div>
+          )}
+
           {form.travelStyle && (
             <div className="summary-row">
               <span className="summary-key">Style</span>
@@ -452,8 +536,8 @@ export default function TripForm() {
     form.endDate !== '' &&
     new Date(form.endDate) > new Date(form.startDate)
 
-  // Step 2 can advance when travel style is chosen
-  const canAdvance2 = form.travelStyle !== ''
+  // Step 2 can advance when transport mode and travel style are both chosen
+  const canAdvance2 = form.transportMode !== '' && form.travelStyle !== ''
 
   // Step 3 can submit when at least one activity is selected
   const canSubmit = form.activities.length > 0
@@ -475,6 +559,7 @@ export default function TripForm() {
     formData.set('startDate', form.startDate)
     formData.set('endDate', form.endDate)
     formData.set('travelMode', form.party) // party maps to travelMode
+    formData.set('transportMode', form.transportMode)
     formData.set('budget', form.budget || '1000') // default $1,000 if not set
     formData.set('travelStyle', form.travelStyle)
     for (const a of form.activities) {
@@ -490,7 +575,7 @@ export default function TripForm() {
         const e = result.errors
         if (e.destination || e.startDate || e.endDate || e.travelMode) {
           setStep(1)
-        } else if (e.budget || e.travelStyle) {
+        } else if (e.budget || e.travelStyle || e.transportMode) {
           setStep(2)
         }
       }

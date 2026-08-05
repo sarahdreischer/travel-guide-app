@@ -17,6 +17,7 @@ export type TripFieldErrors = {
   startDate?: string
   endDate?: string
   travelMode?: string
+  transportMode?: string
   budget?: string
   travelStyle?: string
   activityPreferences?: string
@@ -29,6 +30,7 @@ export type CreateTripResult =
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const VALID_TRAVEL_MODES = ['Solo', 'Friends', 'Couple', 'Family'] as const
+const VALID_TRANSPORT_MODES = ['fly', 'drive', 'rail', 'sail'] as const
 const VALID_TRAVEL_STYLES = [
   'Adventure',
   'Relaxed',
@@ -60,6 +62,7 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
   const startDateStr = formData.get('startDate') as string | null
   const endDateStr = formData.get('endDate') as string | null
   const travelMode = formData.get('travelMode') as string | null
+  const transportMode = formData.get('transportMode') as string | null
   const budgetStr = formData.get('budget') as string | null
   const travelStyle = formData.get('travelStyle') as string | null
   const activityPreferences = formData.getAll('activityPreferences') as string[]
@@ -111,6 +114,11 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
     errors.travelMode = 'Please select a valid travel mode.'
   }
 
+  // Transport mode validation
+  if (!transportMode || !VALID_TRANSPORT_MODES.includes(transportMode as typeof VALID_TRANSPORT_MODES[number])) {
+    errors.transportMode = 'Please select a primary transport mode.'
+  }
+
   // Budget validation
   let budget: number | null = null
   if (!budgetStr) {
@@ -146,6 +154,7 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
       startDate: startDateStr!,
       endDate: endDateStr!,
       travelMode: travelMode!,
+      transportMode: transportMode!,
       budgetUsd: budget!,
       travelStyle: travelStyle!,
       activityPreferences,
@@ -160,6 +169,7 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
     endMonth,
     travellerType: travelMode!.toLowerCase(),
     budgetRange: derivebudgetRange(budget!),
+    transportMode: transportMode ?? undefined,
   }
 
   // 7. Trigger advice generation (fire and don't block redirect)

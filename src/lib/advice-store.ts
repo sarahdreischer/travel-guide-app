@@ -11,8 +11,9 @@ export type CacheKey = {
   destination: string // normalised to lower-case
   startMonth: string // e.g. "july"
   endMonth: string // e.g. "august" (same as startMonth for single-month trips)
-  travellerType: string // travel mode
+  travellerType: string // party type (solo/couple/friends/family)
   budgetRange: string // "budget" | "mid" | "luxury"
+  transportMode?: string // optional: fly | drive | rail | sail (context only, not a cache dimension)
 }
 
 /**
