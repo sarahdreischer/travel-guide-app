@@ -155,10 +155,8 @@ function Step1({
 
   const filtered =
     query.length > 0
-      ? [...DESTINATIONS]
-          .filter((d) => d.toLowerCase().includes(query.toLowerCase()))
-          .slice(0, 7)
-      : []
+      ? [...DESTINATIONS].filter((d) => d.toLowerCase().includes(query.toLowerCase()))
+      : [...DESTINATIONS]
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
