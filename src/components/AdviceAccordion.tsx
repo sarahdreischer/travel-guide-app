@@ -76,9 +76,12 @@ const GROUP_ICONS: Record<string, React.ReactElement> = {
 
 function GroupRow({ group, index }: { group: GroupSection; index: number }) {
   const [open, setOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState(0)
   const hasContent = group.sources.some((s) => s.subQuestions.length > 0)
   const multiSource = group.sources.length > 1
   const icon = GROUP_ICONS[group.id]
+
+  const activeSource = group.sources[activeTab] ?? group.sources[0]
 
   return (
     <div className="category-row-wrap">
@@ -112,7 +115,7 @@ function GroupRow({ group, index }: { group: GroupSection; index: number }) {
 
       {open && hasContent && (
         <div className="category-detail-body">
-          {/* Lead block — group name label + first key tip in a callout */}
+          {/* Lead block */}
           <div className="category-lead">
             <p className="category-lead-label">{group.name}</p>
             {group.keyTip && (
@@ -122,34 +125,41 @@ function GroupRow({ group, index }: { group: GroupSection; index: number }) {
             )}
           </div>
 
-          {/* Q&A list, with teal sub-labels when multiple source categories */}
-          <div className="category-qa-list">
-            {group.sources.map((source) => (
-              <div key={source.category}>
-                {multiSource && source.subQuestions.length > 0 && (
-                  <p className="category-sub-label">
-                    {cleanSubLabel(source.category)}
-                  </p>
-                )}
-                {source.subQuestions.map((question) => {
-                  const answer =
-                    findAnswer(source.answers, question) ??
-                    null
-                  return (
-                    <div key={question} className="category-qa-item">
-                      <p className="category-qa-q">{question}</p>
-                      <p className="category-qa-a">
-                        {answer || (
-                          <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>
-                            Not available
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-            ))}
+          {/* Tab strip — only shown for multi-source groups */}
+          {multiSource && (
+            <div className="category-tabs" role="tablist" aria-label={`${group.name} sections`}>
+              {group.sources.map((source, i) => (
+                <button
+                  key={source.category}
+                  type="button"
+                  role="tab"
+                  aria-selected={i === activeTab}
+                  className={`category-tab${i === activeTab ? ' category-tab-active' : ''}`}
+                  onClick={() => setActiveTab(i)}
+                >
+                  {cleanSubLabel(source.category)}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Q&A items for the active source (or all sources if single) */}
+          <div className="category-qa-list" role="tabpanel">
+            {(multiSource ? [activeSource] : group.sources).map((source) =>
+              source.subQuestions.map((question) => {
+                const answer = findAnswer(source.answers, question) ?? null
+                return (
+                  <div key={question} className="category-qa-item">
+                    <p className="category-qa-q">{question}</p>
+                    <p className="category-qa-a">
+                      {answer || (
+                        <span className="category-qa-empty">Not available</span>
+                      )}
+                    </p>
+                  </div>
+                )
+              })
+            )}
           </div>
         </div>
       )}

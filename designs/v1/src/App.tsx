@@ -1022,9 +1022,12 @@ function CategoryDetailScreen({
 }) {
   const groups = groupAdvice(getAdvice(trip.destination))
   const group = groups.find(g => g.id === categoryId)
+  const [activeIdx, setActiveIdx] = useState(0)
+
   if (!group) return null
 
   const multiSource = group.sources.length > 1
+  const activeSource = group.sources[activeIdx] ?? group.sources[0]
 
   return (
     <>
@@ -1040,22 +1043,31 @@ function CategoryDetailScreen({
         <div className="category-lead">
           <p className="category-lead-label">{group.name}</p>
           <div className="category-lead-callout">
-            <p className="category-lead-tip">{group.sources[0].keyTip}</p>
+            <p className="category-lead-tip">{group.keyTip}</p>
           </div>
         </div>
 
-        <div className="category-qa-list">
-          {group.sources.map((source, si) => (
-            <div key={si}>
-              {multiSource && (
-                <p className="category-sub-label">{cleanSubLabel(source.name)}</p>
-              )}
-              {source.items.map((item, i) => (
-                <div key={i} className="category-qa-item">
-                  <p className="category-qa-q">{item.question}</p>
-                  <p className="category-qa-a">{item.answer}</p>
-                </div>
-              ))}
+        {multiSource && (
+          <div className="tab-strip" role="tablist" aria-label={`${group.name} sections`}>
+            {group.sources.map((source, i) => (
+              <button
+                key={i}
+                role="tab"
+                aria-selected={i === activeIdx}
+                className={`tab-pill${i === activeIdx ? ' tab-pill-active' : ''}`}
+                onClick={() => setActiveIdx(i)}
+              >
+                {cleanSubLabel(source.name)}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="category-qa-list" role={multiSource ? 'tabpanel' : undefined}>
+          {activeSource.items.map((item, i) => (
+            <div key={i} className="category-qa-item">
+              <p className="category-qa-q">{item.question}</p>
+              <p className="category-qa-a">{item.answer}</p>
             </div>
           ))}
         </div>
