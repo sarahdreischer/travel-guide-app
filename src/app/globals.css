@@ -1457,7 +1457,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #B91C1C;
+  background: #E04545;
   color: #fff;
   font-size: 13px;
   font-weight: 600;
@@ -1474,7 +1474,7 @@ textarea {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 100;
+  z-index: 30;
 }
 
 .delete-modal-panel {

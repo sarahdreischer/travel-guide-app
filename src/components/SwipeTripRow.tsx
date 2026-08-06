@@ -33,20 +33,46 @@ export default function SwipeTripRow({ tripId, destination, href, isPast, childr
   function handleTouchMove(e: React.TouchEvent) {
     if (!dragging.current) return
     const diff = e.touches[0].clientX - startX.current
-    // Only allow left swipe (negative)
-    if (diff < 0) {
-      setOffsetX(diff)
-    }
+    if (diff < 0) setOffsetX(diff)
   }
 
   function handleTouchEnd() {
     dragging.current = false
     if (offsetX < -80) {
-      // Threshold passed — show delete confirmation
       didSwipe.current = true
       setShowModal(true)
     }
     setOffsetX(0)
+  }
+
+  // Mouse support for desktop
+  function handleMouseDown(e: React.MouseEvent) {
+    startX.current = e.clientX
+    dragging.current = true
+    didSwipe.current = false
+  }
+
+  function handleMouseMove(e: React.MouseEvent) {
+    if (!dragging.current) return
+    const diff = e.clientX - startX.current
+    if (diff < 0) setOffsetX(diff)
+  }
+
+  function handleMouseUp() {
+    if (!dragging.current) return
+    dragging.current = false
+    if (offsetX < -80) {
+      didSwipe.current = true
+      setShowModal(true)
+    }
+    setOffsetX(0)
+  }
+
+  function handleMouseLeave() {
+    if (dragging.current) {
+      dragging.current = false
+      setOffsetX(0)
+    }
   }
 
   function handleClick(e: React.MouseEvent) {
@@ -72,10 +98,14 @@ export default function SwipeTripRow({ tripId, destination, href, isPast, childr
         {/* The actual row content — entire row translates left on swipe */}
         <div
           className={`trip-row${isPast ? ' is-past' : ''}`}
-          style={{ transform: `translateX(${offsetX}px)`, transition: dragging.current ? 'none' : 'transform 0.2s ease' }}
+          style={{ transform: `translateX(${offsetX}px)`, transition: dragging.current ? 'none' : 'transform 0.2s ease', userSelect: 'none' }}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
           onClick={handleClick}
           role="link"
           aria-label={`${destination}`}
