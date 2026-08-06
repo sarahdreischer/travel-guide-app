@@ -13,7 +13,8 @@ import { reconcileMissingAdviceAction } from '@/actions/advice'
 import { CATEGORIES, CONCISE_TOPIC_MAPPING, type ConciseTopic, type Category, getSubQuestions } from '@/lib/destinations'
 import { findAnswer } from '@/lib/answer-lookup'
 import { fmtDateShort, fmtDate, nightCount } from '@/lib/format-date'
-import { groupSections } from '@/lib/category-groups'
+import { groupSections, getGroupQuestions } from '@/lib/category-groups'
+import { LLMAdapter } from '@/lib/llm-adapter'
 import AdviceAccordion from '@/components/AdviceAccordion'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -111,7 +112,45 @@ export default async function HomePage({
 
   const isPartial = adviceRecords.length < categoriesWithQuestions.length
   const sections = buildSections(adviceRecords)
-  const groups = groupSections(sections)
+
+  // ─── Generate group key tips via AI ────────────────────────────────────────
+  // Group tips are stored in advice_cache with category = '_group_tips'
+  const { startMonth: sm, endMonth: em } = deriveMonthRange(trip.startDate, trip.endDate)
+  const cacheKey = {
+    destination: trip.destination.toLowerCase(),
+    startMonth: sm,
+    endMonth: em,
+    travellerType: trip.travelMode.toLowerCase(),
+    budgetRange: derivebudgetRange(trip.budgetUsd),
+    transportMode: (trip as { transportMode?: string | null }).transportMode ?? undefined,
+  }
+
+  // Check if group tips are already cached
+  const groupTipRecord = await AdviceStore.findByCacheKey(cacheKey, '_group_tips')
+  let groupTips: Record<string, string> = {}
+
+  if (groupTipRecord) {
+    groupTips = groupTipRecord.answers as Record<string, string>
+  } else {
+    // Generate group tips via AI (non-blocking — if it fails we fall back to derived tips)
+    const questions = getGroupQuestions()
+    const aiTips = await LLMAdapter.generateGroupTips(cacheKey, questions)
+    if (Object.keys(aiTips).length > 0) {
+      // Cache for next visit
+      await AdviceStore.save({
+        destination: cacheKey.destination,
+        startMonth: cacheKey.startMonth,
+        endMonth: cacheKey.endMonth,
+        travellerType: cacheKey.travellerType,
+        budgetRange: cacheKey.budgetRange,
+        category: '_group_tips',
+        answers: aiTips,
+      })
+      groupTips = aiTips
+    }
+  }
+
+  const groups = groupSections(sections, groupTips)
 
   const nights = nightCount(trip.startDate, trip.endDate)
   const detail = [

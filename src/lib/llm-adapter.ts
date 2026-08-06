@@ -39,6 +39,12 @@ export type CategoryQuestions = {
  */
 const MAX_ANSWER_CHARS = parseInt(process.env.AI_MAX_ANSWER_CHARS ?? '200', 10)
 
+/**
+ * Maximum characters per group tip answer. Separate from category answers
+ * because group tips are displayed as one-liners in the collapsed accordion row.
+ */
+const MAX_GROUP_TIP_CHARS = parseInt(process.env.AI_MAX_GROUP_TIP_CHARS ?? '200', 10)
+
 // ─── In-flight request deduplication ──────────────────────────────────────────
 
 const inFlightBatchRequests = new Map<string, Promise<AdviceRecord[]>>()
@@ -295,6 +301,86 @@ async function summarise(fullAdvice: string): Promise<string> {
   }
 }
 
+// ─── Group tip generation ─────────────────────────────────────────────────────
+
+export type GroupQuestion = {
+  id: string
+  name: string
+  question: string
+}
+
+/**
+ * Generate concise key tips for display groups.
+ * Uses the same model, rate limits, timeout, and character limit as category advice.
+ * Returns a map of groupId → answer string.
+ */
+async function generateGroupTips(
+  cacheKey: CacheKey,
+  groups: GroupQuestion[]
+): Promise<Record<string, string>> {
+  if (groups.length === 0) return {}
+
+  if (!canCallAI()) {
+    const status = getRateLimitStatus()
+    console.log(`[LLM_Adapter] Rate limited — skipping group tips. cooldown: ${status.inCooldown}`)
+    return {}
+  }
+
+  const questionList = groups
+    .map((g, i) => `${i + 1}. "${g.id}": ${g.question}`)
+    .join('\n')
+
+  const transportLine = cacheKey.transportMode
+    ? `\n- Primary Transport Mode: ${cacheKey.transportMode}`
+    : ''
+
+  const prompt = `You are a concise travel advisor. Answer each numbered question below about the destination. Each answer must be max ${MAX_GROUP_TIP_CHARS} characters. Be direct and practical.
+
+Trip context:
+- Destination: ${cacheKey.destination}
+- Travel Month(s): ${cacheKey.startMonth === cacheKey.endMonth ? cacheKey.startMonth : `${cacheKey.startMonth} to ${cacheKey.endMonth}`}
+- Traveller Type: ${cacheKey.travellerType}
+- Budget Range: ${describeBudgetRange(cacheKey.budgetRange)}${transportLine}
+
+Answer these questions. Return a JSON object with exactly these keys: ${groups.map((g) => `"${g.id}"`).join(', ')}. Each value is your answer as a string (max ${MAX_GROUP_TIP_CHARS} chars).
+
+${questionList}`
+
+  // Build a concrete zod schema with exact keys so the AI knows what to return
+  const schemaShape: Record<string, z.ZodString> = {}
+  for (const g of groups) {
+    schemaShape[g.id] = z.string()
+  }
+  const schema = z.object(schemaShape)
+
+  try {
+    recordAICall()
+
+    console.log('[LLM_Adapter] ▶ AI GROUP TIPS REQUEST:', JSON.stringify({
+      model: process.env.AI_MODEL ?? 'gpt-4o-mini',
+      groups: groups.map((g) => ({ id: g.id, question: g.question })),
+      cacheKey,
+      prompt,
+    }, null, 2))
+
+    const timeoutMs = parseInt(process.env.AI_BATCH_TIMEOUT_MS ?? '90000', 10)
+    const { object: answers } = await generateObject({
+      model: getModel(),
+      prompt,
+      schema,
+      abortSignal: AbortSignal.timeout(timeoutMs),
+    })
+
+    console.log('[LLM_Adapter] ◀ AI GROUP TIPS RESPONSE:', JSON.stringify(answers, null, 2))
+
+    return answers as Record<string, string>
+  } catch (error: unknown) {
+    recordAIFailure()
+    console.error('[LLM_Adapter] Group tips generation failed:', error)
+    return {}
+  }
+}
+
 // ─── Export ───────────────────────────────────────────────────────────────────
 
-export const LLMAdapter = { generateAdvice, generateAdviceBatch, summarise }
+export const LLMAdapter = { generateAdvice, generateAdviceBatch, generateGroupTips, summarise }
