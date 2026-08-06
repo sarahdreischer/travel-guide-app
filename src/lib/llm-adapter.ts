@@ -31,6 +31,14 @@ export type CategoryQuestions = {
   subQuestions: string[]
 }
 
+// ─── Configuration ────────────────────────────────────────────────────────────
+
+/**
+ * Maximum characters per answer. The LLM is instructed to keep each answer
+ * within this limit. Change this single value to adjust answer length globally.
+ */
+const MAX_ANSWER_CHARS = parseInt(process.env.AI_MAX_ANSWER_CHARS ?? '200', 10)
+
 // ─── In-flight request deduplication ──────────────────────────────────────────
 
 const inFlightBatchRequests = new Map<string, Promise<AdviceRecord[]>>()
@@ -70,7 +78,7 @@ function buildBatchPrompt(
     ? `\n- Primary Transport Mode: ${cacheKey.transportMode}`
     : ''
 
-  return `You are a concise travel advice expert. Give short, practical answers (1–2 sentences max per question). No filler.
+  return `You are a concise travel advice expert. Keep each answer to ${MAX_ANSWER_CHARS} characters maximum. Be direct and practical — no filler.
 
 Trip context:
 - Destination: ${cacheKey.destination}
@@ -80,7 +88,7 @@ Trip context:
 
 Answer ALL questions below grouped by category. Return a JSON object where:
 - Top-level keys MUST be the EXACT category names as written below (copy them verbatim, including dashes and special characters)
-- Each category value is an object mapping the EXACT question text to a concise answer
+- Each category value is an object mapping the EXACT question text to a concise answer (max ${MAX_ANSWER_CHARS} chars each)
 
 IMPORTANT: Use the category names EXACTLY as they appear in the headings below. Do NOT shorten, rename, or paraphrase them.
 
