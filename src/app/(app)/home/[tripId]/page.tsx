@@ -2,8 +2,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { db } from '@/db'
-import { trips, destinationImages } from '@/db/schema'
-import { eq } from 'drizzle-orm'
+import { trips, destinationImages, savedTips } from '@/db/schema'
+import { eq, and } from 'drizzle-orm'
 import { AuthService } from '@/lib/auth'
 import { AdviceStore, deriveMonthRange } from '@/lib/advice-store'
 import type { AdviceRecord } from '@/lib/advice-store'
@@ -166,6 +166,16 @@ export default async function HomePage({
 
   const isUpcoming = trip.endDate >= new Date().toISOString().split('T')[0]
 
+  // Fetch saved tips for this trip
+  const savedTipRows = user
+    ? await db
+        .select({ category: savedTips.category, question: savedTips.question })
+        .from(savedTips)
+        .where(and(eq(savedTips.userId, user.id), eq(savedTips.tripId, tripId)))
+    : []
+  const savedKeys = new Set(savedTipRows.map((r) => `${r.category}|${r.question}`))
+  const savedCount = savedTipRows.length
+
   return (
     <>
       {/* Page header */}
@@ -208,8 +218,23 @@ export default async function HomePage({
         </div>
       )}
 
-      {/* 8 grouped rows replacing the old 17 flat rows */}
-      <AdviceAccordion groups={groups} />
+      {/* Saved tips entry — shown when user has bookmarked tips */}
+      {savedCount > 0 && (
+        <div className="saved-tips-entry">
+          <Link href={`/home/${tripId}/saved`} className="saved-tips-link">
+            <span className="saved-tips-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+              </svg>
+            </span>
+            <span className="saved-tips-label">Saved tips</span>
+            <span className="saved-tips-count">{savedCount}</span>
+          </Link>
+        </div>
+      )}
+
+      {/* 8 grouped rows */}
+      <AdviceAccordion groups={groups} tripId={tripId} savedKeys={savedKeys} />
     </>
   )
 }

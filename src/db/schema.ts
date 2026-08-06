@@ -106,6 +106,33 @@ export const destinationImages = pgTable('destination_images', {
   attribution: text('attribution'), // photographer name / Unsplash credit
 })
 
+// ─── saved_tips ───────────────────────────────────────────────────────────────
+
+export const savedTips = pgTable(
+  'saved_tips',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    tripId: uuid('trip_id')
+      .notNull()
+      .references(() => trips.id, { onDelete: 'cascade' }),
+    category: text('category').notNull(),
+    question: text('question').notNull(),
+    answer: text('answer').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => ({
+    userTripQuestionUnique: uniqueIndex('saved_tips_user_trip_q_idx').on(
+      t.userId,
+      t.tripId,
+      t.category,
+      t.question,
+    ),
+  }),
+)
+
 // ─── votes ────────────────────────────────────────────────────────────────────
 
 export const votes = pgTable(
@@ -150,3 +177,6 @@ export type NewVote = typeof votes.$inferInsert
 
 export type DestinationImage = typeof destinationImages.$inferSelect
 export type NewDestinationImage = typeof destinationImages.$inferInsert
+
+export type SavedTip = typeof savedTips.$inferSelect
+export type NewSavedTip = typeof savedTips.$inferInsert
