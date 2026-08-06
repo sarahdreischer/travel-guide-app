@@ -257,15 +257,20 @@ textarea {
 }
 
 .wizard-progress-track {
-  height: 1px;
+  height: 2px;
   background: var(--border);
-  margin: 0 20px;
+  margin: 0;
 }
 
 .wizard-progress-fill {
   height: 100%;
-  background: var(--ink);
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--accent);
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes stepFade {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .wizard-step-content {
@@ -273,6 +278,7 @@ textarea {
   padding: 36px 24px 24px;
   overflow-y: auto;
   scrollbar-width: none;
+  animation: stepFade 0.22s ease;
 }
 
 .wizard-step-content::-webkit-scrollbar {
@@ -280,24 +286,33 @@ textarea {
 }
 
 .wizard-step-heading {
-  margin-bottom: 36px;
+  margin-bottom: 32px;
 }
 
 .wizard-step-eyebrow {
   font-size: 10.5px;
-  font-weight: 600;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--muted);
+  color: var(--muted-light);
   margin-bottom: 8px;
 }
 
 .wizard-step-title {
-  font-size: 26px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
   color: var(--ink);
-  line-height: 1.15;
-  letter-spacing: -0.025em;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  margin-bottom: 8px;
+}
+
+.wizard-step-subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  min-height: unset;
 }
 
 .wizard-footer {
@@ -506,14 +521,14 @@ textarea {
 }
 
 .chip-idle:hover {
-  border-color: var(--border-strong);
-  color: var(--ink);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .chip-on {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--surface);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 /* ─── Travel mode grid ───────────────────────────────────────── */
@@ -545,20 +560,30 @@ textarea {
 }
 
 .mode-btn-idle:hover {
-  border-color: var(--border-strong);
-  color: var(--ink);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .mode-btn-on {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--surface);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 .mode-label {
   font-size: 11.5px;
   font-weight: 500;
   letter-spacing: 0.01em;
+}
+
+.mode-tagline {
+  font-size: 10px;
+  font-weight: 400;
+  opacity: 0.7;
+  text-align: center;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  min-height: unset;
 }
 
 /* ─── Budget input ───────────────────────────────────────────── */
@@ -597,13 +622,133 @@ textarea {
   padding-right: 44px;
 }
 
+/* ─── Destination reveal (step 1) ─────────────────────────────── */
+
+@keyframes fadeReveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dest-reveal {
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  height: 180px;
+  animation: fadeReveal 0.35s cubic-bezier(0.2, 0, 0.1, 1);
+}
+
+.dest-reveal-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.dest-reveal-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(8,14,20,0.78) 0%, rgba(8,14,20,0.15) 55%, transparent 100%);
+}
+
+.dest-reveal-meta {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 18px;
+}
+
+.dest-reveal-name {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  margin-bottom: 3px;
+  min-height: unset;
+}
+
+.dest-reveal-ready {
+  color: rgba(255,255,255,0.58);
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  min-height: unset;
+}
+
+/* ─── Trip ready message (step 3) ────────────────────────────── */
+
+.trip-ready-msg {
+  padding: 15px 17px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  border-radius: 8px;
+}
+
+.trip-ready-text {
+  font-size: 14px;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+  letter-spacing: -0.005em;
+  min-height: unset;
+}
+
+.trip-ready-text strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ─── Footer note ────────────────────────────────────────────── */
+
+.wizard-footer-note {
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--muted-light);
+  margin-top: 10px;
+  letter-spacing: 0.02em;
+  min-height: unset;
+}
+
 /* ─── Trip summary ───────────────────────────────────────────── */
 
 .summary-panel {
   border: 1px solid var(--border);
   border-radius: 7px;
-  padding: 20px;
+  overflow: hidden;
   background: var(--surface);
+}
+
+.summary-hero {
+  position: relative;
+  height: 120px;
+  flex-shrink: 0;
+}
+
+.summary-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.summary-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(8,14,20,0.72) 0%, rgba(8,14,20,0.1) 60%, transparent 100%);
+}
+
+.summary-hero-label {
+  position: absolute;
+  bottom: 12px;
+  left: 16px;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  min-height: unset;
+}
+
+.summary-body {
+  padding: 14px 16px 16px;
 }
 
 .summary-header {

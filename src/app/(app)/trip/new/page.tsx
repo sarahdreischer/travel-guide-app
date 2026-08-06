@@ -1,9 +1,17 @@
+import { db } from '@/db'
+import { destinationImages } from '@/db/schema'
 import TripForm from '@/components/forms/TripForm'
 
 /**
- * New trip page — renders the 3-step wizard.
- * The wizard manages its own full-height shell layout.
+ * New trip page — fetches destination images from DB and passes to wizard.
  */
-export default function NewTripPage() {
-  return <TripForm />
+export default async function NewTripPage() {
+  // Fetch all destination image URLs for the reveal + summary hero
+  const rows = await db.select().from(destinationImages)
+  const imageMap: Record<string, string> = {}
+  for (const row of rows) {
+    imageMap[row.destination] = row.imageUrl
+  }
+
+  return <TripForm destinationImages={imageMap} />
 }

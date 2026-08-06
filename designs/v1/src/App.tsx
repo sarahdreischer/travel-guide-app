@@ -361,7 +361,7 @@ const DESTINATIONS = [
 
 const TRAVEL_MODES = [
   {
-    id: 'fly', label: 'Fly',
+    id: 'fly', label: 'Fly', tagline: 'Fastest way there',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 4c-1 0-2 .5-2.5 1L13 8.8 4.8 6.2l-1.9 1.9L8 12l-3 3H3l-1 1.5L5 18l1.5 2L8 19l1-1v-2l3-3 3.2 4.2 1.9-1.9z" />
@@ -369,7 +369,7 @@ const TRAVEL_MODES = [
     ),
   },
   {
-    id: 'drive', label: 'Drive',
+    id: 'drive', label: 'Drive', tagline: 'Freedom to explore',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-4h10l2 4h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2" />
@@ -379,7 +379,7 @@ const TRAVEL_MODES = [
     ),
   },
   {
-    id: 'rail', label: 'Rail',
+    id: 'rail', label: 'Rail', tagline: 'Scenic & seamless',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <rect x="4" y="3" width="16" height="13" rx="2" />
@@ -390,7 +390,7 @@ const TRAVEL_MODES = [
     ),
   },
   {
-    id: 'sail', label: 'Sail',
+    id: 'sail', label: 'Sail', tagline: 'Uncharted routes',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M3 17h18M12 3v14M12 3C7 7 5 13 5 17h7M12 3c5 4 7 10 7 14h-7" />
@@ -408,9 +408,9 @@ const ACTIVITIES = [
 ]
 
 const STEPS = [
-  { label: 'Where & When' },
-  { label: 'Your trip' },
-  { label: 'Interests' },
+  { label: 'Where to?', subtitle: 'Pick your destination and travel dates.' },
+  { label: 'How you travel', subtitle: "We'll tailor the advice to your style." },
+  { label: 'What excites you?', subtitle: 'Your interests sharpen the recommendations.' },
 ]
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
@@ -866,6 +866,12 @@ const DESTINATION_IMAGES: Record<string, string> = {
   'Japan': 'https://images.unsplash.com/photo-1681317474675-494bd8e91d7d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
 }
 
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1498637841888-108c6b723fcb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080'
+
+function getDestImg(destination: string): string {
+  return DESTINATION_IMAGES[destination] ?? FALLBACK_IMAGE
+}
+
 // ─── Category icons ───────────────────────────────────────────────────────────
 
 const CATEGORY_ICONS: Record<string, React.ReactElement> = {
@@ -1122,7 +1128,7 @@ function Step1({ form, setForm }: { form: FormData; setForm: React.Dispatch<Reac
   return (
     <div className="form-stack">
       <div className="field-block">
-        <label className="field-label" htmlFor="dest-input">Destination</label>
+        <label className="field-label" htmlFor="dest-input">Where are you headed?</label>
         <div className="dest-wrapper" ref={wrapRef}>
           <input
             id="dest-input"
@@ -1150,7 +1156,7 @@ function Step1({ form, setForm }: { form: FormData; setForm: React.Dispatch<Reac
       </div>
 
       <div className="field-block">
-        <label className="field-label">Travelling as</label>
+        <label className="field-label">Who's coming with you?</label>
         <div className="chip-group" role="group">
           {PARTY_OPTIONS.map(p => (
             <button key={p} type="button" className={`chip ${form.party === p ? 'chip-on' : 'chip-idle'}`}
@@ -1162,7 +1168,7 @@ function Step1({ form, setForm }: { form: FormData; setForm: React.Dispatch<Reac
       </div>
 
       <div className="field-block">
-        <label className="field-label">Travel dates</label>
+        <label className="field-label">When are you going?</label>
         <div className="date-row">
           <input type="date" className="field-input" aria-label="Start date" value={form.startDate}
             onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} />
@@ -1172,6 +1178,17 @@ function Step1({ form, setForm }: { form: FormData; setForm: React.Dispatch<Reac
         </div>
         {duration && <p className="duration-tag" aria-live="polite">{duration}</p>}
       </div>
+
+      {form.destination && (
+        <div className="dest-reveal" key={form.destination} aria-hidden="true">
+          <img className="dest-reveal-img" src={getDestImg(form.destination)} alt="" />
+          <div className="dest-reveal-scrim" />
+          <div className="dest-reveal-meta">
+            <p className="dest-reveal-name">{form.destination}</p>
+            <p className="dest-reveal-ready">Ready when you are</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1185,7 +1202,7 @@ function Step2({ form, setForm }: { form: FormData; setForm: React.Dispatch<Reac
   return (
     <div className="form-stack">
       <div className="field-block">
-        <label className="field-label">Primary travel mode</label>
+        <label className="field-label">How are you getting there?</label>
         <div className="mode-grid" role="group">
           {TRAVEL_MODES.map(m => (
             <button key={m.id} type="button"
@@ -1193,6 +1210,7 @@ function Step2({ form, setForm }: { form: FormData; setForm: React.Dispatch<Reac
               aria-pressed={form.travelMode === m.id} onClick={() => setForm(f => ({ ...f, travelMode: m.id }))}>
               {m.icon}
               <span className="mode-label">{m.label}</span>
+              <span className="mode-tagline">{m.tagline}</span>
             </button>
           ))}
         </div>
@@ -1200,7 +1218,7 @@ function Step2({ form, setForm }: { form: FormData; setForm: React.Dispatch<Reac
 
       <div className="field-block">
         <label className="field-label" htmlFor="budget-input">
-          Approximate budget <span className="field-label-note">— optional</span>
+          What's your rough budget? <span className="field-label-note">— optional</span>
         </label>
         <div className="budget-wrapper">
           <span className="budget-prefix" aria-hidden="true">$</span>
@@ -1213,7 +1231,7 @@ function Step2({ form, setForm }: { form: FormData; setForm: React.Dispatch<Reac
       </div>
 
       <div className="field-block">
-        <label className="field-label">Travel style <span className="field-label-note">— select all that apply</span></label>
+        <label className="field-label">What kind of traveller are you? <span className="field-label-note">— select all that apply</span></label>
         <div className="chip-group" role="group">
           {TRAVEL_STYLES.map(s => (
             <button key={s} type="button" className={`chip ${form.travelStyle.includes(s) ? 'chip-on' : 'chip-idle'}`}
@@ -1238,7 +1256,7 @@ function Step3({ form, setForm }: { form: FormData; setForm: React.Dispatch<Reac
   return (
     <div className="form-stack">
       <div className="field-block">
-        <label className="field-label">Activity preferences <span className="field-label-note">— select at least one</span></label>
+        <label className="field-label">What do you love doing? <span className="field-label-note">— pick at least one</span></label>
         <div className="chip-group" role="group">
           {ACTIVITIES.map(a => (
             <button key={a} type="button" className={`chip ${form.activities.includes(a) ? 'chip-on' : 'chip-idle'}`}
@@ -1249,21 +1267,35 @@ function Step3({ form, setForm }: { form: FormData; setForm: React.Dispatch<Reac
         </div>
       </div>
 
+      {form.destination && form.activities.length > 0 && (
+        <div className="trip-ready-msg">
+          <p className="trip-ready-text">
+            You're all set. We'll build a personalised guide for{' '}
+            <strong>{form.destination}</strong> — covering everything from getting
+            around to local tips, so you can travel with confidence.
+          </p>
+        </div>
+      )}
+
       {form.destination && (
         <div className="summary-panel" aria-label="Trip summary">
-          <p className="summary-header">Trip summary</p>
-          <div className="summary-row"><span className="summary-key">Destination</span><span className="summary-val">{form.destination}</span></div>
-          <div className="summary-row">
-            <span className="summary-key">Dates</span>
-            <span className="summary-val">
-              {fmtDate(form.startDate)} – {fmtDate(form.endDate)}
-              {duration && <span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {duration}</span>}
-            </span>
+          <div className="summary-hero">
+            <img className="summary-hero-img" src={getDestImg(form.destination)} alt={form.destination} />
+            <div className="summary-hero-scrim" />
+            <p className="summary-hero-label">{form.destination}</p>
           </div>
-          {form.party && <div className="summary-row"><span className="summary-key">Party</span><span className="summary-val">{form.party}</span></div>}
-          {form.travelMode && <div className="summary-row"><span className="summary-key">Mode</span><span className="summary-val" style={{ textTransform: 'capitalize' }}>{form.travelMode}</span></div>}
-          {form.budget && <div className="summary-row"><span className="summary-key">Budget</span><span className="summary-val">${parseInt(form.budget).toLocaleString()} USD</span></div>}
-          {form.travelStyle.length > 0 && <div className="summary-row"><span className="summary-key">Style</span><span className="summary-val">{form.travelStyle.join(', ')}</span></div>}
+          <div className="summary-body">
+            <div className="summary-row"><span className="summary-key">Dates</span>
+              <span className="summary-val">
+                {fmtDate(form.startDate)} – {fmtDate(form.endDate)}
+                {duration && <span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {duration}</span>}
+              </span>
+            </div>
+            {form.party && <div className="summary-row"><span className="summary-key">Party</span><span className="summary-val">{form.party}</span></div>}
+            {form.travelMode && <div className="summary-row"><span className="summary-key">Mode</span><span className="summary-val" style={{ textTransform: 'capitalize' }}>{form.travelMode}</span></div>}
+            {form.budget && <div className="summary-row"><span className="summary-key">Budget</span><span className="summary-val">${parseInt(form.budget).toLocaleString()} USD</span></div>}
+            {form.travelStyle.length > 0 && <div className="summary-row"><span className="summary-key">Style</span><span className="summary-val">{form.travelStyle.join(', ')}</span></div>}
+          </div>
         </div>
       )}
     </div>
@@ -1311,10 +1343,11 @@ function NewTripScreen({
         <div className="progress-fill" style={{ width: `${(step / STEPS.length) * 100}%` }} />
       </div>
 
-      <main className="step-content">
+      <main className="step-content" key={step}>
         <div className="step-heading">
-          <p className="step-eyebrow">Step {step}</p>
+          <p className="step-eyebrow">Step {step} of {STEPS.length}</p>
           <h1 className="step-title">{STEPS[step - 1].label}</h1>
+          <p className="step-subtitle">{STEPS[step - 1].subtitle}</p>
         </div>
         {step === 1 && <Step1 form={form} setForm={setForm} />}
         {step === 2 && <Step2 form={form} setForm={setForm} />}
@@ -1322,10 +1355,17 @@ function NewTripScreen({
       </main>
 
       <footer className="step-footer">
-        <button className="btn-primary" disabled={!canContinue}
-          onClick={() => step < STEPS.length ? setStep(s => s + 1) : onSubmit(form)}>
-          {step < STEPS.length ? 'Continue' : 'Generate travel advice'}
+        <button
+          className="btn-primary"
+          style={step === STEPS.length ? { background: 'var(--accent)' } : undefined}
+          disabled={!canContinue}
+          onClick={() => step < STEPS.length ? setStep(s => s + 1) : onSubmit(form)}
+        >
+          {step < STEPS.length ? 'Continue' : 'Build my travel guide'}
         </button>
+        {step === STEPS.length && (
+          <p className="step-footer-note">Personalised for your trip · Ready in seconds</p>
+        )}
       </footer>
     </>
   )
