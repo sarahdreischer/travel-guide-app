@@ -661,6 +661,7 @@ function LoginScreen({
   const canSubmit = email.includes('@') && password.length >= 6
 
   return (
+    <div className="auth-page">
     <div className="auth-shell">
       <p className="auth-wordmark">Travel Guide</p>
 
@@ -703,6 +704,7 @@ function LoginScreen({
         <button className="auth-toggle-link" onClick={onGoSignup}>Create an account</button>
       </div>
     </div>
+    </div>
   )
 }
 
@@ -722,7 +724,7 @@ function SignupScreen({
   const canSubmit = firstName.trim() && lastName.trim() && email.includes('@') && password.length >= 6
 
   return (
-    <>
+    <div className="auth-page">
       <div className="auth-shell">
         <p className="auth-wordmark">Travel Guide</p>
 
@@ -803,7 +805,7 @@ function SignupScreen({
           onCancel={() => setShowDisclaimer(false)}
         />
       )}
-    </>
+    </div>
   )
 }
 
@@ -1602,6 +1604,76 @@ function NewTripScreen({
 
 // ─── Bottom nav ───────────────────────────────────────────────────────────────
 
+function IconSidebarToggle({ collapsed }: { collapsed: boolean }) {
+  return collapsed ? (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="3" width="14" height="1.5" rx="0.75" fill="currentColor"/>
+      <rect x="1" y="7.25" width="9" height="1.5" rx="0.75" fill="currentColor"/>
+      <rect x="1" y="11.5" width="14" height="1.5" rx="0.75" fill="currentColor"/>
+    </svg>
+  ) : (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="3" width="14" height="1.5" rx="0.75" fill="currentColor"/>
+      <rect x="1" y="7.25" width="14" height="1.5" rx="0.75" fill="currentColor"/>
+      <rect x="1" y="11.5" width="14" height="1.5" rx="0.75" fill="currentColor"/>
+    </svg>
+  )
+}
+
+function SideNav({
+  active,
+  onNavigate,
+}: {
+  active: 'destinations' | 'new-trip' | 'profile'
+  onNavigate: (target: 'destinations' | 'new-trip' | 'profile') => void
+}) {
+  const [collapsed, setCollapsed] = useState(false)
+  return (
+    <nav className={`side-nav${collapsed ? ' side-nav-collapsed' : ''}`} aria-label="Main navigation">
+      <div className="side-nav-top">
+        {!collapsed && <div className="side-nav-brand">Travel Guide</div>}
+        <button
+          className="side-nav-toggle"
+          onClick={() => setCollapsed(c => !c)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand" : "Collapse"}
+        >
+          <IconSidebarToggle collapsed={collapsed} />
+        </button>
+      </div>
+      <div className="side-nav-items">
+        <button
+          className={`side-nav-item${active === 'destinations' ? ' side-nav-item-active' : ''}`}
+          onClick={() => onNavigate('destinations')}
+          aria-current={active === 'destinations' ? 'page' : undefined}
+          title={collapsed ? "Trips" : undefined}
+        >
+          <IconGlobe />
+          {!collapsed && <span>Trips</span>}
+        </button>
+        <button
+          className={`side-nav-item${active === 'new-trip' ? ' side-nav-item-active' : ''}`}
+          onClick={() => onNavigate('new-trip')}
+          aria-current={active === 'new-trip' ? 'page' : undefined}
+          title={collapsed ? "New trip" : undefined}
+        >
+          <IconPlus />
+          {!collapsed && <span>New trip</span>}
+        </button>
+        <button
+          className={`side-nav-item${active === 'profile' ? ' side-nav-item-active' : ''}`}
+          onClick={() => onNavigate('profile')}
+          aria-current={active === 'profile' ? 'page' : undefined}
+          title={collapsed ? "Profile" : undefined}
+        >
+          <IconUser />
+          {!collapsed && <span>Profile</span>}
+        </button>
+      </div>
+    </nav>
+  )
+}
+
 function BottomNav({
   active,
   onNavigate,
@@ -1863,6 +1935,8 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      <SideNav active={navActive()} onNavigate={handleNavNavigate} />
+      <div className="main-panel">
       {screen.view === 'destinations' && (
         <DestinationsScreen
           trips={trips}
@@ -1960,6 +2034,7 @@ export default function App() {
       {!hideNav && (
         <BottomNav active={navActive()} onNavigate={handleNavNavigate} />
       )}
+      </div>
     </div>
   )
 }

@@ -38,7 +38,7 @@ body {
   background: var(--bg);
 }
 
-@media (min-width: 640px) {
+@media (min-width: 640px) and (max-width: 899px) {
   .app-shell {
     border-left: 1px solid var(--border);
     border-right: 1px solid var(--border);
@@ -991,22 +991,23 @@ body {
 
 /* ─── Auth screens ────────────────────────────────────────────── */
 
-.auth-shell {
+.auth-page {
   min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+
+.auth-shell {
+  width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding: 48px 28px 56px;
   max-width: 520px;
-  margin: 0 auto;
 }
 
-@media (min-width: 640px) {
-  .auth-shell {
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
-  }
-}
 
 .auth-wordmark {
   font-size: 10.5px;
@@ -1260,6 +1261,22 @@ body {
 
 .profile-delete-btn:hover { opacity: 0.65; }
 
+/* ─── Side nav (desktop) ──────────────────────────────────────── */
+
+.side-nav {
+  display: none;
+}
+
+/* ─── Main panel wrapper ──────────────────────────────────────── */
+
+.main-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* ─── Bottom nav ──────────────────────────────────────────────── */
 
 .bottom-nav {
@@ -1291,3 +1308,188 @@ body {
 
 .nav-item:hover { color: var(--ink-secondary); }
 .nav-item-active { color: var(--ink); }
+
+/* ─── Desktop layout ──────────────────────────────────────────── */
+
+@media (min-width: 900px) {
+  body {
+    background: #EDECEA;
+  }
+
+  /* App shell becomes a horizontal flex row */
+  .app-shell {
+    flex-direction: row;
+    max-width: 1100px;
+    min-height: 100dvh;
+    height: 100dvh;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  /* Main content panel */
+  .main-panel {
+    border-left: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  /* Hide bottom nav */
+  .bottom-nav {
+    display: none;
+  }
+
+  /* Show side nav */
+  .side-nav {
+    display: flex;
+    flex-direction: column;
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--bg);
+    padding: 24px 0 24px;
+    gap: 0;
+    transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+
+  .side-nav-collapsed {
+    width: 60px;
+  }
+
+  .side-nav-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px 24px;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .side-nav-brand {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    white-space: nowrap;
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .side-nav-toggle {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    transition: background 0.13s, color 0.13s;
+  }
+
+  .side-nav-toggle:hover {
+    background: var(--row-hover);
+    color: var(--ink);
+  }
+
+  .side-nav-items {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 8px;
+  }
+
+  .side-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 10px;
+    border-radius: 6px;
+    font-family: "Inter", sans-serif;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.13s, color 0.13s;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .side-nav-collapsed .side-nav-item {
+    justify-content: center;
+    padding: 10px;
+  }
+
+  .side-nav-item:hover {
+    background: var(--row-hover);
+    color: var(--ink-secondary);
+  }
+
+  .side-nav-item-active {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .side-nav-item-active:hover {
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    color: var(--accent);
+  }
+
+  .side-nav-collapsed .side-nav-top {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* Trip hero taller on desktop */
+  .trip-hero {
+    height: 260px;
+  }
+
+  /* Auth screens: card on desktop */
+  .auth-page {
+    background: #EDECEA;
+  }
+
+  .auth-shell {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    max-width: 440px;
+    padding: 48px 44px 52px;
+    box-shadow: 0 2px 16px rgba(17,19,24,0.06);
+  }
+
+  /* Modal: centered dialog on desktop */
+  .modal-overlay {
+    align-items: center;
+  }
+
+  .modal-panel {
+    border-radius: 10px;
+    max-width: 400px;
+    padding: 28px 24px 28px;
+  }
+
+  .modal-handle {
+    display: none;
+  }
+
+  /* Step content more padding on desktop */
+  .step-content {
+    padding: 44px 36px 32px;
+  }
+
+  .step-footer {
+    padding: 16px 36px;
+  }
+}
