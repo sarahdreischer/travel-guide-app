@@ -1663,3 +1663,156 @@ textarea {
   border-radius: 10px;
   min-height: unset;
 }
+
+/* ─── Profile page ────────────────────────────────────────────── */
+
+.profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 20px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-avatar {
+  width: 52px;
+  height: 52px;
+  min-height: 52px;
+  border-radius: 8px;
+  background: #E3EDF0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+}
+
+.profile-avatar:hover {
+  opacity: 0.75;
+}
+
+.profile-initials {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  user-select: none;
+  min-height: unset;
+}
+
+.profile-name-block {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-display-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: unset;
+}
+
+.profile-change-photo {
+  font-size: 12px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--border-mid);
+  text-underline-offset: 2px;
+  transition: color 0.15s;
+  min-height: unset;
+}
+
+.profile-change-photo:hover {
+  color: var(--ink);
+}
+
+.profile-form {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-form .btn-primary {
+  width: 100%;
+  height: 48px;
+  min-height: 48px;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-form .btn-primary:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.profile-form .btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.profile-action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border);
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  color: var(--ink-secondary);
+  transition: background 0.12s;
+  text-decoration: none;
+  min-height: unset;
+}
+
+.profile-action-row:hover {
+  background: var(--row-hover);
+}
+
+.profile-delete-row {
+  display: flex;
+  padding: 22px 20px 8px;
+}
+
+.profile-delete-btn {
+  font-size: 13px;
+  font-weight: 500;
+  color: #B91C1C;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  letter-spacing: 0.005em;
+  min-height: unset;
+}
+
+.profile-delete-btn:hover {
+  opacity: 0.65;
+}
