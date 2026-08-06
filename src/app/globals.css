@@ -1816,3 +1816,148 @@ textarea {
 .profile-delete-btn:hover {
   opacity: 0.65;
 }
+
+/* ─── Auth screens ────────────────────────────────────────────── */
+
+.auth-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px 28px 56px;
+  max-width: 520px;
+  margin: 0 auto;
+  background: var(--bg);
+}
+
+@media (min-width: 640px) {
+  .auth-shell {
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+}
+
+.auth-wordmark {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 36px;
+  min-height: unset;
+}
+
+.auth-heading-block {
+  margin-bottom: 32px;
+}
+
+.auth-heading {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  margin-bottom: 6px;
+  line-height: 1.2;
+  min-height: unset;
+}
+
+.auth-subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+  min-height: unset;
+}
+
+.auth-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.auth-toggle-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--border-mid);
+  transition: text-decoration-color 0.15s;
+  min-height: unset;
+}
+
+.auth-toggle-link:hover {
+  text-decoration-color: var(--ink);
+}
+
+.auth-error {
+  padding: 12px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
+}
+
+/* ─── Password field ──────────────────────────────────────────── */
+
+.pw-wrapper {
+  position: relative;
+}
+
+.pw-wrapper .field-input {
+  padding-right: 44px;
+}
+
+.pw-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--muted-light);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+  min-height: unset;
+}
+
+.pw-toggle:hover {
+  color: var(--ink);
+}
+
+/* ─── Shared btn-primary (used in auth + profile forms) ──────── */
+
+.auth-shell .btn-primary,
+.profile-form .btn-primary {
+  width: 100%;
+  height: 48px;
+  min-height: 48px;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-shell .btn-primary:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.auth-shell .btn-primary:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
