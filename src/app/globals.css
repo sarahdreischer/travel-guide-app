@@ -986,6 +986,12 @@ textarea {
   opacity: 0.8;
 }
 
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .page-body {
   max-width: 520px;
   margin: 0 auto;

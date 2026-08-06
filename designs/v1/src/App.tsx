@@ -38,9 +38,20 @@ type Screen =
   | { view: 'signup' }
   | { view: 'destinations' }
   | { view: 'new-trip' }
+  | { view: 'edit-trip'; tripId: string }
   | { view: 'trip-overview'; tripId: string }
   | { view: 'trip-category'; tripId: string; categoryId: string }
+  | { view: 'saved-tips'; tripId: string }
   | { view: 'profile' }
+
+interface SavedTip {
+  id: string
+  tripId: string
+  groupId: string
+  groupName: string
+  question: string
+  answer: string
+}
 
 // ─── Advice data ──────────────────────────────────────────────────────────────
 
@@ -526,6 +537,23 @@ function IconEyeOff() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
       <line x1="1" y1="1" x2="23" y2="23"/>
+    </svg>
+  )
+}
+
+function IconBookmark({ filled = false }: { filled?: boolean }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+  )
+}
+
+function IconPencil() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
     </svg>
   )
 }
@@ -1023,14 +1051,20 @@ function IconCheck() {
 
 function TripOverviewScreen({
   trip,
+  savedTips = [],
   onBack,
+  onEdit,
   onDelete,
   onOpenCategory,
+  onOpenSaved,
 }: {
   trip: Trip
+  savedTips?: SavedTip[]
   onBack: () => void
+  onEdit: () => void
   onDelete: () => void
   onOpenCategory: (categoryId: string) => void
+  onOpenSaved: () => void
 }) {
   const groups = groupAdvice(getAdvice(trip.destination))
   const [visited, setVisited] = useState<Set<string>>(new Set())
@@ -1057,14 +1091,24 @@ function TripOverviewScreen({
           <IconArrowLeft />
         </button>
         <span className="page-title" style={{ fontSize: 15 }}>Travel advice</span>
-        <button
-          className="page-header-btn"
-          onClick={() => setShowDeleteConfirm(true)}
-          aria-label="Delete trip"
-          style={{ color: 'var(--muted)' }}
-        >
-          <IconTrash />
-        </button>
+        <div style={{ display: 'flex' }}>
+          <button
+            className="page-header-btn"
+            onClick={onEdit}
+            aria-label="Edit trip"
+            style={{ color: 'var(--muted)' }}
+          >
+            <IconPencil />
+          </button>
+          <button
+            className="page-header-btn"
+            onClick={() => setShowDeleteConfirm(true)}
+            aria-label="Delete trip"
+            style={{ color: 'var(--muted)' }}
+          >
+            <IconTrash />
+          </button>
+        </div>
       </header>
 
       {showDeleteConfirm && (
@@ -1115,6 +1159,24 @@ function TripOverviewScreen({
         )}
 
         <div className="category-list">
+          {savedTips.length > 0 && (
+            <button className="category-row saved-tips-row" onClick={onOpenSaved} aria-label="View saved tips">
+              <span className="category-row-num" style={{ color: 'var(--accent)' }}>
+                <IconBookmark filled />
+              </span>
+              <div className="category-row-body">
+                <div className="category-row-name-row">
+                  <p className="category-row-name">Saved tips</p>
+                </div>
+                <p className="category-row-tip">
+                  {savedTips.length} tip{savedTips.length !== 1 ? 's' : ''} bookmarked
+                </p>
+              </div>
+              <span className="category-row-chevron" aria-hidden="true">
+                <IconChevronRight />
+              </span>
+            </button>
+          )}
           {groups.map((group, i) => {
             const icon = CATEGORY_ICONS[group.id]
             const seen = visited.has(group.id)
@@ -1154,10 +1216,14 @@ function TripOverviewScreen({
 function CategoryDetailScreen({
   trip,
   categoryId,
+  savedTips = [],
+  onToggleTip,
   onBack,
 }: {
   trip: Trip
   categoryId: string
+  savedTips?: SavedTip[]
+  onToggleTip: (tip: SavedTip) => void
   onBack: () => void
 }) {
   const groups = groupAdvice(getAdvice(trip.destination))
@@ -1168,6 +1234,11 @@ function CategoryDetailScreen({
 
   const multiSource = group.sources.length > 1
   const activeSource = group.sources[activeIdx] ?? group.sources[0]
+  const sourceIdx = activeIdx
+
+  function makeTipId(sIdx: number, iIdx: number) {
+    return `${trip.id}|${group.id}|${sIdx}|${iIdx}`
+  }
 
   return (
     <>
@@ -1204,12 +1275,32 @@ function CategoryDetailScreen({
         )}
 
         <div className="category-qa-list" role={multiSource ? 'tabpanel' : undefined}>
-          {activeSource.items.map((item, i) => (
-            <div key={i} className="category-qa-item">
-              <p className="category-qa-q">{item.question}</p>
-              <p className="category-qa-a">{item.answer}</p>
-            </div>
-          ))}
+          {activeSource.items.map((item, i) => {
+            const tipId = makeTipId(sourceIdx, i)
+            const isSaved = savedTips.some(t => t.id === tipId)
+            return (
+              <div key={i} className="category-qa-item">
+                <div className="category-qa-header">
+                  <p className="category-qa-q">{item.question}</p>
+                  <button
+                    className={`bookmark-btn${isSaved ? ' bookmark-btn-active' : ''}`}
+                    onClick={() => onToggleTip({
+                      id: tipId,
+                      tripId: trip.id,
+                      groupId: group.id,
+                      groupName: group.name,
+                      question: item.question,
+                      answer: item.answer,
+                    })}
+                    aria-label={isSaved ? 'Remove from saved tips' : 'Save tip'}
+                  >
+                    <IconBookmark filled={isSaved} />
+                  </button>
+                </div>
+                <p className="category-qa-a">{item.answer}</p>
+              </div>
+            )
+          })}
         </div>
       </div>
     </>
@@ -1439,12 +1530,16 @@ function Step3({ form, setForm }: { form: FormData; setForm: React.Dispatch<Reac
 function NewTripScreen({
   onSubmit,
   onCancel,
+  initialData,
+  isEdit = false,
 }: {
   onSubmit: (form: FormData) => void
   onCancel: () => void
+  initialData?: FormData
+  isEdit?: boolean
 }) {
   const [step, setStep] = useState(1)
-  const [form, setForm] = useState<FormData>(EMPTY_FORM)
+  const [form, setForm] = useState<FormData>(initialData ?? EMPTY_FORM)
 
   const canAdvance1 = form.destination !== '' && form.party !== '' && form.startDate !== '' &&
     form.endDate !== '' && new Date(form.endDate) > new Date(form.startDate)
@@ -1495,9 +1590,9 @@ function NewTripScreen({
           disabled={!canContinue}
           onClick={() => step < STEPS.length ? setStep(s => s + 1) : onSubmit(form)}
         >
-          {step < STEPS.length ? 'Continue' : 'Build my travel guide'}
+          {step < STEPS.length ? 'Continue' : isEdit ? 'Save changes' : 'Build my travel guide'}
         </button>
-        {step === STEPS.length && (
+        {step === STEPS.length && !isEdit && (
           <p className="step-footer-note">Personalised for your trip · Ready in seconds</p>
         )}
       </footer>
@@ -1645,11 +1740,88 @@ function ProfileScreen() {
   )
 }
 
+// ─── Saved tips screen ───────────────────────────────────────────────────────
+
+function SavedTipsScreen({
+  trip,
+  savedTips = [],
+  onToggleTip,
+  onBack,
+}: {
+  trip: Trip
+  savedTips?: SavedTip[]
+  onToggleTip: (tip: SavedTip) => void
+  onBack: () => void
+}) {
+  const grouped = savedTips.reduce<Record<string, SavedTip[]>>((acc, tip) => {
+    const key = tip.groupName
+    if (!acc[key]) acc[key] = []
+    acc[key].push(tip)
+    return acc
+  }, {})
+
+  return (
+    <>
+      <header className="page-header">
+        <button className="page-header-btn" onClick={onBack} aria-label="Back">
+          <IconArrowLeft />
+        </button>
+        <span className="page-title" style={{ fontSize: 15 }}>Saved tips</span>
+        <div style={{ width: 36 }} />
+      </header>
+
+      <div className="category-detail-body">
+        {savedTips.length === 0 ? (
+          <div className="saved-empty">
+            <span className="saved-empty-icon"><IconBookmark /></span>
+            <p className="saved-empty-title">No saved tips yet</p>
+            <p className="saved-empty-body">
+              Tap the bookmark icon on any tip while reading your travel advice to save it here.
+            </p>
+          </div>
+        ) : (
+          <div className="category-qa-list">
+            {Object.entries(grouped).map(([groupName, tips]) => (
+              <div key={groupName}>
+                <p className="category-sub-label">{groupName}</p>
+                {tips.map(tip => (
+                  <div key={tip.id} className="category-qa-item">
+                    <div className="category-qa-header">
+                      <p className="category-qa-q">{tip.question}</p>
+                      <button
+                        className="bookmark-btn bookmark-btn-active"
+                        onClick={() => onToggleTip(tip)}
+                        aria-label="Remove from saved tips"
+                      >
+                        <IconBookmark filled />
+                      </button>
+                    </div>
+                    <p className="category-qa-a">{tip.answer}</p>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ view: 'login' })
   const [trips, setTrips] = useState<Trip[]>(SAMPLE_TRIPS)
+  const [savedTips, setSavedTips] = useState<SavedTip[]>([])
+
+  function toggleSavedTip(tip: SavedTip) {
+    setSavedTips(prev =>
+      prev.some(t => t.id === tip.id)
+        ? prev.filter(t => t.id !== tip.id)
+        : [...prev, tip]
+    )
+  }
 
   function handleAddTrip(form: FormData) {
     const newTrip: Trip = { ...form, id: generateId() }
@@ -1669,7 +1841,7 @@ export default function App() {
     else setScreen({ view: 'destinations' })
   }
 
-  const hideNav = false
+  const hideNav = screen.view === 'new-trip' || screen.view === 'edit-trip'
 
   if (screen.view === 'login') {
     return (
@@ -1707,18 +1879,49 @@ export default function App() {
         />
       )}
 
+      {screen.view === 'edit-trip' && (() => {
+        const trip = trips.find(t => t.id === screen.tripId)
+        if (!trip) return null
+        const initialData: FormData = {
+          destination: trip.destination,
+          startDate: trip.startDate,
+          endDate: trip.endDate,
+          party: trip.party,
+          travelMode: trip.travelMode,
+          budget: trip.budget,
+          travelStyle: trip.travelStyle,
+          activities: trip.activities,
+        }
+        return (
+          <NewTripScreen
+            isEdit
+            initialData={initialData}
+            onSubmit={form => {
+              setTrips(prev => prev.map(t => t.id === trip.id ? { ...form, id: trip.id } : t))
+              setScreen({ view: 'trip-overview', tripId: trip.id })
+            }}
+            onCancel={() => setScreen({ view: 'trip-overview', tripId: trip.id })}
+          />
+        )
+      })()}
+
       {screen.view === 'trip-overview' && (() => {
         const trip = trips.find(t => t.id === screen.tripId)
         if (!trip) return null
+        const tripSaved = savedTips.filter(t => t.tripId === trip.id)
         return (
           <TripOverviewScreen
             trip={trip}
+            savedTips={tripSaved}
             onBack={() => setScreen({ view: 'destinations' })}
+            onEdit={() => setScreen({ view: 'edit-trip', tripId: trip.id })}
             onDelete={() => {
               setTrips(prev => prev.filter(t => t.id !== trip.id))
+              setSavedTips(prev => prev.filter(t => t.tripId !== trip.id))
               setScreen({ view: 'destinations' })
             }}
             onOpenCategory={catId => setScreen({ view: 'trip-category', tripId: trip.id, categoryId: catId })}
+            onOpenSaved={() => setScreen({ view: 'saved-tips', tripId: trip.id })}
           />
         )
       })()}
@@ -1726,10 +1929,27 @@ export default function App() {
       {screen.view === 'trip-category' && (() => {
         const trip = trips.find(t => t.id === screen.tripId)
         if (!trip) return null
+        const tripSaved = savedTips.filter(t => t.tripId === trip.id)
         return (
           <CategoryDetailScreen
             trip={trip}
             categoryId={screen.categoryId}
+            savedTips={tripSaved}
+            onToggleTip={toggleSavedTip}
+            onBack={() => setScreen({ view: 'trip-overview', tripId: trip.id })}
+          />
+        )
+      })()}
+
+      {screen.view === 'saved-tips' && (() => {
+        const trip = trips.find(t => t.id === screen.tripId)
+        if (!trip) return null
+        const tripSaved = savedTips.filter(t => t.tripId === trip.id)
+        return (
+          <SavedTipsScreen
+            trip={trip}
+            savedTips={tripSaved}
+            onToggleTip={toggleSavedTip}
             onBack={() => setScreen({ view: 'trip-overview', tripId: trip.id })}
           />
         )

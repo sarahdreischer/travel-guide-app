@@ -305,13 +305,20 @@ function Step3({ form, setForm, destImg }: {
 
 interface TripFormProps {
   destinationImages?: Record<string, string>
+  /** If set, the wizard is in edit mode — pre-populates and updates instead of creating */
+  editTripId?: string
+  initialData?: Partial<WizardData>
+  /** URL to return to on cancel in edit mode */
+  cancelHref?: string
 }
 
-export default function TripForm({ destinationImages = {} }: TripFormProps) {
+export default function TripForm({ destinationImages = {}, editTripId, initialData, cancelHref }: TripFormProps) {
   const [step, setStep] = useState(1)
-  const [form, setForm] = useState<WizardData>(EMPTY)
+  const [form, setForm] = useState<WizardData>({ ...EMPTY, ...initialData })
   const [serverErrors, setServerErrors] = useState<(CreateTripResult & { success: false }) | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  const isEditMode = !!editTripId
 
   const canAdvance1 = form.destination !== '' && form.party !== '' && form.startDate !== '' && form.endDate !== '' && new Date(form.endDate) > new Date(form.startDate)
   const canAdvance2 = form.transportMode !== '' && form.travelStyle.length > 0
@@ -332,7 +339,13 @@ export default function TripForm({ destinationImages = {} }: TripFormProps) {
     for (const a of form.activities) fd.append('activityPreferences', a)
 
     startTransition(async () => {
-      const result = await createTripAction(fd)
+      let result: CreateTripResult | null = null
+      if (isEditMode) {
+        const { updateTripAction } = await import('@/actions/update-trip')
+        result = await updateTripAction(editTripId!, fd) as CreateTripResult
+      } else {
+        result = await createTripAction(fd)
+      }
       if (result && !result.success) {
         setServerErrors(result)
         const e = result.errors
@@ -342,12 +355,22 @@ export default function TripForm({ destinationImages = {} }: TripFormProps) {
     })
   }
 
+  function handleCancel() {
+    if (cancelHref) {
+      window.location.href = cancelHref
+    }
+  }
+
   return (
     <div className="wizard-shell">
       {/* Header */}
       <header className="wizard-header">
         {step > 1 ? (
           <button className="wizard-back-btn" onClick={() => setStep((s) => s - 1)} aria-label="Back to previous step">
+            <IconArrowLeft />
+          </button>
+        ) : isEditMode ? (
+          <button className="wizard-back-btn" onClick={handleCancel} aria-label="Cancel editing">
             <IconArrowLeft />
           </button>
         ) : <div style={{ width: 36 }} />}
@@ -386,9 +409,13 @@ export default function TripForm({ destinationImages = {} }: TripFormProps) {
           aria-disabled={!canContinue || isPending}
           onClick={step < STEPS.length ? () => setStep((s) => s + 1) : handleSubmit}
         >
-          {isPending ? 'Creating trip…' : step < STEPS.length ? 'Continue' : 'Build my travel guide'}
+          {isPending
+            ? (isEditMode ? 'Saving…' : 'Creating trip…')
+            : step < STEPS.length
+            ? 'Continue'
+            : (isEditMode ? 'Save changes' : 'Build my travel guide')}
         </button>
-        {step === STEPS.length && (
+        {step === STEPS.length && !isEditMode && (
           <p className="wizard-footer-note">Personalised for your trip · Ready in seconds</p>
         )}
       </footer>

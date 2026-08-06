@@ -16,6 +16,7 @@ import { groupSections, getGroupQuestions } from '@/lib/category-groups'
 import { LLMAdapter } from '@/lib/llm-adapter'
 import AdviceAccordion from '@/components/AdviceAccordion'
 import DeleteTripButton from '@/components/DeleteTripButton'
+import EditTripButton from '@/components/EditTripButton'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -163,6 +164,8 @@ export default async function HomePage({
     .filter(Boolean)
     .join('  ·  ')
 
+  const isUpcoming = trip.endDate >= new Date().toISOString().split('T')[0]
+
   return (
     <>
       {/* Page header */}
@@ -171,7 +174,10 @@ export default async function HomePage({
           <IconArrowLeft />
         </Link>
         <span className="page-title" style={{ fontSize: 15 }}>Travel advice</span>
-        <DeleteTripButton tripId={tripId} destination={trip.destination} />
+        <div className="page-header-actions">
+          {isUpcoming && <EditTripButton tripId={tripId} />}
+          <DeleteTripButton tripId={tripId} destination={trip.destination} />
+        </div>
       </header>
 
       {/* Hero banner or plain meta */}
