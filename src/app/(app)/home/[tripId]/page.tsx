@@ -1,58 +1,73 @@
-// Home page for a specific trip — Requirements 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { db } from '@/db'
 import { trips } from '@/db/schema'
-import { eq, desc } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { AuthService } from '@/lib/auth'
 import { AdviceStore, deriveMonthRange } from '@/lib/advice-store'
 import type { AdviceRecord } from '@/lib/advice-store'
 import { derivebudgetRange } from '@/lib/validators'
 import { reconcileMissingAdviceAction } from '@/actions/advice'
-import { CATEGORIES, CONCISE_TOPICS, CONCISE_TOPIC_MAPPING, type ConciseTopic, getSubQuestions } from '@/lib/destinations'
-import HomeCardGrid, { type CardData } from '@/components/HomeCardGrid'
-import TripSelector from '@/components/TripSelector'
-
+import { CATEGORIES, CONCISE_TOPIC_MAPPING, type ConciseTopic, type Category, getSubQuestions } from '@/lib/destinations'
 import { findAnswer } from '@/lib/answer-lookup'
+import { fmtDateShort, fmtDate, nightCount } from '@/lib/format-date'
+import AdviceAccordion from '@/components/AdviceAccordion'
 
-/**
- * Derive a one-sentence summary from the full advice answer text.
- * Takes the first sentence (ending with . ! or ?) to avoid blocking the page
- * with 12 LLM calls. Falls back to the full text if no sentence boundary found.
- *
- * Requirements: 5.4, 5.6
- */
-function deriveSummary(fullText: string | undefined | null): string | null {
-  if (!fullText) return null
-  const match = fullText.match(/^[^.!?]*[.!?]/)
-  return match ? match[0].trim() : fullText
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface CategorySection {
+  category: string
+  conciseTip: string | null
+  conciseTopic: string | null
+  answers: Record<string, string> | null
+  subQuestions: string[]
 }
 
-/**
- * Build CardData array by mapping topics to their advice records.
- */
-function buildCards(adviceRecords: AdviceRecord[]): CardData[] {
-  // Index advice records by category for quick lookup
-  const byCategory = new Map<string, AdviceRecord>()
-  for (const record of adviceRecords) {
-    byCategory.set(record.category, record)
-  }
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-  return CONCISE_TOPICS.map((topic) => {
-    const mapping = CONCISE_TOPIC_MAPPING[topic]
-    const record = byCategory.get(mapping.category)
+const categoryToConciseTopic = new Map<string, ConciseTopic>(
+  (Object.entries(CONCISE_TOPIC_MAPPING) as [ConciseTopic, { category: Category; question: string }][])
+    .map(([topic, { category }]) => [category, topic])
+)
+
+function deriveSummary(text: string | undefined | null): string | null {
+  if (!text) return null
+  const match = text.match(/^[^.!?]*[.!?]/)
+  return match ? match[0].trim() : text
+}
+
+function buildSections(adviceRecords: AdviceRecord[]): CategorySection[] {
+  const byCategory = new Map<string, AdviceRecord>()
+  for (const record of adviceRecords) byCategory.set(record.category, record)
+
+  return CATEGORIES.map((category) => {
+    const record = byCategory.get(category)
     const answers = record?.answers as Record<string, string> | null | undefined
-    const fullAnswer = findAnswer(answers, mapping.question) ?? null
+    const subQuestions = getSubQuestions(category)
+    const conciseTopic = categoryToConciseTopic.get(category) ?? null
+    const conciseQuestion = conciseTopic ? CONCISE_TOPIC_MAPPING[conciseTopic].question : null
+    const conciseFullAnswer = conciseQuestion ? findAnswer(answers ?? null, conciseQuestion) ?? null : null
 
     return {
-      topic,
-      summary: deriveSummary(fullAnswer),
-      category: mapping.category,
+      category,
+      conciseTip: deriveSummary(conciseFullAnswer),
+      conciseTopic,
       answers: answers ?? null,
+      subQuestions,
     }
   })
 }
+
+function IconArrowLeft() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M19 12H5M12 5l-7 7 7 7" />
+    </svg>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function HomePage({
   params,
@@ -61,99 +76,67 @@ export default async function HomePage({
 }) {
   const { tripId } = await params
 
-  // Get current user for trip list
   const cookieStore = await cookies()
   const token = cookieStore.get('session_token')?.value
   const user = token ? await AuthService.getSession(token) : null
 
-  // Fetch the trip record for the heading
   const [trip] = await db.select().from(trips).where(eq(trips.id, tripId)).limit(1)
+  if (!trip) notFound()
 
-  if (!trip) {
-    notFound()
-  }
-
-  // Fetch all user trips for the trip selector
-  const userTrips = user
-    ? await db
-        .select({ id: trips.id, destination: trips.destination, startDate: trips.startDate, endDate: trips.endDate })
-        .from(trips)
-        .where(eq(trips.userId, user.id))
-        .orderBy(desc(trips.createdAt))
-    : []
-
-  // Fetch all cached advice records for this trip
-  const adviceRecords = await AdviceStore.getForTrip(tripId)
-
-  // Only count categories that have sub-questions defined
+  // Fetch + reconcile advice
+  let adviceRecords = await AdviceStore.getForTrip(tripId)
   const categoriesWithQuestions = CATEGORIES.filter((c) => getSubQuestions(c).length > 0)
-  const hasMissingAdvice = adviceRecords.length < categoriesWithQuestions.length
 
-  // If missing, await reconciliation so answers are available on first render
-  if (hasMissingAdvice) {
+  if (adviceRecords.length < categoriesWithQuestions.length) {
     const { startMonth, endMonth } = deriveMonthRange(trip.startDate, trip.endDate)
-    const cacheKey = {
+    await reconcileMissingAdviceAction({
       destination: trip.destination.toLowerCase(),
       startMonth,
       endMonth,
       travellerType: trip.travelMode.toLowerCase(),
       budgetRange: derivebudgetRange(trip.budgetUsd),
-    }
-
-    await reconcileMissingAdviceAction(cacheKey)
+    })
+    adviceRecords = await AdviceStore.getForTrip(tripId)
   }
 
-  // Re-fetch after reconciliation to get latest data
-  const finalAdviceRecords = hasMissingAdvice
-    ? await AdviceStore.getForTrip(tripId)
-    : adviceRecords
+  const sections = buildSections(adviceRecords)
+  const isPartial = adviceRecords.length < categoriesWithQuestions.length
 
-  // Build card data from advice records
-  const cards = buildCards(finalAdviceRecords)
+  const nights = nightCount(trip.startDate, trip.endDate)
+  const dateRange = `${fmtDateShort(trip.startDate)} – ${fmtDate(trip.endDate)}`
+  const detailParts = [
+    dateRange,
+    nights > 0 ? `${nights} night${nights !== 1 ? 's' : ''}` : null,
+    trip.travelMode,
+    trip.travelStyle,
+    (trip as { transportMode?: string | null }).transportMode ?? null,
+  ].filter(Boolean).join('  ·  ')
 
   return (
-    <main className="p-4 max-w-4xl mx-auto">
-      {/* Trip selector for users with multiple trips */}
-      {userTrips.length > 1 && (
-        <TripSelector
-          trips={userTrips.map((t) => ({
-            id: t.id,
-            destination: t.destination,
-            startDate: t.startDate,
-            endDate: t.endDate,
-          }))}
-          currentTripId={tripId}
-        />
-      )}
+    <>
+      {/* Page header — back to Trips list */}
+      <header className="page-header">
+        <Link href="/destinations" className="page-header-btn" aria-label="Back to trips">
+          <IconArrowLeft />
+        </Link>
+        <span className="page-title" style={{ fontSize: 15 }}>Travel advice</span>
+        <div style={{ width: 36 }} />
+      </header>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">
-        {trip.destination} — Key Tips
-      </h1>
+      {/* Trip meta */}
+      <div className="trip-overview-meta">
+        <p className="trip-overview-destination">{trip.destination}</p>
+        <p className="trip-overview-detail">{detailParts}</p>
+      </div>
 
-      {finalAdviceRecords.length < categoriesWithQuestions.length && (
-        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          Some advice is still being generated. Refresh to check for updates.
+      {isPartial && (
+        <div className="advice-partial-banner">
+          Some advice is still being generated — refresh to check for updates.
         </div>
       )}
 
-      {/* Responsive grid of 12 Concise Cards — Req 5.1, 5.2 */}
-      <HomeCardGrid cards={cards} />
-
-      {/* Links — Req 5.7 and "Add new destination" */}
-      <nav className="mt-8 flex flex-col sm:flex-row gap-4">
-        <Link
-          href={`/home/${tripId}/comprehensive`}
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-center text-white font-medium hover:bg-blue-700 transition-colors"
-        >
-          View full advice
-        </Link>
-        <Link
-          href="/trip/new"
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-gray-300 px-4 py-2 text-center text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-        >
-          Add new destination
-        </Link>
-      </nav>
-    </main>
+      {/* Numbered category list with inline accordion expansion */}
+      <AdviceAccordion sections={sections} />
+    </>
   )
 }
