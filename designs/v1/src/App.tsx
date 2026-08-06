@@ -530,6 +530,17 @@ function IconEyeOff() {
   )
 }
 
+function IconTrash() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  )
+}
+
 function IconChevronRight() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -774,13 +785,17 @@ function DestinationsScreen({
   trips,
   onAddTrip,
   onOpenTrip,
+  onDeleteTrip,
 }: {
   trips: Trip[]
   onAddTrip: () => void
   onOpenTrip: (id: string) => void
+  onDeleteTrip: (id: string) => void
 }) {
   const upcoming = trips.filter(t => isUpcoming(t.endDate))
   const past = trips.filter(t => !isUpcoming(t.endDate))
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const pendingTrip = trips.find(t => t.id === pendingDeleteId)
 
   return (
     <>
@@ -807,7 +822,12 @@ function DestinationsScreen({
         ) : (
           <div className="trip-list">
             {upcoming.map(trip => (
-              <TripRow key={trip.id} trip={trip} onClick={() => onOpenTrip(trip.id)} />
+              <TripRow
+                key={trip.id}
+                trip={trip}
+                onClick={() => onOpenTrip(trip.id)}
+                onSwipeDelete={() => setPendingDeleteId(trip.id)}
+              />
             ))}
           </div>
         )}
@@ -817,7 +837,12 @@ function DestinationsScreen({
             <span className="section-label" style={{ marginTop: 24, display: 'block' }}>Past</span>
             <div className="trip-list">
               {past.map(trip => (
-                <TripRow key={trip.id} trip={trip} onClick={() => onOpenTrip(trip.id)} />
+                <TripRow
+                  key={trip.id}
+                  trip={trip}
+                  onClick={() => onOpenTrip(trip.id)}
+                  onSwipeDelete={() => setPendingDeleteId(trip.id)}
+                />
               ))}
             </div>
           </>
@@ -825,14 +850,59 @@ function DestinationsScreen({
 
         <div style={{ height: 32 }} />
       </div>
+
+      {pendingTrip && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="swipe-delete-title"
+          onClick={e => { if (e.target === e.currentTarget) setPendingDeleteId(null) }}
+        >
+          <div className="modal-panel">
+            <div className="modal-handle" aria-hidden="true" />
+            <h2 className="modal-title" id="swipe-delete-title">Delete trip?</h2>
+            <p className="modal-body">
+              <strong>{pendingTrip.destination}</strong> and all its travel advice will be permanently removed. This can't be undone.
+            </p>
+            <div className="modal-actions">
+              <button className="modal-cancel" onClick={() => setPendingDeleteId(null)}>
+                Cancel
+              </button>
+              <button
+                className="btn-primary"
+                style={{ flex: 1, background: '#C0392B' }}
+                onClick={() => {
+                  onDeleteTrip(pendingTrip.id)
+                  setPendingDeleteId(null)
+                }}
+              >
+                Delete trip
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
 
-function TripRow({ trip, onClick }: { trip: Trip; onClick: () => void }) {
+function TripRow({
+  trip,
+  onClick,
+  onSwipeDelete,
+}: {
+  trip: Trip
+  onClick: () => void
+  onSwipeDelete: () => void
+}) {
   const past = !isUpcoming(trip.endDate)
   const duration = getDuration(trip.startDate, trip.endDate)
   const relative = relativeTime(trip.startDate, trip.endDate)
+  const [dx, setDx] = useState(0)
+  const [dragging, setDragging] = useState(false)
+  const startX = useRef(0)
+  const THRESHOLD = 80
 
   const meta = [
     `${fmtDateShort(trip.startDate)} – ${fmtDate(trip.endDate)}`,
@@ -842,20 +912,44 @@ function TripRow({ trip, onClick }: { trip: Trip; onClick: () => void }) {
   ].filter(Boolean).join('  ·  ')
 
   return (
-    <button
-      className={`trip-row${past ? ' is-past' : ''}`}
-      onClick={onClick}
-      aria-label={`${trip.destination}, ${meta}`}
-    >
-      <div className="trip-row-top">
-        <span className="trip-row-destination">{trip.destination}</span>
-        <span className={`trip-row-time${!past ? ' is-soon' : ''}`}>{relative}</span>
+    <div className="trip-row-wrap">
+      <div className="trip-row-delete-bg" aria-hidden="true">
+        <IconTrash />
+        <span className="trip-row-delete-label">Delete</span>
       </div>
-      <p className="trip-row-meta">{meta}</p>
-      <span className="trip-row-chevron" aria-hidden="true">
-        <IconChevronRight />
-      </span>
-    </button>
+      <button
+        className={`trip-row${past ? ' is-past' : ''}`}
+        style={{
+          transform: `translateX(${Math.min(0, dx)}px)`,
+          transition: dragging ? 'none' : 'transform 0.24s ease',
+        }}
+        aria-label={`${trip.destination}, ${meta}`}
+        onClick={onClick}
+        onTouchStart={e => {
+          startX.current = e.touches[0].clientX
+          setDragging(true)
+        }}
+        onTouchMove={e => {
+          const delta = e.touches[0].clientX - startX.current
+          if (delta < 0) setDx(Math.max(-(THRESHOLD + 20), delta))
+        }}
+        onTouchEnd={() => {
+          const triggered = dx <= -THRESHOLD
+          setDx(0)
+          setDragging(false)
+          if (triggered) onSwipeDelete()
+        }}
+      >
+        <div className="trip-row-top">
+          <span className="trip-row-destination">{trip.destination}</span>
+          <span className={`trip-row-time${!past ? ' is-soon' : ''}`}>{relative}</span>
+        </div>
+        <p className="trip-row-meta">{meta}</p>
+        <span className="trip-row-chevron" aria-hidden="true">
+          <IconChevronRight />
+        </span>
+      </button>
+    </div>
   )
 }
 
@@ -930,14 +1024,17 @@ function IconCheck() {
 function TripOverviewScreen({
   trip,
   onBack,
+  onDelete,
   onOpenCategory,
 }: {
   trip: Trip
   onBack: () => void
+  onDelete: () => void
   onOpenCategory: (categoryId: string) => void
 }) {
   const groups = groupAdvice(getAdvice(trip.destination))
   const [visited, setVisited] = useState<Set<string>>(new Set())
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const duration = getDuration(trip.startDate, trip.endDate)
   const heroImg = DESTINATION_IMAGES[trip.destination]
 
@@ -960,8 +1057,45 @@ function TripOverviewScreen({
           <IconArrowLeft />
         </button>
         <span className="page-title" style={{ fontSize: 15 }}>Travel advice</span>
-        <div style={{ width: 36 }} />
+        <button
+          className="page-header-btn"
+          onClick={() => setShowDeleteConfirm(true)}
+          aria-label="Delete trip"
+          style={{ color: 'var(--muted)' }}
+        >
+          <IconTrash />
+        </button>
       </header>
+
+      {showDeleteConfirm && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-trip-title"
+          onClick={e => { if (e.target === e.currentTarget) setShowDeleteConfirm(false) }}
+        >
+          <div className="modal-panel">
+            <div className="modal-handle" aria-hidden="true" />
+            <h2 className="modal-title" id="delete-trip-title">Delete trip?</h2>
+            <p className="modal-body">
+              <strong>{trip.destination}</strong> and all its travel advice will be permanently removed. This can't be undone.
+            </p>
+            <div className="modal-actions">
+              <button className="modal-cancel" onClick={() => setShowDeleteConfirm(false)}>
+                Cancel
+              </button>
+              <button
+                className="btn-primary"
+                style={{ flex: 1, background: '#C0392B' }}
+                onClick={onDelete}
+              >
+                Delete trip
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="page-body">
         {heroImg ? (
@@ -1562,6 +1696,7 @@ export default function App() {
           trips={trips}
           onAddTrip={() => setScreen({ view: 'new-trip' })}
           onOpenTrip={id => setScreen({ view: 'trip-overview', tripId: id })}
+          onDeleteTrip={id => setTrips(prev => prev.filter(t => t.id !== id))}
         />
       )}
 
@@ -1579,6 +1714,10 @@ export default function App() {
           <TripOverviewScreen
             trip={trip}
             onBack={() => setScreen({ view: 'destinations' })}
+            onDelete={() => {
+              setTrips(prev => prev.filter(t => t.id !== trip.id))
+              setScreen({ view: 'destinations' })
+            }}
             onOpenCategory={catId => setScreen({ view: 'trip-category', tripId: trip.id, categoryId: catId })}
           />
         )

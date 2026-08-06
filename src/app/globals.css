@@ -1434,3 +1434,131 @@ textarea {
   max-width: 520px;
   margin: 0 auto;
 }
+
+/* ─── Swipe-to-delete row ─────────────────────────────────────── */
+
+.swipe-row-container {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Rows inside a swipe container need an opaque background so content
+   doesn't show through over the delete zone during swipe */
+.swipe-row-container .trip-row {
+  background: var(--bg);
+}
+
+.swipe-row-delete-zone {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #B91C1C;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  min-height: unset;
+}
+
+/* ─── Delete confirmation modal ───────────────────────────────── */
+
+.delete-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 19, 24, 0.36);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+}
+
+.delete-modal-panel {
+  background: var(--surface);
+  width: 100%;
+  max-width: 520px;
+  border-radius: 12px 12px 0 0;
+  padding: 28px 24px calc(28px + 64px + env(safe-area-inset-bottom, 0px));
+}
+
+.delete-modal-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-mid);
+  margin: 0 auto 24px;
+}
+
+.delete-modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  margin-bottom: 12px;
+  min-height: unset;
+}
+
+.delete-modal-body {
+  font-size: 13px;
+  color: var(--ink-secondary);
+  line-height: 1.65;
+  margin-bottom: 24px;
+  min-height: unset;
+}
+
+.delete-modal-body strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.delete-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.delete-modal-cancel {
+  height: 48px;
+  min-height: 48px;
+  padding: 0 18px;
+  background: transparent;
+  border: 1px solid var(--border-mid);
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.delete-modal-cancel:hover {
+  background: var(--row-hover);
+}
+
+.delete-modal-confirm {
+  flex: 1;
+  height: 48px;
+  min-height: 48px;
+  background: #DC2626;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.delete-modal-confirm:hover {
+  opacity: 0.85;
+}
+
+.delete-modal-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

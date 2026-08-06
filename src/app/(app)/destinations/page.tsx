@@ -5,7 +5,8 @@ import { AuthService } from '@/lib/auth'
 import { db } from '@/db'
 import { trips } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
-import { fmtDateShort, fmtDate, nightCount, relativeTime, isUpcoming } from '@/lib/format-date'
+import { fmtDateShort, fmtDate, nightCount, relativeTime } from '@/lib/format-date'
+import SwipeTripRow from '@/components/SwipeTripRow'
 
 function IconPlus() {
   return (
@@ -76,11 +77,11 @@ export default async function DestinationsPage() {
               ].filter(Boolean).join('  ·  ')
 
               return (
-                <Link
+                <SwipeTripRow
                   key={trip.id}
+                  tripId={trip.id}
+                  destination={trip.destination}
                   href={`/home/${trip.id}`}
-                  className="trip-row"
-                  aria-label={`${trip.destination}, ${meta}`}
                 >
                   <div className="trip-row-top">
                     <span className="trip-row-destination">{trip.destination}</span>
@@ -90,7 +91,7 @@ export default async function DestinationsPage() {
                   <span className="trip-row-chevron" aria-hidden="true">
                     <IconChevronRight />
                   </span>
-                </Link>
+                </SwipeTripRow>
               )
             })}
           </div>
@@ -111,11 +112,12 @@ export default async function DestinationsPage() {
                 ].filter(Boolean).join('  ·  ')
 
                 return (
-                  <Link
+                  <SwipeTripRow
                     key={trip.id}
+                    tripId={trip.id}
+                    destination={trip.destination}
                     href={`/home/${trip.id}`}
-                    className="trip-row is-past"
-                    aria-label={`${trip.destination}, ${meta}`}
+                    isPast
                   >
                     <div className="trip-row-top">
                       <span className="trip-row-destination">{trip.destination}</span>
@@ -125,7 +127,7 @@ export default async function DestinationsPage() {
                     <span className="trip-row-chevron" aria-hidden="true">
                       <IconChevronRight />
                     </span>
-                  </Link>
+                  </SwipeTripRow>
                 )
               })}
             </div>

@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { db } from '@/db'
@@ -16,6 +15,7 @@ import { fmtDateShort, fmtDate, nightCount } from '@/lib/format-date'
 import { groupSections, getGroupQuestions } from '@/lib/category-groups'
 import { LLMAdapter } from '@/lib/llm-adapter'
 import AdviceAccordion from '@/components/AdviceAccordion'
+import DeleteTripButton from '@/components/DeleteTripButton'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -171,7 +171,7 @@ export default async function HomePage({
           <IconArrowLeft />
         </Link>
         <span className="page-title" style={{ fontSize: 15 }}>Travel advice</span>
-        <div style={{ width: 36 }} />
+        <DeleteTripButton tripId={tripId} destination={trip.destination} />
       </header>
 
       {/* Hero banner or plain meta */}
