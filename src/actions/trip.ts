@@ -130,9 +130,17 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
     }
   }
 
-  // Travel style validation
-  if (!travelStyle || !VALID_TRAVEL_STYLES.includes(travelStyle as typeof VALID_TRAVEL_STYLES[number])) {
+  // Travel style validation (comma-separated, at least one must be valid)
+  if (!travelStyle) {
     errors.travelStyle = 'Please select a valid travel style.'
+  } else {
+    const styles = travelStyle.split(',').map((s) => s.trim()).filter(Boolean)
+    const allValid = styles.length > 0 && styles.every((s) =>
+      VALID_TRAVEL_STYLES.includes(s as typeof VALID_TRAVEL_STYLES[number])
+    )
+    if (!allValid) {
+      errors.travelStyle = 'Please select a valid travel style.'
+    }
   }
 
   // Activity preferences validation

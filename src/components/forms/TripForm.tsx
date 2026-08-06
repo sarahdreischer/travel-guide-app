@@ -71,13 +71,13 @@ interface WizardData {
   party: string
   transportMode: string
   budget: string
-  travelStyle: string
+  travelStyle: string[]
   activities: string[]
 }
 
 const EMPTY: WizardData = {
   destination: '', startDate: '', endDate: '', party: '',
-  transportMode: '', budget: '', travelStyle: '', activities: [],
+  transportMode: '', budget: '', travelStyle: [], activities: [],
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -223,9 +223,14 @@ function Step2({ form, setForm }: {
         <label className="field-label">What kind of traveller are you? <span className="field-label-note">— select all that apply</span></label>
         <div className="chip-group" role="group" aria-label="Travel style">
           {TRAVEL_STYLES.map((s) => (
-            <button key={s} type="button" className={`chip ${form.travelStyle === s ? 'chip-on' : 'chip-idle'}`}
-              aria-pressed={form.travelStyle === s}
-              onClick={() => setForm((f) => ({ ...f, travelStyle: s }))}>{s}</button>
+            <button key={s} type="button" className={`chip ${form.travelStyle.includes(s) ? 'chip-on' : 'chip-idle'}`}
+              aria-pressed={form.travelStyle.includes(s)}
+              onClick={() => setForm((f) => ({
+                ...f,
+                travelStyle: f.travelStyle.includes(s)
+                  ? f.travelStyle.filter((x) => x !== s)
+                  : [...f.travelStyle, s],
+              }))}>{s}</button>
           ))}
         </div>
       </div>
@@ -288,7 +293,7 @@ function Step3({ form, setForm, destImg }: {
             {form.party && <div className="summary-row"><span className="summary-key">Party</span><span className="summary-val">{form.party}</span></div>}
             {form.transportMode && <div className="summary-row"><span className="summary-key">Mode</span><span className="summary-val" style={{ textTransform: 'capitalize' }}>{form.transportMode}</span></div>}
             {form.budget && <div className="summary-row"><span className="summary-key">Budget</span><span className="summary-val">${parseInt(form.budget).toLocaleString()} USD</span></div>}
-            {form.travelStyle && <div className="summary-row"><span className="summary-key">Style</span><span className="summary-val">{form.travelStyle}</span></div>}
+            {form.travelStyle.length > 0 && <div className="summary-row"><span className="summary-key">Style</span><span className="summary-val">{form.travelStyle.join(', ')}</span></div>}
           </div>
         </div>
       )}
@@ -309,7 +314,7 @@ export default function TripForm({ destinationImages = {} }: TripFormProps) {
   const [isPending, startTransition] = useTransition()
 
   const canAdvance1 = form.destination !== '' && form.party !== '' && form.startDate !== '' && form.endDate !== '' && new Date(form.endDate) > new Date(form.startDate)
-  const canAdvance2 = form.transportMode !== '' && form.travelStyle !== ''
+  const canAdvance2 = form.transportMode !== '' && form.travelStyle.length > 0
   const canSubmit = form.activities.length > 0
   const canContinue = step === 1 ? canAdvance1 : step === 2 ? canAdvance2 : canSubmit
 
@@ -323,7 +328,7 @@ export default function TripForm({ destinationImages = {} }: TripFormProps) {
     fd.set('travelMode', form.party)
     fd.set('transportMode', form.transportMode)
     fd.set('budget', form.budget || '1000')
-    fd.set('travelStyle', form.travelStyle)
+    fd.set('travelStyle', form.travelStyle.join(', '))
     for (const a of form.activities) fd.append('activityPreferences', a)
 
     startTransition(async () => {
