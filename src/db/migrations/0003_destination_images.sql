@@ -1,0 +1,51 @@
+CREATE TABLE "destination_images" (
+  "destination" text PRIMARY KEY NOT NULL,
+  "image_url" text NOT NULL,
+  "attribution" text
+);
+
+-- Seed one curated Unsplash photo per destination
+-- All photos are free to use under the Unsplash licence (https://unsplash.com/license)
+INSERT INTO "destination_images" ("destination", "image_url", "attribution") VALUES
+  ('Argentina',         'https://images.unsplash.com/photo-1589909202802-8f4aadce1849?w=1080&q=80&fit=crop', 'Agustin Lautaro'),
+  ('Australia',         'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=1080&q=80&fit=crop', 'Dan Freeman'),
+  ('Bali',              'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1080&q=80&fit=crop', 'Artem Beliaikin'),
+  ('Indonesia',         'https://images.unsplash.com/photo-1555400038-63f5ba517a47?w=1080&q=80&fit=crop', 'Raychan'),
+  ('Barcelona, Spain',  'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=1080&q=80&fit=crop', 'Toa Heftiba'),
+  ('Cambodia',          'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=1080&q=80&fit=crop', 'Ioana Cristiana'),
+  ('Canada',            'https://images.unsplash.com/photo-1517935706615-2717063c2225?w=1080&q=80&fit=crop', 'Luca Bravo'),
+  ('Cap Ferret, France','https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&q=80&fit=crop', 'Sean Oulashin'),
+  ('Chile',             'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1080&q=80&fit=crop', 'Henrique Setim'),
+  ('Colombia',          'https://images.unsplash.com/photo-1553522991-2d1b1fc3d62b?w=1080&q=80&fit=crop', 'Harley Martinez'),
+  ('Costa Rica',        'https://images.unsplash.com/photo-1580259679654-9276b39fd2d5?w=1080&q=80&fit=crop', 'Fabian Schneider'),
+  ('Croatia',           'https://images.unsplash.com/photo-1555990793-da11153b6e2c?w=1080&q=80&fit=crop', 'John Mark Arnold'),
+  ('Cuba',              'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=1080&q=80&fit=crop', 'Andrew Preble'),
+  ('Egypt',             'https://images.unsplash.com/photo-1539768942893-daf53e448371?w=1080&q=80&fit=crop', 'Claudia Altamimi'),
+  ('France',            'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=1080&q=80&fit=crop', 'Léonard Cotte'),
+  ('Georgia',           'https://images.unsplash.com/photo-1565008576549-57569a49371d?w=1080&q=80&fit=crop', 'Giorgi Iremadze'),
+  ('Greece',            'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=1080&q=80&fit=crop', 'Oleg Chursin'),
+  ('Iceland',           'https://images.unsplash.com/photo-1476610182048-b716b8518aae?w=1080&q=80&fit=crop', 'Sebastian Müller'),
+  ('India',             'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=1080&q=80&fit=crop', 'Sylwia Bartyzel'),
+  ('Italy',             'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=1080&q=80&fit=crop', 'Dario Veronesi'),
+  ('Japan',             'https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=1080&q=80&fit=crop', 'Redd'),
+  ('Jordan',            'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1080&q=80&fit=crop', 'Calvin Hanson'),
+  ('Kenya',             'https://images.unsplash.com/photo-1516426122078-c23e76319801?w=1080&q=80&fit=crop', 'sutirta budiman'),
+  ('Laos',              'https://images.unsplash.com/photo-1528181304800-259b08848526?w=1080&q=80&fit=crop', 'Thomas Jungers'),
+  ('Malaysia',          'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?w=1080&q=80&fit=crop', 'Paulo Evangelista'),
+  ('Mexico',            'https://images.unsplash.com/photo-1518105779142-d975f22f1b0a?w=1080&q=80&fit=crop', 'Jorge Aguilar'),
+  ('Morocco',           'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=1080&q=80&fit=crop', 'Oussama Bergaoui'),
+  ('Nepal',             'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=1080&q=80&fit=crop', 'Raimond Klavins'),
+  ('New Zealand',       'https://images.unsplash.com/photo-1507699622108-4be3abd695ad?w=1080&q=80&fit=crop', 'Tim Marshall'),
+  ('Norway',            'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=1080&q=80&fit=crop', 'Thomas Hafeneth'),
+  ('Peru',              'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=1080&q=80&fit=crop', 'Willian Justen de Vasconcellos'),
+  ('Philippines',       'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=1080&q=80&fit=crop', 'Cris Tagupa'),
+  ('Portugal',          'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=1080&q=80&fit=crop', 'Julien Pianetti'),
+  ('Scotland',          'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1080&q=80&fit=crop', 'Jörg Angeli'),
+  ('South Africa',      'https://images.unsplash.com/photo-1580060839134-75a5edca2e99?w=1080&q=80&fit=crop', 'Tobias Reich'),
+  ('Spain',             'https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=1080&q=80&fit=crop', 'Alex Ovs'),
+  ('Sri Lanka',         'https://images.unsplash.com/photo-1586861635167-e5223aadc9fe?w=1080&q=80&fit=crop', 'Geoff Brooks'),
+  ('Switzerland',       'https://images.unsplash.com/photo-1527668752968-14dc70a27c95?w=1080&q=80&fit=crop', 'Samuel Ferrara'),
+  ('Thailand',          'https://images.unsplash.com/photo-1528181304800-259b08848526?w=1080&q=80&fit=crop', 'Thomas Jungers'),
+  ('Turkey',            'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=1080&q=80&fit=crop', 'Engin Akyurt'),
+  ('Vietnam',           'https://images.unsplash.com/photo-1528127269322-539801943592?w=1080&q=80&fit=crop', 'Ammie Ngo')
+ON CONFLICT (destination) DO NOTHING;

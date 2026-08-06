@@ -98,6 +98,14 @@ export const adviceCache = pgTable(
   }),
 )
 
+// ─── destination_images ───────────────────────────────────────────────────────
+
+export const destinationImages = pgTable('destination_images', {
+  destination: text('destination').primaryKey(), // matches DESTINATIONS values exactly
+  imageUrl: text('image_url').notNull(),
+  attribution: text('attribution'), // photographer name / Unsplash credit
+})
+
 // ─── votes ────────────────────────────────────────────────────────────────────
 
 export const votes = pgTable(
@@ -139,3 +147,6 @@ export type NewAdviceCache = typeof adviceCache.$inferInsert
 
 export type Vote = typeof votes.$inferSelect
 export type NewVote = typeof votes.$inferInsert
+
+export type DestinationImage = typeof destinationImages.$inferSelect
+export type NewDestinationImage = typeof destinationImages.$inferInsert

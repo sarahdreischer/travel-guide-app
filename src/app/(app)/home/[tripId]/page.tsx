@@ -1,8 +1,9 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { db } from '@/db'
-import { trips } from '@/db/schema'
+import { trips, destinationImages } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { AuthService } from '@/lib/auth'
 import { AdviceStore, deriveMonthRange } from '@/lib/advice-store'
@@ -12,6 +13,7 @@ import { reconcileMissingAdviceAction } from '@/actions/advice'
 import { CATEGORIES, CONCISE_TOPIC_MAPPING, type ConciseTopic, type Category, getSubQuestions } from '@/lib/destinations'
 import { findAnswer } from '@/lib/answer-lookup'
 import { fmtDateShort, fmtDate, nightCount } from '@/lib/format-date'
+import { groupSections } from '@/lib/category-groups'
 import AdviceAccordion from '@/components/AdviceAccordion'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -83,6 +85,14 @@ export default async function HomePage({
   const [trip] = await db.select().from(trips).where(eq(trips.id, tripId)).limit(1)
   if (!trip) notFound()
 
+  // Fetch hero image (may be null for destinations without a stored image)
+  const [heroRow] = await db
+    .select()
+    .from(destinationImages)
+    .where(eq(destinationImages.destination, trip.destination))
+    .limit(1)
+  const heroUrl = heroRow?.imageUrl ?? null
+
   // Fetch + reconcile advice
   let adviceRecords = await AdviceStore.getForTrip(tripId)
   const categoriesWithQuestions = CATEGORIES.filter((c) => getSubQuestions(c).length > 0)
@@ -99,23 +109,25 @@ export default async function HomePage({
     adviceRecords = await AdviceStore.getForTrip(tripId)
   }
 
-  const sections = buildSections(adviceRecords)
   const isPartial = adviceRecords.length < categoriesWithQuestions.length
+  const sections = buildSections(adviceRecords)
+  const groups = groupSections(sections)
 
   const nights = nightCount(trip.startDate, trip.endDate)
-  const dateRange = `${fmtDateShort(trip.startDate)} – ${fmtDate(trip.endDate)}`
-  const detailParts = [
-    dateRange,
+  const detail = [
+    `${fmtDateShort(trip.startDate)} – ${fmtDate(trip.endDate)}`,
     nights > 0 ? `${nights} night${nights !== 1 ? 's' : ''}` : null,
     trip.travelMode,
     trip.travelStyle,
     (trip as { transportMode?: string | null }).transportMode ?? null,
-  ].filter(Boolean).join('  ·  ')
+  ]
+    .filter(Boolean)
+    .join('  ·  ')
 
   return (
     <>
-      {/* Page header — back to Trips list */}
-      <header className="page-header">
+      {/* Page header */}
+      <header className="page-header" style={heroUrl ? { borderBottom: 'none' } : undefined}>
         <Link href="/destinations" className="page-header-btn" aria-label="Back to trips">
           <IconArrowLeft />
         </Link>
@@ -123,11 +135,27 @@ export default async function HomePage({
         <div style={{ width: 36 }} />
       </header>
 
-      {/* Trip meta */}
-      <div className="trip-overview-meta">
-        <p className="trip-overview-destination">{trip.destination}</p>
-        <p className="trip-overview-detail">{detailParts}</p>
-      </div>
+      {/* Hero banner or plain meta */}
+      {heroUrl ? (
+        <div className="trip-hero">
+          <img
+            className="trip-hero-img"
+            src={heroUrl}
+            alt={trip.destination}
+            loading="eager"
+          />
+          <div className="trip-hero-scrim" aria-hidden="true" />
+          <div className="trip-hero-meta">
+            <p className="trip-hero-destination">{trip.destination}</p>
+            <p className="trip-hero-detail">{detail}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="trip-overview-meta">
+          <p className="trip-overview-destination">{trip.destination}</p>
+          <p className="trip-overview-detail">{detail}</p>
+        </div>
+      )}
 
       {isPartial && (
         <div className="advice-partial-banner">
@@ -135,8 +163,8 @@ export default async function HomePage({
         </div>
       )}
 
-      {/* Numbered category list with inline accordion expansion */}
-      <AdviceAccordion sections={sections} />
+      {/* 8 grouped rows replacing the old 17 flat rows */}
+      <AdviceAccordion groups={groups} />
     </>
   )
 }

@@ -972,7 +972,99 @@ textarea {
   opacity: 0.84;
 }
 
-/* ─── Trip overview meta ──────────────────────────────────────── */
+/* ─── Trip hero banner ────────────────────────────────────────── */
+
+.trip-hero {
+  position: relative;
+  height: 210px;
+  overflow: hidden;
+  flex-shrink: 0;
+  max-width: 520px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.trip-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.trip-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(8, 14, 20, 0.75) 0%,
+    rgba(8, 14, 20, 0.18) 55%,
+    transparent 100%
+  );
+}
+
+.trip-hero-meta {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px 20px 18px;
+}
+
+.trip-hero-destination {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 5px;
+  min-height: unset;
+}
+
+.trip-hero-detail {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.68);
+  min-height: unset;
+}
+
+/* ─── Category row icon + name row ───────────────────────────── */
+
+.category-row-name-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 3px;
+}
+
+.category-row-icon {
+  color: var(--accent);
+  opacity: 0.55;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: unset;
+}
+
+/* ─── Category lead callout ──────────────────────────────────── */
+
+.category-lead-callout {
+  border-left: 2.5px solid var(--accent);
+  padding: 2px 0 2px 14px;
+}
+
+/* ─── Category sub-label (multi-source groups) ───────────────── */
+
+.category-sub-label {
+  padding: 14px 20px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  min-height: unset;
+}
+
+/* ─── Trip overview meta (fallback when no hero image) ───────── */
 
 .trip-overview-meta {
   padding: 18px 20px 16px;
@@ -1090,7 +1182,7 @@ textarea {
 }
 
 .category-lead {
-  padding: 22px 20px 20px;
+  padding: 22px 20px 22px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1100,16 +1192,16 @@ textarea {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--accent);
-  margin-bottom: 10px;
+  margin-bottom: 14px;
   min-height: unset;
 }
 
 .category-lead-tip {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--ink);
-  line-height: 1.45;
-  letter-spacing: -0.015em;
+  line-height: 1.5;
+  letter-spacing: -0.012em;
   min-height: unset;
 }
 
