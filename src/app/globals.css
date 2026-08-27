@@ -952,6 +952,32 @@ textarea {
   min-height: unset;
 }
 
+.page-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.page-brand-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.page-brand-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  min-height: unset;
+}
+
 .page-header-btn {
   width: 36px;
   height: 36px;
@@ -2213,6 +2239,11 @@ textarea {
   .saved-tips-entry,
   .trip-hero {
     max-width: 100%;
+  }
+
+  /* Hide page brand on desktop — sidebar already shows it */
+  .page-brand {
+    display: none;
   }
 
   .wizard-shell {

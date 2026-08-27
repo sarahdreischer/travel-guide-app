@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { logoutAction } from '@/actions/auth'
 import { updateProfileAction, deleteAccountAction } from '@/actions/profile'
 import type { UpdateProfileFieldErrors } from '@/actions/profile'
@@ -73,7 +74,10 @@ export default function ProfileContent({ user }: ProfileContentProps) {
   return (
     <>
       <header className="page-header">
-        <h1 className="page-title">Profile</h1>
+        <div className="page-brand">
+          <Image src="/app-icon.png" alt="" width={22} height={22} className="page-brand-icon" aria-hidden="true" />
+          <span className="page-brand-label">Travel Guide</span>
+        </div>
         <div style={{ width: 36 }} />
       </header>
 

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { AuthService } from '@/lib/auth'
@@ -46,7 +47,11 @@ export default async function DestinationsPage() {
   return (
     <>
       <header className="page-header">
-        <h1 className="page-title">Trips</h1>
+        <div style={{ width: 30 }} />
+        <div className="page-brand">
+          <Image src="/app-icon.png" alt="" width={22} height={22} className="page-brand-icon" aria-hidden="true" />
+          <span className="page-brand-label">Travel Guide</span>
+        </div>
         <Link href="/trip/new" className="page-header-add" aria-label="Add a trip">
           <IconPlus />
         </Link>
