@@ -44,9 +44,12 @@ export default function AppFooter() {
       }
     }
 
-    // Check after a short delay to ensure layout is settled
+    // Check after two animation frames to ensure initial paint is complete
+    // (prevents flicker when visibility transitions from hidden to visible)
     const raf = requestAnimationFrame(() => {
-      check()
+      requestAnimationFrame(() => {
+        check()
+      })
     })
 
     scrollContainer.addEventListener('scroll', check, { passive: true })
