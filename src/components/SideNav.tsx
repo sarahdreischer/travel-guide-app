@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 function IconGlobe() {
@@ -57,7 +58,15 @@ export default function SideNav() {
   return (
     <nav className={`side-nav${collapsed ? ' side-nav-collapsed' : ''}`} aria-label="Main navigation">
       <div className="side-nav-top">
-        {!collapsed && <div className="side-nav-brand">Travel Guide</div>}
+        {!collapsed && (
+          <div className="side-nav-brand">
+            <Image src="/app-icon.png" alt="" width={20} height={20} className="side-nav-brand-icon" aria-hidden="true" />
+            Travel Guide
+          </div>
+        )}
+        {collapsed && (
+          <Image src="/app-icon.png" alt="Travel Guide" width={20} height={20} className="side-nav-brand-icon" />
+        )}
         <button
           className="side-nav-toggle"
           onClick={() => setCollapsed((c) => !c)}

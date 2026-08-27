@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useCallback } from 'react'
 import { useFormStatus } from 'react-dom'
+import Image from 'next/image'
 import { loginAction, LoginActionResult } from '@/actions/auth'
 import AppFooter from '@/components/AppFooter'
 
@@ -44,7 +45,10 @@ export default function LoginForm() {
   return (
     <div className="auth-page">
     <div className="auth-shell">
-      <p className="auth-wordmark">Travel Guide</p>
+      <p className="auth-wordmark">
+        <Image src="/app-icon.png" alt="" width={22} height={22} className="auth-wordmark-icon" aria-hidden="true" />
+        Travel Guide
+      </p>
 
       <div className="auth-heading-block">
         <h1 className="auth-heading">Welcome back</h1>

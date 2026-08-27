@@ -1849,6 +1849,17 @@ textarea {
   color: var(--accent);
   margin-bottom: 28px;
   min-height: unset;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-wordmark-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .auth-heading-block {
@@ -2065,6 +2076,17 @@ textarea {
     flex: 1;
     min-width: 0;
     min-height: unset;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .side-nav-brand-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    object-fit: contain;
+    flex-shrink: 0;
   }
 
   .side-nav-toggle {
@@ -2138,9 +2160,12 @@ textarea {
   }
 
   .side-nav-collapsed .side-nav-top {
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
     padding-left: 0;
     padding-right: 0;
+    gap: 10px;
   }
 
   /* Trip hero taller on desktop */

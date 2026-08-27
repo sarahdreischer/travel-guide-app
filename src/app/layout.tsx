@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   title: "Travel Guide",
   description:
     "Real-world, practical travel advice for curated destinations — powered by AI.",
+  icons: {
+    icon: "/app-icon.png",
+    apple: "/app-icon.png",
+  },
 };
 
 export default function RootLayout({
