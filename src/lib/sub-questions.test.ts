@@ -47,8 +47,9 @@ describe('getSubQuestions', () => {
 
   it('returns the correct sub-questions for Accommodation', () => {
     expect(getSubQuestions('Accommodation')).toEqual([
-    'Which accommodations should I book according to my budget?',
+      'Which accommodations should I book according to my budget?',
       'Which area should I stay in according to my budget?',
+      'What are the top 3 accommodations to book according to my budget?',
       'Is accommodation likely to sell out?',
     ])
   })

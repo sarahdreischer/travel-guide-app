@@ -97,6 +97,7 @@ export const CATEGORY_CONFIG = {
   'Accommodation': [
     'Which accommodations should I book according to my budget?',
     'Which area should I stay in according to my budget?',
+    'What are the top 3 accommodations to book according to my budget?',
     'Is accommodation likely to sell out?',
   ],
   'Budget & Money': [
