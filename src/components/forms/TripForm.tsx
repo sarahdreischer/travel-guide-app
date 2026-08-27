@@ -162,18 +162,6 @@ function Step1({ form, setForm, destImg }: {
         </div>
       </div>
 
-      {/* Destination image reveal */}
-      {form.destination && destImg && (
-        <div className="dest-reveal" aria-hidden="true">
-          <img className="dest-reveal-img" src={destImg} alt="" />
-          <div className="dest-reveal-scrim" />
-          <div className="dest-reveal-meta">
-            <p className="dest-reveal-name">{form.destination}</p>
-            <p className="dest-reveal-ready">Ready when you are</p>
-          </div>
-        </div>
-      )}
-
       <div className="field-block">
         <label className="field-label">Who&apos;s coming with you?</label>
         <div className="chip-group" role="group" aria-label="Travel party">
@@ -195,6 +183,18 @@ function Step1({ form, setForm, destImg }: {
         </div>
         {duration && <p className="duration-tag" aria-live="polite">{duration}</p>}
       </div>
+
+      {/* Destination image reveal */}
+      {form.destination && destImg && (
+        <div className="dest-reveal" aria-hidden="true">
+          <img className="dest-reveal-img" src={destImg} alt="" />
+          <div className="dest-reveal-scrim" />
+          <div className="dest-reveal-meta">
+            <p className="dest-reveal-name">{form.destination}</p>
+            <p className="dest-reveal-ready">Ready when you are</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -495,7 +495,7 @@ export default function TripForm({ destinationImages = {}, editTripId, initialDa
   const canSubmit = form.activities.length > 0
   const canContinue = step === 1 ? canAdvance1 : step === 2 ? canAdvance2 : canSubmit
 
-  const destImg = destinationImages[form.destination] || null
+  const destImg = destinationImages[form.destination] || (form.destination ? FALLBACK_IMAGE : null)
 
   function handleSubmit() {
     const fd = new FormData()

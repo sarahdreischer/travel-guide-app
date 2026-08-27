@@ -95,7 +95,8 @@ export const CATEGORY_CONFIG = {
     'Which transportation companies other than local taxis are widely used?',
   ],
   'Accommodation': [
-    'Which area should I stay in?',
+    'Which accommodations should I book according to my budget?',
+    'Which area should I stay in according to my budget?',
     'Is accommodation likely to sell out?',
   ],
   'Budget & Money': [
