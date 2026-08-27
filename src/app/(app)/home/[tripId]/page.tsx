@@ -244,23 +244,8 @@ export default async function HomePage({
         </div>
       )}
 
-      {/* Saved tips entry — shown when user has bookmarked tips */}
-      {savedCount > 0 && (
-        <div className="saved-tips-entry">
-          <Link href={`/home/${tripId}/saved`} className="saved-tips-link">
-            <span className="saved-tips-icon">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-              </svg>
-            </span>
-            <span className="saved-tips-label">Saved tips</span>
-            <span className="saved-tips-count">{savedCount}</span>
-          </Link>
-        </div>
-      )}
-
-      {/* 8 grouped rows */}
-      <AdviceAccordion groups={groups} tripId={tripId} savedKeys={savedKeys} />
+      {/* 8 grouped rows + saved tips banner (managed by accordion) */}
+      <AdviceAccordion groups={groups} tripId={tripId} savedKeys={savedKeys} initialSavedCount={savedCount} />
 
       <AppFooter />
     </>

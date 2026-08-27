@@ -11,6 +11,8 @@ interface AdviceAccordionProps {
   tripId: string
   /** Set of "category|question" keys that are currently saved */
   savedKeys: Set<string>
+  /** Initial count of saved tips (for showing the banner) */
+  initialSavedCount: number
 }
 
 function makeSavedKey(category: string, question: string) {
@@ -58,8 +60,8 @@ const GROUP_ICONS: Record<string, React.ReactElement> = {
 
 // ─── Bookmark button ──────────────────────────────────────────────────────────
 
-function BookmarkBtn({ tripId, category, question, answer, initialSaved }: {
-  tripId: string; category: string; question: string; answer: string; initialSaved: boolean
+function BookmarkBtn({ tripId, category, question, answer, initialSaved, onSavedChange }: {
+  tripId: string; category: string; question: string; answer: string; initialSaved: boolean; onSavedChange?: (key: string, saved: boolean) => void
 }) {
   const [saved, setSaved] = useState(initialSaved)
   const [pending, startTransition] = useTransition()
@@ -69,6 +71,7 @@ function BookmarkBtn({ tripId, category, question, answer, initialSaved }: {
     startTransition(async () => {
       const result = await toggleSavedTipAction({ tripId, category, question, answer })
       setSaved(result.saved)
+      onSavedChange?.(makeSavedKey(category, question), result.saved)
     })
   }
 
@@ -88,8 +91,8 @@ function BookmarkBtn({ tripId, category, question, answer, initialSaved }: {
 
 // ─── Group row ────────────────────────────────────────────────────────────────
 
-function GroupRow({ group, index, tripId, savedKeys }: {
-  group: GroupSection; index: number; tripId: string; savedKeys: Set<string>
+function GroupRow({ group, index, tripId, savedKeys, onSavedChange }: {
+  group: GroupSection; index: number; tripId: string; savedKeys: Set<string>; onSavedChange: (key: string, saved: boolean) => void
 }) {
   const [open, setOpen] = useState(false)
   // -1 means "All" tab; 0+ means individual source tabs
@@ -173,6 +176,7 @@ function GroupRow({ group, index, tripId, savedKeys }: {
                             question={question}
                             answer={answer}
                             initialSaved={savedKeys.has(key)}
+                            onSavedChange={onSavedChange}
                           />
                         )}
                       </div>
@@ -193,12 +197,39 @@ function GroupRow({ group, index, tripId, savedKeys }: {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function AdviceAccordion({ groups, tripId, savedKeys }: AdviceAccordionProps) {
+export default function AdviceAccordion({ groups, tripId, savedKeys: initialSavedKeys, initialSavedCount }: AdviceAccordionProps) {
+  const [savedKeys, setSavedKeys] = useState<Set<string>>(initialSavedKeys)
+  const savedCount = savedKeys.size || initialSavedCount
+
+  function handleSavedChange(key: string, saved: boolean) {
+    setSavedKeys((prev) => {
+      const next = new Set(prev)
+      if (saved) next.add(key)
+      else next.delete(key)
+      return next
+    })
+  }
+
   return (
-    <div className="category-list">
-      {groups.map((group, i) => (
-        <GroupRow key={group.id} group={group} index={i} tripId={tripId} savedKeys={savedKeys} />
-      ))}
-    </div>
+    <>
+      {savedCount > 0 && (
+        <div className="saved-tips-entry">
+          <a href={`/home/${tripId}/saved`} className="saved-tips-link">
+            <span className="saved-tips-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+              </svg>
+            </span>
+            <span className="saved-tips-label">Saved tips</span>
+            <span className="saved-tips-count">{savedCount}</span>
+          </a>
+        </div>
+      )}
+      <div className="category-list">
+        {groups.map((group, i) => (
+          <GroupRow key={group.id} group={group} index={i} tripId={tripId} savedKeys={savedKeys} onSavedChange={handleSavedChange} />
+        ))}
+      </div>
+    </>
   )
 }

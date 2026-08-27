@@ -40,6 +40,7 @@ export const DESTINATIONS = [
   'Morocco',
   'Nepal',
   'New Zealand',
+  'Norderney, Germany',
   'Norway',
   'Peru',
   'Philippines',
