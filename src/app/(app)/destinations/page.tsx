@@ -7,6 +7,7 @@ import { trips } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { fmtDateShort, fmtDate, nightCount, relativeTime } from '@/lib/format-date'
 import SwipeTripRow from '@/components/SwipeTripRow'
+import AppFooter from '@/components/AppFooter'
 
 function IconPlus() {
   return (
@@ -135,6 +136,7 @@ export default async function DestinationsPage() {
         )}
 
         <div style={{ height: 32 }} />
+        <AppFooter />
       </div>
     </>
   )

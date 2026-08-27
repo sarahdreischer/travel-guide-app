@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { logoutAction } from '@/actions/auth'
 import { updateProfileAction, deleteAccountAction } from '@/actions/profile'
 import type { UpdateProfileFieldErrors } from '@/actions/profile'
+import AppFooter from '@/components/AppFooter'
 
 interface ProfileContentProps {
   user: {
@@ -164,6 +165,7 @@ export default function ProfileContent({ user }: ProfileContentProps) {
             Delete account
           </button>
         </div>
+        <AppFooter />
       </div>
 
       {/* Delete confirmation modal */}

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import CookieBanner from '@/components/CookieBanner'
 
 // Start scheduled reconciliation (server-side only, runs periodically)
 import '@/lib/scheduled-reconciliation'
@@ -17,7 +18,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="overflow-x-hidden">
-      <body className="w-full max-w-full">{children}</body>
+      <body className="w-full max-w-full">
+        {children}
+        <CookieBanner />
+      </body>
     </html>
   );
 }

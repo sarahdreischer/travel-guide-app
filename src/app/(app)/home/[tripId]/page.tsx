@@ -17,6 +17,7 @@ import { LLMAdapter } from '@/lib/llm-adapter'
 import AdviceAccordion from '@/components/AdviceAccordion'
 import DeleteTripButton from '@/components/DeleteTripButton'
 import EditTripButton from '@/components/EditTripButton'
+import AppFooter from '@/components/AppFooter'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -235,6 +236,8 @@ export default async function HomePage({
 
       {/* 8 grouped rows */}
       <AdviceAccordion groups={groups} tripId={tripId} savedKeys={savedKeys} />
+
+      <AppFooter />
     </>
   )
 }

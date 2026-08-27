@@ -6,6 +6,7 @@ import { trips, savedTips } from '@/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { AuthService } from '@/lib/auth'
 import SavedTipsList from '@/components/SavedTipsList'
+import AppFooter from '@/components/AppFooter'
 
 function IconArrowLeft() {
   return (
@@ -66,6 +67,7 @@ export default async function SavedTipsPage({
         ) : (
           <SavedTipsList tripId={tripId} grouped={Object.fromEntries(grouped)} />
         )}
+        <AppFooter />
       </div>
     </>
   )

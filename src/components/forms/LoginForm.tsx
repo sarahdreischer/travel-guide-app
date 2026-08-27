@@ -3,6 +3,7 @@
 import { useActionState, useState, useCallback } from 'react'
 import { useFormStatus } from 'react-dom'
 import { loginAction, LoginActionResult } from '@/actions/auth'
+import AppFooter from '@/components/AppFooter'
 
 function IconEye() {
   return (
@@ -41,6 +42,7 @@ export default function LoginForm() {
   const isLocked = state?.error?.type === 'account_locked'
 
   return (
+    <div className="auth-page">
     <div className="auth-shell">
       <p className="auth-wordmark">Travel Guide</p>
 
@@ -96,6 +98,8 @@ export default function LoginForm() {
         <span>New here?</span>
         <a href="/setup" className="auth-toggle-link">Create an account</a>
       </div>
+    </div>
+    <AppFooter />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { setupProfileAction } from '@/actions/profile'
 import type { ProfileFieldErrors } from '@/actions/profile'
 import { validateEmail } from '@/lib/validators'
+import AppFooter from '@/components/AppFooter'
 
 function IconEye() {
   return (
@@ -67,6 +68,7 @@ export default function SetupForm() {
 
   return (
     <>
+      <div className="auth-page">
       <div className="auth-shell">
         <p className="auth-wordmark">Travel Guide</p>
 
@@ -131,6 +133,8 @@ export default function SetupForm() {
           <span>Already have an account?</span>
           <a href="/login" className="auth-toggle-link">Log in</a>
         </div>
+      </div>
+      <AppFooter />
       </div>
 
       {/* Liability disclaimer bottom sheet */}
