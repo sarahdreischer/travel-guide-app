@@ -1,7 +1,7 @@
 import TermsContent from '@/components/TermsContent'
 
 export const metadata = {
-  title: 'Terms & Conditions – Travel Guide',
+  title: 'Terms of Service – Travel Guide',
 }
 
 export default function TermsPage() {

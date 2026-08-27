@@ -79,8 +79,8 @@ export default function AppFooter() {
           </div>
           <div className="app-footer-col">
             <p className="app-footer-col-heading">Legal</p>
-            <a className="app-footer-link" href="#">Privacy Policy</a>
-            <a className="app-footer-link" href="/terms">Terms &amp; Conditions</a>
+            <a className="app-footer-link" href="/privacy">Privacy Policy</a>
+            <a className="app-footer-link" href="/terms">Terms of Service</a>
             <a className="app-footer-link" href="#">Cookie Policy</a>
           </div>
           <div className="app-footer-col">

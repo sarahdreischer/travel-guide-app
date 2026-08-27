@@ -43,7 +43,7 @@ export default function TermsContent() {
         <a href="/profile" className="page-header-btn" aria-label="Back">
           <IconArrowLeft />
         </a>
-        <span className="page-title" style={{ fontSize: 15 }}>Terms &amp; Conditions</span>
+        <span className="page-title" style={{ fontSize: 15 }}>Terms of Service</span>
         <div style={{ width: 36 }} />
       </header>
 

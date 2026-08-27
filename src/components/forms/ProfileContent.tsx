@@ -155,7 +155,11 @@ export default function ProfileContent({ user }: ProfileContentProps) {
         </span>
         <div style={{ borderTop: '1px solid var(--border)' }}>
           <a href="/terms" className="profile-action-row">
-            <span>Terms &amp; Conditions</span>
+            <span>Terms of Service</span>
+            <IconChevronRight />
+          </a>
+          <a href="/privacy" className="profile-action-row">
+            <span>Privacy Policy</span>
             <IconChevronRight />
           </a>
           <button className="profile-action-row" onClick={handleLogout} disabled={loggingOut}>
