@@ -50,10 +50,23 @@ const TRANSPORT_MODES = [
 const TRAVEL_STYLES = ['Adventure', 'Relaxed', 'Cultural', 'Luxury', 'Budget', 'Family'] as const
 
 const ACTIVITY_OPTIONS = [
-  'Hiking', 'Swimming', 'Surfing', 'Cycling', 'Snorkelling',
-  'Rock climbing', 'Yoga', 'Museums', 'Food tours', 'Nightlife',
-  'Photography', 'Wildlife', 'Sailing', 'Skiing', 'Scuba diving',
+  'Cycling',
+  'Food tours',
   'Freediving',
+  'Hiking',
+  'Museums',
+  'Nightlife',
+  'Paddleboarding',
+  'Photography',
+  'Rock climbing',
+  'Scuba diving',
+  'Snorkelling',
+  'Surfing',
+  'Sailing',
+  'Skiing',
+  'Swimming',
+  'Wildlife',
+  'Yoga',
 ] as const
 
 const STEPS = [
