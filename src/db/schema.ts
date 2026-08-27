@@ -155,6 +155,19 @@ export const votes = pgTable(
   }),
 )
 
+// ─── password_reset_tokens ────────────────────────────────────────────────────
+
+export const passwordResetTokens = pgTable('password_reset_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  usedAt: timestamp('used_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
 // ─── Type exports ─────────────────────────────────────────────────────────────
 
 export type User = typeof users.$inferSelect
@@ -180,3 +193,6 @@ export type NewDestinationImage = typeof destinationImages.$inferInsert
 
 export type SavedTip = typeof savedTips.$inferSelect
 export type NewSavedTip = typeof savedTips.$inferInsert
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect
+export type NewPasswordResetToken = typeof passwordResetTokens.$inferInsert

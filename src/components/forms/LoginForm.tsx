@@ -71,7 +71,10 @@ export default function LoginForm() {
         </div>
 
         <div className="field-block">
-          <label className="field-label" htmlFor="password">Password</label>
+          <div className="auth-field-label-row">
+            <label className="field-label" htmlFor="password">Password</label>
+            <a href="/forgot-password" className="auth-forgot-link">Forgot password?</a>
+          </div>
           <div className="pw-wrapper">
             <input
               id="password" name="password" type={showPw ? 'text' : 'password'}
