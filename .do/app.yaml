@@ -16,7 +16,7 @@ services:
     # Build from Dockerfile
     dockerfile_path: Dockerfile
     github:
-      repo: your-github-username/travel-guide-app  # ← UPDATE THIS
+      repo: sarahdreischer/travel-guide-app  # ← UPDATE THIS
       branch: main
       deploy_on_push: true
     # Instance size — basic-xxs ($5/mo) works for personal use
@@ -60,7 +60,7 @@ services:
         value: "${RESEND_API_KEY}"
       - key: SMTP_FROM
         scope: RUN_TIME
-        value: "Travel Guide <noreply@yourdomain.com>"
+        value: "Travel Guide <noreply@travelguide.com>"
       - key: AI_MAX_CALLS_PER_MINUTE
         scope: RUN_TIME
         value: "20"
