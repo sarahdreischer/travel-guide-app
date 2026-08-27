@@ -11,7 +11,8 @@
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:file": "jest --passWithNoTests",
-    "reconcile": "tsx scripts/reconcile.ts"
+    "reconcile": "tsx scripts/reconcile.ts",
+    "clear-cache": "tsx scripts/clear-cache.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "1.0.7",
