@@ -92,11 +92,16 @@ function GroupRow({ group, index, tripId, savedKeys }: {
   group: GroupSection; index: number; tripId: string; savedKeys: Set<string>
 }) {
   const [open, setOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState(0)
+  // -1 means "All" tab; 0+ means individual source tabs
+  const [activeTab, setActiveTab] = useState(-1)
   const hasContent = group.sources.some((s) => s.subQuestions.length > 0)
   const multiSource = group.sources.length > 1
   const icon = GROUP_ICONS[group.id]
-  const activeSource = group.sources[activeTab] ?? group.sources[0]
+
+  // Determine which sources to show based on active tab
+  const visibleSources = activeTab === -1
+    ? group.sources
+    : [group.sources[activeTab] ?? group.sources[0]]
 
   return (
     <div className="category-row-wrap">
@@ -137,6 +142,9 @@ function GroupRow({ group, index, tripId, savedKeys }: {
 
           {multiSource && (
             <div className="category-tabs" role="tablist" aria-label={`${group.name} sections`}>
+              <button type="button" role="tab" aria-selected={activeTab === -1}
+                className={`category-tab${activeTab === -1 ? ' category-tab-active' : ''}`}
+                onClick={() => setActiveTab(-1)}>All</button>
               {group.sources.map((source, i) => (
                 <button key={source.category} type="button" role="tab" aria-selected={i === activeTab}
                   className={`category-tab${i === activeTab ? ' category-tab-active' : ''}`}
@@ -146,31 +154,36 @@ function GroupRow({ group, index, tripId, savedKeys }: {
           )}
 
           <div className="category-qa-list" role="tabpanel">
-            {(multiSource ? [activeSource] : group.sources).map((source) =>
-              source.subQuestions.map((question) => {
-                const answer = findAnswer(source.answers, question) ?? null
-                const key = makeSavedKey(source.category, question)
-                return (
-                  <div key={question} className="category-qa-item">
-                    <div className="category-qa-header">
-                      <p className="category-qa-q">{question}</p>
-                      {answer && (
-                        <BookmarkBtn
-                          tripId={tripId}
-                          category={source.category}
-                          question={question}
-                          answer={answer}
-                          initialSaved={savedKeys.has(key)}
-                        />
-                      )}
+            {visibleSources.map((source) => (
+              <div key={source.category}>
+                {activeTab === -1 && multiSource && (
+                  <p className="category-sub-label">{cleanSubLabel(source.category)}</p>
+                )}
+                {source.subQuestions.map((question) => {
+                  const answer = findAnswer(source.answers, question) ?? null
+                  const key = makeSavedKey(source.category, question)
+                  return (
+                    <div key={question} className="category-qa-item">
+                      <div className="category-qa-header">
+                        <p className="category-qa-q">{question}</p>
+                        {answer && (
+                          <BookmarkBtn
+                            tripId={tripId}
+                            category={source.category}
+                            question={question}
+                            answer={answer}
+                            initialSaved={savedKeys.has(key)}
+                          />
+                        )}
+                      </div>
+                      <p className="category-qa-a">
+                        {answer || <span className="category-qa-empty">Not available</span>}
+                      </p>
                     </div>
-                    <p className="category-qa-a">
-                      {answer || <span className="category-qa-empty">Not available</span>}
-                    </p>
-                  </div>
-                )
-              })
-            )}
+                  )
+                })}
+              </div>
+            ))}
           </div>
         </div>
       )}
