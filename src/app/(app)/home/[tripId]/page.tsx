@@ -147,9 +147,19 @@ export default async function HomePage({
   if (groupTipRecord) {
     groupTips = groupTipRecord.answers as Record<string, string>
   } else {
-    // Generate group tips via AI (non-blocking — if it fails we fall back to derived tips)
+    // Build context from existing sub-question answers so tips are consistent
+    const existingAdvice: Record<string, Record<string, string>> = {}
+    for (const record of adviceRecords) {
+      if (record.category === '_group_tips') continue
+      const answers = record.answers as Record<string, string> | null
+      if (answers && Object.keys(answers).length > 0) {
+        existingAdvice[record.category] = answers
+      }
+    }
+
+    // Generate group tips via AI, passing existing answers for coherence
     const questions = getGroupQuestions()
-    const aiTips = await LLMAdapter.generateGroupTips(cacheKey, questions)
+    const aiTips = await LLMAdapter.generateGroupTips(cacheKey, questions, existingAdvice)
     if (Object.keys(aiTips).length > 0) {
       // Cache for next visit
       await AdviceStore.save({

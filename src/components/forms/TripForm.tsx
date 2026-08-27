@@ -210,6 +210,7 @@ function Step2({ form, setForm }: {
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
   const [locationOpen, setLocationOpen] = useState(false)
   const [locationError, setLocationError] = useState('')
+  const [locationLoading, setLocationLoading] = useState(false)
   const locationWrapRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -219,8 +220,10 @@ function Step2({ form, setForm }: {
   function fetchCitySuggestions(query: string) {
     if (query.length < 2) {
       setLocationSuggestions([])
+      setLocationLoading(false)
       return
     }
+    setLocationLoading(true)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
       try {
@@ -228,7 +231,10 @@ function Step2({ form, setForm }: {
           `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1&accept-language=en`,
           { headers: { 'User-Agent': 'TravelGuideApp/1.0' } }
         )
-        if (!res.ok) return
+        if (!res.ok) {
+          setLocationLoading(false)
+          return
+        }
         const data = await res.json()
         const results: string[] = []
         const seen = new Set<string>()
@@ -245,8 +251,12 @@ function Step2({ form, setForm }: {
         }
         setLocationSuggestions(results)
         setLocationOpen(results.length > 0)
+        if (results.length === 0 && query.length >= 2) {
+          setLocationError('Location not found. Please try a different city name.')
+        }
+        setLocationLoading(false)
       } catch {
-        // Silently fail — suggestions are optional
+        setLocationLoading(false)
       }
     }, 300)
   }
@@ -313,19 +323,30 @@ function Step2({ form, setForm }: {
       <div className="field-block">
         <label className="field-label" htmlFor="starting-location-input">Where are you travelling from?</label>
         <div className="dest-wrapper" ref={locationWrapRef}>
-          <input
-            id="starting-location-input"
-            type="text"
-            className="field-input"
-            placeholder="City, Country"
-            autoComplete="off"
-            value={locationQuery}
-            onChange={(e) => handleLocationChange(e.target.value)}
-            onFocus={() => { if (locationSuggestions.length > 0) setLocationOpen(true) }}
-            onBlur={handleLocationBlur}
-            aria-autocomplete="list"
-            aria-expanded={locationOpen}
-          />
+          <div className="location-input-wrapper">
+            <input
+              id="starting-location-input"
+              type="text"
+              className="field-input"
+              placeholder="City, Country"
+              autoComplete="off"
+              value={locationQuery}
+              onChange={(e) => handleLocationChange(e.target.value)}
+              onFocus={() => { if (locationSuggestions.length > 0) setLocationOpen(true) }}
+              onBlur={handleLocationBlur}
+              aria-autocomplete="list"
+              aria-expanded={locationOpen}
+              style={{ paddingRight: 38 }}
+            />
+            {locationLoading && (
+              <span className="location-spinner" aria-label="Loading suggestions">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" opacity="0.25" />
+                  <path d="M8 2a6 6 0 0 1 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </span>
+            )}
+          </div>
           {locationOpen && locationSuggestions.length > 0 && (
             <ul className="dest-dropdown" role="listbox">
               {locationSuggestions.map((city) => (

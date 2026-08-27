@@ -2997,3 +2997,27 @@ textarea {
   opacity: 0.4;
   pointer-events: none;
 }
+
+/* ─── Location input spinner ──────────────────────────────────── */
+
+.location-input-wrapper {
+  position: relative;
+}
+
+.location-spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: spinRotate 0.7s linear infinite;
+  min-height: unset;
+}
+
+@keyframes spinRotate {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to   { transform: translateY(-50%) rotate(360deg); }
+}

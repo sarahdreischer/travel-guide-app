@@ -337,10 +337,15 @@ export type GroupQuestion = {
  * Generate concise key tips for display groups.
  * Uses the same model, rate limits, timeout, and character limit as category advice.
  * Returns a map of groupId → answer string.
+ *
+ * When `existingAdvice` is provided, the prompt includes a summary of the actual
+ * sub-question answers so that group tips are consistent with and derived from
+ * the detailed advice already generated.
  */
 async function generateGroupTips(
   cacheKey: CacheKey,
-  groups: GroupQuestion[]
+  groups: GroupQuestion[],
+  existingAdvice?: Record<string, Record<string, string>>
 ): Promise<Record<string, string>> {
   if (groups.length === 0) return {}
 
@@ -376,14 +381,27 @@ async function generateGroupTips(
     ? `\n- Planned Activities: ${cacheKey.activities.join(', ')}`
     : ''
 
-  const prompt = `You are a concise travel advisor. Answer each numbered question below about the destination. Each answer must be max ${MAX_GROUP_TIP_CHARS} characters. Be direct and practical. Ensure all answers are consistent with each other — no contradictions.
+  // Build a context block from existing sub-question answers so tips are derived from actual advice
+  let adviceContext = ''
+  if (existingAdvice && Object.keys(existingAdvice).length > 0) {
+    const summaryLines: string[] = []
+    for (const [category, answers] of Object.entries(existingAdvice)) {
+      const topAnswers = Object.entries(answers).slice(0, 3).map(([q, a]) => `  Q: ${q} → ${a}`).join('\n')
+      summaryLines.push(`[${category}]\n${topAnswers}`)
+    }
+    adviceContext = `\n\n--- EXISTING DETAILED ADVICE (your tips MUST be consistent with these answers) ---\n${summaryLines.join('\n\n')}\n--- END OF EXISTING ADVICE ---\n`
+  }
+
+  const prompt = `You are a concise travel advisor. For each group below, write a single headline tip that summarises the key insight from the detailed advice already generated for this trip. Each tip must be max ${MAX_GROUP_TIP_CHARS} characters. Be direct and practical.
+
+CRITICAL: Your headline tips MUST accurately reflect and be consistent with the existing detailed advice provided below. Do NOT contradict any of the detailed answers. Summarise the most important practical takeaway for each group.
 
 Trip context:
 - Destination: ${cacheKey.destination}
 - Travel Month(s): ${cacheKey.startMonth === cacheKey.endMonth ? cacheKey.startMonth : `${cacheKey.startMonth} to ${cacheKey.endMonth}`}
-- Traveller Type: ${cacheKey.travellerType}${budgetLine}${transportLine}${startingLine}${activitiesLine}
+- Traveller Type: ${cacheKey.travellerType}${budgetLine}${transportLine}${startingLine}${activitiesLine}${adviceContext}
 
-Answer these questions. Return a JSON object with exactly these keys: ${groups.map((g) => `"${g.id}"`).join(', ')}. Each value is your answer as a string (max ${MAX_GROUP_TIP_CHARS} chars).
+Answer these questions. Return a JSON object with exactly these keys: ${groups.map((g) => `"${g.id}"`).join(', ')}. Each value is your headline tip as a string (max ${MAX_GROUP_TIP_CHARS} chars).
 
 ${questionList}`
 
