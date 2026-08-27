@@ -8,6 +8,7 @@ import { CATEGORIES, type Category, getSubQuestions } from '@/lib/destinations'
 import { derivebudgetRange } from '@/lib/validators'
 import { reconcileMissingAdviceAction } from '@/actions/advice'
 import { findAnswer } from '@/lib/answer-lookup'
+import AppFooter from '@/components/AppFooter'
 
 /**
  * Comprehensive Advice page — shows ALL categories with their full Q&A
@@ -129,6 +130,8 @@ export default async function ComprehensivePage({
           ))}
         </div>
       </nav>
+
+      <AppFooter />
     </main>
   )
 }

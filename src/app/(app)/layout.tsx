@@ -1,14 +1,19 @@
 import AppNav from '@/components/AppNav'
+import SideNav from '@/components/SideNav'
 
-// (app) route-group layout — auth guard applied via middleware.
-// This layout wraps all authenticated pages with navigation.
+/**
+ * (app) route-group layout — auth guard applied via middleware.
+ * Renders a side nav on desktop (900px+) and a bottom nav on mobile.
+ * The main-panel wrapper contains the scrollable page content.
+ */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col overflow-x-hidden">
-      <main className="flex-1 pb-20">
+    <div className="app-layout">
+      <SideNav />
+      <div className="main-panel">
         {children}
-      </main>
-      <AppNav />
+        <AppNav />
+      </div>
     </div>
   )
 }

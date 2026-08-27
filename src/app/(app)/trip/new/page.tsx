@@ -1,10 +1,17 @@
+import { db } from '@/db'
+import { destinationImages } from '@/db/schema'
 import TripForm from '@/components/forms/TripForm'
 
-export default function NewTripPage() {
-  return (
-    <main className="mx-auto max-w-lg px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">Add Travel Destination</h1>
-      <TripForm />
-    </main>
-  )
+/**
+ * New trip page — fetches destination images from DB and passes to wizard.
+ */
+export default async function NewTripPage() {
+  // Fetch all destination image URLs for the reveal + summary hero
+  const rows = await db.select().from(destinationImages)
+  const imageMap: Record<string, string> = {}
+  for (const row of rows) {
+    imageMap[row.destination] = row.imageUrl
+  }
+
+  return <TripForm destinationImages={imageMap} />
 }

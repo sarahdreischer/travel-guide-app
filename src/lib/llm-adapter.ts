@@ -31,6 +31,20 @@ export type CategoryQuestions = {
   subQuestions: string[]
 }
 
+// ─── Configuration ────────────────────────────────────────────────────────────
+
+/**
+ * Maximum characters per answer. The LLM is instructed to keep each answer
+ * within this limit. Change this single value to adjust answer length globally.
+ */
+const MAX_ANSWER_CHARS = parseInt(process.env.AI_MAX_ANSWER_CHARS ?? '200', 10)
+
+/**
+ * Maximum characters per group tip answer. Separate from category answers
+ * because group tips are displayed as one-liners in the collapsed accordion row.
+ */
+const MAX_GROUP_TIP_CHARS = parseInt(process.env.AI_MAX_GROUP_TIP_CHARS ?? '200', 10)
+
 // ─── In-flight request deduplication ──────────────────────────────────────────
 
 const inFlightBatchRequests = new Map<string, Promise<AdviceRecord[]>>()
@@ -66,19 +80,47 @@ function buildBatchPrompt(
     })
     .join('\n\n')
 
-  return `You are a concise travel advice expert. Give short, practical answers (1–2 sentences max per question). No filler.
+  const transportLine = cacheKey.transportMode
+    ? `\n- Primary Transport Mode: ${cacheKey.transportMode}`
+    : ''
+
+  const startingLine = cacheKey.startingLocation
+    ? `\n- Travelling From: ${cacheKey.startingLocation}`
+    : ''
+
+  // Build budget context line with daily budget estimation
+  let budgetLine = `\n- Budget Range: ${describeBudgetRange(cacheKey.budgetRange)}`
+  if (cacheKey.totalBudgetUsd && cacheKey.tripDurationDays) {
+    const totalBudget = cacheKey.totalBudgetUsd
+    const days = cacheKey.tripDurationDays
+    const transportNote = cacheKey.transportCostIncluded
+      ? ' (transportation costs ARE included in this total — estimate and subtract travel costs before calculating daily spending)'
+      : ' (transportation costs are NOT included — this is purely destination spending money)'
+    budgetLine = `\n- Total Budget: $${totalBudget.toLocaleString()} USD for ${days} days${transportNote}`
+  }
+
+  const activitiesLine = cacheKey.activities && cacheKey.activities.length > 0
+    ? `\n- Planned Activities: ${cacheKey.activities.join(', ')}`
+    : ''
+
+  return `You are a concise, practical travel advice expert. Keep each answer to ${MAX_ANSWER_CHARS} characters maximum. Be direct — no filler.
+
+CRITICAL RULES:
+1. **Coherence**: Your answers MUST be consistent across all categories. Do NOT contradict yourself. For example, if you recommend against renting a car due to road conditions in one category, do not recommend car rental in another. Review your full set of answers for logical consistency before finalising.
+2. **Budget-aware**: Factor the traveller's total budget into ALL cost-related recommendations. Estimate a realistic daily budget and use it to inform advice on accommodation, food, activities, and transport.
+3. **Activity-aware**: Tailor recommendations to the traveller's selected activities and interests.
 
 Trip context:
 - Destination: ${cacheKey.destination}
 - Travel Month(s): ${cacheKey.startMonth === cacheKey.endMonth ? cacheKey.startMonth : `${cacheKey.startMonth} to ${cacheKey.endMonth}`}
-- Traveller Type: ${cacheKey.travellerType}
-- Budget Range: ${describeBudgetRange(cacheKey.budgetRange)}
+- Traveller Type: ${cacheKey.travellerType}${budgetLine}${transportLine}${startingLine}${activitiesLine}
 
 Answer ALL questions below grouped by category. Return a JSON object where:
 - Top-level keys MUST be the EXACT category names as written below (copy them verbatim, including dashes and special characters)
-- Each category value is an object mapping the EXACT question text to a concise answer
+- Each category value is an object mapping the EXACT question text to a concise answer (max ${MAX_ANSWER_CHARS} chars each)
 
 IMPORTANT: Use the category names EXACTLY as they appear in the headings below. Do NOT shorten, rename, or paraphrase them.
+IMPORTANT: Ensure all answers are mutually consistent — no contradictions between categories.
 
 ${categoryBlocks}`
 }
@@ -283,6 +325,121 @@ async function summarise(fullAdvice: string): Promise<string> {
   }
 }
 
+// ─── Group tip generation ─────────────────────────────────────────────────────
+
+export type GroupQuestion = {
+  id: string
+  name: string
+  question: string
+}
+
+/**
+ * Generate concise key tips for display groups.
+ * Uses the same model, rate limits, timeout, and character limit as category advice.
+ * Returns a map of groupId → answer string.
+ *
+ * When `existingAdvice` is provided, the prompt includes a summary of the actual
+ * sub-question answers so that group tips are consistent with and derived from
+ * the detailed advice already generated.
+ */
+async function generateGroupTips(
+  cacheKey: CacheKey,
+  groups: GroupQuestion[],
+  existingAdvice?: Record<string, Record<string, string>>
+): Promise<Record<string, string>> {
+  if (groups.length === 0) return {}
+
+  if (!canCallAI()) {
+    const status = getRateLimitStatus()
+    console.log(`[LLM_Adapter] Rate limited — skipping group tips. cooldown: ${status.inCooldown}`)
+    return {}
+  }
+
+  const questionList = groups
+    .map((g, i) => `${i + 1}. "${g.id}": ${g.question}`)
+    .join('\n')
+
+  const transportLine = cacheKey.transportMode
+    ? `\n- Primary Transport Mode: ${cacheKey.transportMode}`
+    : ''
+
+  const startingLine = cacheKey.startingLocation
+    ? `\n- Travelling From: ${cacheKey.startingLocation}`
+    : ''
+
+  let budgetLine = `\n- Budget Range: ${describeBudgetRange(cacheKey.budgetRange)}`
+  if (cacheKey.totalBudgetUsd && cacheKey.tripDurationDays) {
+    const totalBudget = cacheKey.totalBudgetUsd
+    const days = cacheKey.tripDurationDays
+    const transportNote = cacheKey.transportCostIncluded
+      ? ' (transport costs included in total)'
+      : ' (transport costs excluded — destination spending only)'
+    budgetLine = `\n- Total Budget: $${totalBudget.toLocaleString()} USD for ${days} days${transportNote}`
+  }
+
+  const activitiesLine = cacheKey.activities && cacheKey.activities.length > 0
+    ? `\n- Planned Activities: ${cacheKey.activities.join(', ')}`
+    : ''
+
+  // Build a context block from existing sub-question answers so tips are derived from actual advice
+  let adviceContext = ''
+  if (existingAdvice && Object.keys(existingAdvice).length > 0) {
+    const summaryLines: string[] = []
+    for (const [category, answers] of Object.entries(existingAdvice)) {
+      const topAnswers = Object.entries(answers).slice(0, 3).map(([q, a]) => `  Q: ${q} → ${a}`).join('\n')
+      summaryLines.push(`[${category}]\n${topAnswers}`)
+    }
+    adviceContext = `\n\n--- EXISTING DETAILED ADVICE (your tips MUST be consistent with these answers) ---\n${summaryLines.join('\n\n')}\n--- END OF EXISTING ADVICE ---\n`
+  }
+
+  const prompt = `You are a concise travel advisor. For each group below, write a single headline tip that summarises the key insight from the detailed advice already generated for this trip. Each tip must be max ${MAX_GROUP_TIP_CHARS} characters. Be direct and practical.
+
+CRITICAL: Your headline tips MUST accurately reflect and be consistent with the existing detailed advice provided below. Do NOT contradict any of the detailed answers. Summarise the most important practical takeaway for each group.
+
+Trip context:
+- Destination: ${cacheKey.destination}
+- Travel Month(s): ${cacheKey.startMonth === cacheKey.endMonth ? cacheKey.startMonth : `${cacheKey.startMonth} to ${cacheKey.endMonth}`}
+- Traveller Type: ${cacheKey.travellerType}${budgetLine}${transportLine}${startingLine}${activitiesLine}${adviceContext}
+
+Answer these questions. Return a JSON object with exactly these keys: ${groups.map((g) => `"${g.id}"`).join(', ')}. Each value is your headline tip as a string (max ${MAX_GROUP_TIP_CHARS} chars).
+
+${questionList}`
+
+  // Build a concrete zod schema with exact keys so the AI knows what to return
+  const schemaShape: Record<string, z.ZodString> = {}
+  for (const g of groups) {
+    schemaShape[g.id] = z.string()
+  }
+  const schema = z.object(schemaShape)
+
+  try {
+    recordAICall()
+
+    console.log('[LLM_Adapter] ▶ AI GROUP TIPS REQUEST:', JSON.stringify({
+      model: process.env.AI_MODEL ?? 'gpt-4o-mini',
+      groups: groups.map((g) => ({ id: g.id, question: g.question })),
+      cacheKey,
+      prompt,
+    }, null, 2))
+
+    const timeoutMs = parseInt(process.env.AI_BATCH_TIMEOUT_MS ?? '90000', 10)
+    const { object: answers } = await generateObject({
+      model: getModel(),
+      prompt,
+      schema,
+      abortSignal: AbortSignal.timeout(timeoutMs),
+    })
+
+    console.log('[LLM_Adapter] ◀ AI GROUP TIPS RESPONSE:', JSON.stringify(answers, null, 2))
+
+    return answers as Record<string, string>
+  } catch (error: unknown) {
+    recordAIFailure()
+    console.error('[LLM_Adapter] Group tips generation failed:', error)
+    return {}
+  }
+}
+
 // ─── Export ───────────────────────────────────────────────────────────────────
 
-export const LLMAdapter = { generateAdvice, generateAdviceBatch, summarise }
+export const LLMAdapter = { generateAdvice, generateAdviceBatch, generateGroupTips, summarise }

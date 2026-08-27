@@ -64,7 +64,10 @@ export const trips = pgTable('trips', {
   startDate: date('start_date').notNull(),
   endDate: date('end_date').notNull(),
   travelMode: text('travel_mode').notNull(),
+  transportMode: text('transport_mode'), // 'fly' | 'drive' | 'rail' | 'sail' — nullable for legacy rows
+  startingLocation: text('starting_location'), // city, country — nullable for legacy rows
   budgetUsd: integer('budget_usd').notNull(),
+  transportCostIncluded: boolean('transport_cost_included').notNull().default(true),
   travelStyle: text('travel_style').notNull(),
   activityPreferences: text('activity_preferences').array().notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -97,6 +100,41 @@ export const adviceCache = pgTable(
   }),
 )
 
+// ─── destination_images ───────────────────────────────────────────────────────
+
+export const destinationImages = pgTable('destination_images', {
+  destination: text('destination').primaryKey(), // matches DESTINATIONS values exactly
+  imageUrl: text('image_url').notNull(),
+  attribution: text('attribution'), // photographer name / Unsplash credit
+})
+
+// ─── saved_tips ───────────────────────────────────────────────────────────────
+
+export const savedTips = pgTable(
+  'saved_tips',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    tripId: uuid('trip_id')
+      .notNull()
+      .references(() => trips.id, { onDelete: 'cascade' }),
+    category: text('category').notNull(),
+    question: text('question').notNull(),
+    answer: text('answer').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => ({
+    userTripQuestionUnique: uniqueIndex('saved_tips_user_trip_q_idx').on(
+      t.userId,
+      t.tripId,
+      t.category,
+      t.question,
+    ),
+  }),
+)
+
 // ─── votes ────────────────────────────────────────────────────────────────────
 
 export const votes = pgTable(
@@ -119,6 +157,19 @@ export const votes = pgTable(
   }),
 )
 
+// ─── password_reset_tokens ────────────────────────────────────────────────────
+
+export const passwordResetTokens = pgTable('password_reset_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  usedAt: timestamp('used_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
 // ─── Type exports ─────────────────────────────────────────────────────────────
 
 export type User = typeof users.$inferSelect
@@ -138,3 +189,12 @@ export type NewAdviceCache = typeof adviceCache.$inferInsert
 
 export type Vote = typeof votes.$inferSelect
 export type NewVote = typeof votes.$inferInsert
+
+export type DestinationImage = typeof destinationImages.$inferSelect
+export type NewDestinationImage = typeof destinationImages.$inferInsert
+
+export type SavedTip = typeof savedTips.$inferSelect
+export type NewSavedTip = typeof savedTips.$inferInsert
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect
+export type NewPasswordResetToken = typeof passwordResetTokens.$inferInsert

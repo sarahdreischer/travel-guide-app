@@ -15,6 +15,41 @@
       "when": 1783512651254,
       "tag": "0001_perpetual_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785000000000,
+      "tag": "0002_add_transport_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785100000000,
+      "tag": "0003_destination_images",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785200000000,
+      "tag": "0004_saved_tips",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787831448726,
+      "tag": "0005_messy_diamondback",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787834749086,
+      "tag": "0006_wild_lake",
+      "breakpoints": true
     }
   ]
 }

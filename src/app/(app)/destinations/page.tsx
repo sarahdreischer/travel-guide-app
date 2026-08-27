@@ -1,118 +1,148 @@
-// Travel Destinations page — Requirements 8.1, 8.2, 8.3, 8.4
 import Link from 'next/link'
+import Image from 'next/image'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { AuthService } from '@/lib/auth'
 import { db } from '@/db'
 import { trips } from '@/db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, desc } from 'drizzle-orm'
+import { fmtDateShort, fmtDate, nightCount, relativeTime } from '@/lib/format-date'
+import SwipeTripRow from '@/components/SwipeTripRow'
+import AppFooter from '@/components/AppFooter'
+
+function IconPlus() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  )
+}
+
+function IconChevronRight() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9 18l6-6-6-6" />
+    </svg>
+  )
+}
 
 export default async function DestinationsPage() {
-  // Get current user from session cookie
   const cookieStore = await cookies()
   const token = cookieStore.get('session_token')?.value
-
-  if (!token) {
-    redirect('/login')
-  }
+  if (!token) redirect('/login')
 
   const user = await AuthService.getSession(token)
+  if (!user) redirect('/login')
 
-  if (!user) {
-    redirect('/login')
-  }
-
-  // Query all trips for the current user
   const userTrips = await db
     .select()
     .from(trips)
     .where(eq(trips.userId, user.id))
+    .orderBy(desc(trips.startDate))
 
-  // Split into upcoming and past based on end_date vs today
-  const today = new Date().toISOString().split('T')[0] // "YYYY-MM-DD"
-
-  const upcomingTrips = userTrips.filter((trip) => trip.endDate >= today)
-  const pastTrips = userTrips.filter((trip) => trip.endDate < today)
+  const today = new Date().toISOString().split('T')[0]
+  const upcomingTrips = userTrips.filter((t) => t.endDate >= today)
+  const pastTrips = userTrips.filter((t) => t.endDate < today)
 
   return (
-    <main className="p-4 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">
-        Travel Destinations
-      </h1>
+    <>
+      <header className="page-header">
+        <h1 className="page-title">Trips</h1>
+        <div className="page-brand">
+          <Image src="/app-icon.png" alt="" width={22} height={22} className="page-brand-icon" aria-hidden="true" />
+          <span className="page-brand-label">Travel Guide</span>
+        </div>
+        <Link href="/trip/new" className="page-header-add" aria-label="Add a trip">
+          <IconPlus />
+        </Link>
+      </header>
 
-      {/* Add new destination link */}
-      <Link
-        href="/trip/new"
-        className="inline-flex min-h-[44px] min-w-[44px] items-center rounded-lg bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 transition-colors"
-      >
-        Add new destination
-      </Link>
+      <div className="page-body">
+        <span className="section-label">Upcoming</span>
 
-      {/* Upcoming destinations section */}
-      <section className="mt-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-          Upcoming destinations
-        </h2>
-
-        {upcomingTrips.length > 0 ? (
-          <ul className="space-y-2">
-            {upcomingTrips.map((trip) => (
-              <li key={trip.id}>
-                <Link
-                  href={`/home/${trip.id}`}
-                  className="block rounded-lg border border-gray-200 px-4 py-3 min-h-[44px] hover:bg-gray-50 transition-colors overflow-hidden"
-                >
-                  <span className="block font-medium text-gray-900 truncate">
-                    {trip.destination}
-                  </span>
-                  <span className="block text-sm text-gray-600">
-                    {trip.startDate} — {trip.endDate}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-600">
-            No upcoming trips. Plan your next adventure!{' '}
-            <Link
-              href="/trip/new"
-              className="inline-flex min-h-[44px] min-w-[44px] items-center text-blue-600 underline hover:text-blue-700"
-            >
-              Create a trip
+        {upcomingTrips.length === 0 ? (
+          <div className="empty-state">
+            <p className="empty-state-text">
+              No trips planned yet. Add your first destination to get personalised travel advice.
+            </p>
+            <Link href="/trip/new" className="empty-state-btn">
+              <IconPlus />
+              Plan a trip
             </Link>
-          </p>
-        )}
-      </section>
-
-      {/* Past destinations section */}
-      <section className="mt-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-          Past destinations
-        </h2>
-
-        {pastTrips.length > 0 ? (
-          <ul className="space-y-2">
-            {pastTrips.map((trip) => (
-              <li key={trip.id}>
-                <Link
-                  href={`/home/${trip.id}`}
-                  className="block rounded-lg border border-gray-200 px-4 py-3 min-h-[44px] hover:bg-gray-50 transition-colors overflow-hidden"
-                >
-                  <span className="block font-medium text-gray-900 truncate">
-                    {trip.destination}
-                  </span>
-                  <span className="block text-sm text-gray-600">
-                    {trip.startDate} — {trip.endDate}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          </div>
         ) : (
-          <p className="text-gray-600">No past trips yet.</p>
+          <div className="trip-list">
+            {upcomingTrips.map((trip) => {
+              const nights = nightCount(trip.startDate, trip.endDate)
+              const relative = relativeTime(trip.startDate, trip.endDate)
+              const meta = [
+                `${fmtDateShort(trip.startDate)} – ${fmtDate(trip.endDate)}`,
+                nights > 0 ? `${nights} night${nights !== 1 ? 's' : ''}` : null,
+                trip.travelMode || null,
+                trip.travelStyle || null,
+              ].filter(Boolean).join('  ·  ')
+
+              return (
+                <SwipeTripRow
+                  key={trip.id}
+                  tripId={trip.id}
+                  destination={trip.destination}
+                  href={`/home/${trip.id}`}
+                >
+                  <div className="trip-row-top">
+                    <span className="trip-row-destination">{trip.destination}</span>
+                    <span className="trip-row-time is-soon">{relative}</span>
+                  </div>
+                  <p className="trip-row-meta">{meta}</p>
+                  <span className="trip-row-chevron" aria-hidden="true">
+                    <IconChevronRight />
+                  </span>
+                </SwipeTripRow>
+              )
+            })}
+          </div>
         )}
-      </section>
-    </main>
+
+        {pastTrips.length > 0 && (
+          <>
+            <span className="section-label" style={{ marginTop: 24, display: 'block' }}>Past</span>
+            <div className="trip-list">
+              {pastTrips.map((trip) => {
+                const nights = nightCount(trip.startDate, trip.endDate)
+                const relative = relativeTime(trip.startDate, trip.endDate)
+                const meta = [
+                  `${fmtDateShort(trip.startDate)} – ${fmtDate(trip.endDate)}`,
+                  nights > 0 ? `${nights} night${nights !== 1 ? 's' : ''}` : null,
+                  trip.travelMode || null,
+                  trip.travelStyle || null,
+                ].filter(Boolean).join('  ·  ')
+
+                return (
+                  <SwipeTripRow
+                    key={trip.id}
+                    tripId={trip.id}
+                    destination={trip.destination}
+                    href={`/home/${trip.id}`}
+                    isPast
+                  >
+                    <div className="trip-row-top">
+                      <span className="trip-row-destination">{trip.destination}</span>
+                      <span className="trip-row-time">{relative}</span>
+                    </div>
+                    <p className="trip-row-meta">{meta}</p>
+                    <span className="trip-row-chevron" aria-hidden="true">
+                      <IconChevronRight />
+                    </span>
+                  </SwipeTripRow>
+                )
+              })}
+            </div>
+          </>
+        )}
+
+        <div style={{ height: 32 }} />
+        <AppFooter />
+      </div>
+    </>
   )
 }
