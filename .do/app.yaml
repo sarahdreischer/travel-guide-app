@@ -33,13 +33,13 @@ services:
     # Environment variables — set these in the DO dashboard or here
     envs:
       - key: DATABASE_URL
-        scope: RUN_TIME
+        scope: RUN_AND_BUILD_TIME
         type: SECRET
         # Set this to your Neon connection string:
         # postgresql://user:pass@ep-xxx.region.neon.tech/travel_guide?sslmode=require
         value: "${DATABASE_URL}"
       - key: OPENAI_API_KEY
-        scope: RUN_TIME
+        scope: RUN_AND_BUILD_TIME
         type: SECRET
         value: "${OPENAI_API_KEY}"
       - key: NEXT_PUBLIC_APP_URL
