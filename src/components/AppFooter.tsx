@@ -71,12 +71,12 @@ export default function AppFooter() {
             <p className="app-footer-brand">Travel Guide</p>
             <p className="app-footer-tagline">Personalised advice for every journey.</p>
           </div>
-          <div className="app-footer-col">
+          {/* <div className="app-footer-col">
             <p className="app-footer-col-heading">Company</p>
             <a className="app-footer-link" href="#">About us</a>
             <a className="app-footer-link" href="#">Careers</a>
             <a className="app-footer-link" href="#">Press</a>
-          </div>
+          </div> */}
           <div className="app-footer-col">
             <p className="app-footer-col-heading">Legal</p>
             <a className="app-footer-link" href="/privacy">Privacy Policy</a>
