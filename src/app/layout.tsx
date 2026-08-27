@@ -2,9 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import CookieBanner from '@/components/CookieBanner'
 
-// Start scheduled reconciliation (server-side only, runs periodically)
-import '@/lib/scheduled-reconciliation'
-
 export const metadata: Metadata = {
   title: "Travel Guide",
   description:
