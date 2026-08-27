@@ -1,13 +1,20 @@
 import { DESTINATIONS } from '@/lib/destinations'
-import { getDestinationImages } from '@/lib/destination-image'
+import { getDestinationImagesWithAttribution } from '@/lib/destination-image'
 import TripForm from '@/components/forms/TripForm'
 
 /**
  * New trip page — fetches destination images (from DB cache or Unsplash) and passes to wizard.
  */
 export default async function NewTripPage() {
-  // Get images for all destinations (cached in DB, auto-fetched if missing)
-  const imageMap = await getDestinationImages([...DESTINATIONS])
+  // Get images + attribution for all destinations (cached in DB, auto-fetched if missing)
+  const imageData = await getDestinationImagesWithAttribution([...DESTINATIONS])
 
-  return <TripForm destinationImages={imageMap} />
+  const imageMap: Record<string, string> = {}
+  const attributionMap: Record<string, string | null> = {}
+  for (const [dest, info] of Object.entries(imageData)) {
+    imageMap[dest] = info.imageUrl
+    attributionMap[dest] = info.attribution
+  }
+
+  return <TripForm destinationImages={imageMap} destinationAttributions={attributionMap} />
 }

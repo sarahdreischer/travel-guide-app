@@ -122,10 +122,11 @@ function IconArrowLeft() {
 
 // ─── Step 1 ───────────────────────────────────────────────────────────────────
 
-function Step1({ form, setForm, destImg }: {
+function Step1({ form, setForm, destImg, destAttribution }: {
   form: WizardData
   setForm: React.Dispatch<React.SetStateAction<WizardData>>
   destImg: string | null
+  destAttribution: string | null
 }) {
   const [query, setQuery] = useState(form.destination)
   const [open, setOpen] = useState(false)
@@ -186,13 +187,18 @@ function Step1({ form, setForm, destImg }: {
 
       {/* Destination image reveal */}
       {form.destination && destImg && (
-        <div className="dest-reveal" aria-hidden="true">
+        <div className="dest-reveal">
           <img className="dest-reveal-img" src={destImg} alt="" />
           <div className="dest-reveal-scrim" />
           <div className="dest-reveal-meta">
             <p className="dest-reveal-name">{form.destination}</p>
             <p className="dest-reveal-ready">Ready when you are</p>
           </div>
+          {destAttribution && (
+            <p className="dest-reveal-attribution">
+              Photo by <a href="https://unsplash.com?utm_source=travel_guide&utm_medium=referral" target="_blank" rel="noopener noreferrer">{destAttribution}</a> on <a href="https://unsplash.com?utm_source=travel_guide&utm_medium=referral" target="_blank" rel="noopener noreferrer">Unsplash</a>
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -496,6 +502,7 @@ function Step3({ form, setForm, destImg }: {
 
 interface TripFormProps {
   destinationImages?: Record<string, string>
+  destinationAttributions?: Record<string, string | null>
   /** If set, the wizard is in edit mode — pre-populates and updates instead of creating */
   editTripId?: string
   initialData?: Partial<WizardData>
@@ -503,7 +510,7 @@ interface TripFormProps {
   cancelHref?: string
 }
 
-export default function TripForm({ destinationImages = {}, editTripId, initialData, cancelHref }: TripFormProps) {
+export default function TripForm({ destinationImages = {}, destinationAttributions = {}, editTripId, initialData, cancelHref }: TripFormProps) {
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<WizardData>({ ...EMPTY, ...initialData })
   const [serverErrors, setServerErrors] = useState<(CreateTripResult & { success: false }) | null>(null)
@@ -517,6 +524,7 @@ export default function TripForm({ destinationImages = {}, editTripId, initialDa
   const canContinue = step === 1 ? canAdvance1 : step === 2 ? canAdvance2 : canSubmit
 
   const destImg = destinationImages[form.destination] || (form.destination ? FALLBACK_IMAGE : null)
+  const destAttribution = destinationAttributions[form.destination] ?? null
 
   function handleSubmit() {
     const fd = new FormData()
@@ -592,7 +600,7 @@ export default function TripForm({ destinationImages = {}, editTripId, initialDa
           <p className="wizard-step-subtitle">{STEPS[step - 1].subtitle}</p>
         </div>
 
-        {step === 1 && <Step1 form={form} setForm={setForm} destImg={destImg} />}
+        {step === 1 && <Step1 form={form} setForm={setForm} destImg={destImg} destAttribution={destAttribution} />}
         {step === 2 && <Step2 form={form} setForm={setForm} />}
         {step === 3 && <Step3 form={form} setForm={setForm} destImg={destImg} />}
       </main>
