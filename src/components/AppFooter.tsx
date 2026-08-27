@@ -5,8 +5,8 @@ import { useRef, useState, useEffect } from 'react'
 /**
  * Shared footer component that appears on all pages.
  * Fades in once the user has scrolled more than 60px in the nearest scroll container.
- * Walks up the DOM to find the scroll container (.page-body, .category-detail-body,
- * .auth-page, or .main-panel).
+ * If the content is short enough that the user can't scroll 60px, the footer
+ * becomes visible immediately (the user can already see the bottom).
  */
 export default function AppFooter() {
   const ref = useRef<HTMLElement>(null)
@@ -19,37 +19,45 @@ export default function AppFooter() {
     // Walk up the DOM to find the nearest scrollable ancestor
     let container: Element | null = el.parentElement
     while (container && container !== document.documentElement) {
-      const cls = container.className || ''
-      if (
-        cls.includes('page-body') ||
-        cls.includes('category-detail-body') ||
-        cls.includes('auth-page') ||
-        cls.includes('main-panel')
-      ) {
-        break
-      }
       const { overflowY } = window.getComputedStyle(container)
       if (overflowY === 'auto' || overflowY === 'scroll') break
       container = container.parentElement
     }
 
+    // If no overflow container found, fall back to documentElement
     if (!container || container === document.documentElement) {
-      // Fallback: show immediately if no scroll container found
-      setVisible(true)
-      return
+      container = document.documentElement
     }
 
-    function onScroll() {
-      if ((container as HTMLElement).scrollTop > 60) {
+    const scrollContainer = container as HTMLElement
+
+    function check() {
+      // If user has scrolled past 60px, reveal
+      if (scrollContainer.scrollTop > 60) {
+        setVisible(true)
+        return
+      }
+      // If the container can't scroll 60px total (content is short), reveal immediately
+      const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight
+      if (maxScroll <= 60) {
         setVisible(true)
       }
     }
 
-    // Check initial scroll position
-    onScroll()
+    // Check after a short delay to ensure layout is settled
+    const raf = requestAnimationFrame(() => {
+      check()
+    })
 
-    container.addEventListener('scroll', onScroll, { passive: true })
-    return () => container!.removeEventListener('scroll', onScroll)
+    scrollContainer.addEventListener('scroll', check, { passive: true })
+    // Re-check on resize (content may reflow)
+    window.addEventListener('resize', check, { passive: true })
+
+    return () => {
+      cancelAnimationFrame(raf)
+      scrollContainer.removeEventListener('scroll', check)
+      window.removeEventListener('resize', check)
+    }
   }, [])
 
   return (
