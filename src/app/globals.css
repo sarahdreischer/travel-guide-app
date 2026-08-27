@@ -215,11 +215,36 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px 14px;
+  padding: 18px 20px 16px;
   position: sticky;
   top: 0;
   background: var(--bg);
   z-index: 10;
+  border-bottom: 1px solid var(--border);
+  min-height: 64px;
+}
+
+.wizard-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* On mobile, hide step counter (brand takes center) */
+@media (max-width: 899px) {
+  .wizard-header .step-counter {
+    display: none;
+  }
+}
+
+/* On desktop, hide wizard brand (sidebar has it) and show step counter */
+@media (min-width: 900px) {
+  .wizard-brand {
+    display: none;
+  }
 }
 
 .wizard-back-btn {

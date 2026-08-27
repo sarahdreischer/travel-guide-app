@@ -47,7 +47,7 @@ export default async function DestinationsPage() {
   return (
     <>
       <header className="page-header">
-        <div style={{ width: 30 }} />
+        <h1 className="page-title">Trips</h1>
         <div className="page-brand">
           <Image src="/app-icon.png" alt="" width={22} height={22} className="page-brand-icon" aria-hidden="true" />
           <span className="page-brand-label">Travel Guide</span>
