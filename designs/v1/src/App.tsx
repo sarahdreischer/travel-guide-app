@@ -43,6 +43,9 @@ type Screen =
   | { view: 'trip-category'; tripId: string; categoryId: string }
   | { view: 'saved-tips'; tripId: string }
   | { view: 'profile' }
+  | { view: 'terms' }
+  | { view: 'forgot-password' }
+  | { view: 'reset-password'; token: string }
 
 interface SavedTip {
   id: string
@@ -652,9 +655,11 @@ function DisclaimerModal({
 function LoginScreen({
   onLogin,
   onGoSignup,
+  onForgotPassword,
 }: {
   onLogin: () => void
   onGoSignup: () => void
+  onForgotPassword: () => void
 }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -685,7 +690,12 @@ function LoginScreen({
         </div>
 
         <div className="field-block">
-          <label className="field-label" htmlFor="login-password">Password</label>
+          <div className="auth-field-label-row">
+            <label className="field-label" htmlFor="login-password">Password</label>
+            <button className="auth-forgot-link" type="button" onClick={onForgotPassword}>
+              Forgot password?
+            </button>
+          </div>
           <PasswordField
             id="login-password"
             value={password}
@@ -704,6 +714,7 @@ function LoginScreen({
         <button className="auth-toggle-link" onClick={onGoSignup}>Create an account</button>
       </div>
     </div>
+    <AppFooter />
     </div>
   )
 }
@@ -799,6 +810,7 @@ function SignupScreen({
         </div>
       </div>
 
+      <AppFooter />
       {showDisclaimer && (
         <DisclaimerModal
           onAcknowledge={onComplete}
@@ -879,6 +891,7 @@ function DestinationsScreen({
         )}
 
         <div style={{ height: 32 }} />
+        <AppFooter />
       </div>
 
       {pendingTrip && (
@@ -1208,6 +1221,7 @@ function TripOverviewScreen({
             )
           })}
         </div>
+        <AppFooter />
       </div>
     </>
   )
@@ -1304,6 +1318,7 @@ function CategoryDetailScreen({
             )
           })}
         </div>
+        <AppFooter />
       </div>
     </>
   )
@@ -1705,9 +1720,478 @@ function BottomNav({
   )
 }
 
+// ─── Cookie banner ────────────────────────────────────────────────────────────
+
+function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+  return (
+    <button
+      role="switch"
+      aria-checked={on}
+      disabled={disabled}
+      className={`cookie-toggle${on ? ' cookie-toggle-on' : ''}${disabled ? ' cookie-toggle-disabled' : ''}`}
+      onClick={() => !disabled && onChange(!on)}
+      aria-label={on ? 'Enabled' : 'Disabled'}
+    >
+      <span className="cookie-toggle-thumb" />
+    </button>
+  )
+}
+
+function CookieBanner({ onDismiss }: { onDismiss: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [analytics, setAnalytics] = useState(true)
+
+  function acceptAll() {
+    try { localStorage.setItem('cookie-consent', JSON.stringify({ required: true, analytics: true })) } catch {}
+    onDismiss()
+  }
+
+  function savePreferences() {
+    try { localStorage.setItem('cookie-consent', JSON.stringify({ required: true, analytics })) } catch {}
+    onDismiss()
+  }
+
+  return (
+    <div className="cookie-overlay" role="dialog" aria-modal="true" aria-label="Cookie preferences">
+      <div className="cookie-panel">
+        <div className="cookie-header">
+          <div className="cookie-header-left">
+            <span className="cookie-icon" aria-hidden="true">🍪</span>
+            <div>
+              <p className="cookie-title">We use cookies</p>
+              <p className="cookie-desc">
+                We use cookies to keep the site working and to understand how it's used.
+                {!open && (
+                  <button className="cookie-manage-link" onClick={() => setOpen(true)}>
+                    Manage preferences
+                  </button>
+                )}
+              </p>
+            </div>
+          </div>
+          {!open && (
+            <div className="cookie-actions-inline">
+              <button className="cookie-btn-secondary" onClick={() => setOpen(true)}>Manage</button>
+              <button className="cookie-btn-primary" onClick={acceptAll}>Accept all</button>
+            </div>
+          )}
+        </div>
+
+        {open && (
+          <>
+            <div className="cookie-divider" />
+
+            <div className="cookie-category">
+              <div className="cookie-category-header">
+                <div>
+                  <p className="cookie-category-name">Required cookies</p>
+                  <p className="cookie-category-desc">
+                    Essential for the site to function — login sessions, security, and preferences. Cannot be disabled.
+                  </p>
+                </div>
+                <Toggle on={true} onChange={() => {}} disabled />
+              </div>
+            </div>
+
+            <div className="cookie-divider" />
+
+            <div className="cookie-category">
+              <div className="cookie-category-header">
+                <div>
+                  <p className="cookie-category-name">Analytical cookies</p>
+                  <p className="cookie-category-desc">
+                    Help us understand how visitors use the app so we can improve it. No personal data is sold.
+                  </p>
+                </div>
+                <Toggle on={analytics} onChange={setAnalytics} />
+              </div>
+            </div>
+
+            <div className="cookie-divider" />
+
+            <div className="cookie-footer-actions">
+              <button className="cookie-btn-secondary" onClick={savePreferences}>Save preferences</button>
+              <button className="cookie-btn-primary" onClick={acceptAll}>Accept all</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Shared footer ────────────────────────────────────────────────────────────
+
+function AppFooter() {
+  const ref = useRef<HTMLElement>(null)
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    // Walk up the DOM to find the nearest scrollable ancestor
+    let container: Element = el.parentElement!
+    while (container && container !== document.documentElement) {
+      const { overflowY } = window.getComputedStyle(container)
+      if (overflowY === 'auto' || overflowY === 'scroll') break
+      container = container.parentElement!
+    }
+    function onScroll() {
+      if ((container as HTMLElement).scrollTop > 60) setVisible(true)
+    }
+    container.addEventListener('scroll', onScroll, { passive: true })
+    return () => container.removeEventListener('scroll', onScroll)
+  }, [])
+  return (
+    <footer ref={ref} className={`app-footer${visible ? ' app-footer-visible' : ''}`}>
+      <div className="app-footer-inner">
+        <div className="app-footer-cols">
+          <div className="app-footer-col app-footer-col-brand">
+            <p className="app-footer-brand">Travel Guide</p>
+            <p className="app-footer-tagline">Personalised advice for every journey.</p>
+          </div>
+          <div className="app-footer-col">
+            <p className="app-footer-col-heading">Company</p>
+            <a className="app-footer-link" href="#">About us</a>
+            <a className="app-footer-link" href="#">Careers</a>
+            <a className="app-footer-link" href="#">Press</a>
+          </div>
+          <div className="app-footer-col">
+            <p className="app-footer-col-heading">Legal</p>
+            <a className="app-footer-link" href="#">Privacy Policy</a>
+            <a className="app-footer-link" href="#">Terms &amp; Conditions</a>
+            <a className="app-footer-link" href="#">Cookie Policy</a>
+          </div>
+          <div className="app-footer-col">
+            <p className="app-footer-col-heading">Contact us</p>
+            <a className="app-footer-link" href="mailto:hello@travelguide.app">hello@travelguide.app</a>
+            <a className="app-footer-link" href="#">Support centre</a>
+            <a className="app-footer-link" href="#">Report an issue</a>
+          </div>
+        </div>
+        <div className="app-footer-bottom">
+          <p className="app-footer-copy">© 2026 Travel Guide Ltd. All rights reserved.</p>
+          <p className="app-footer-copy">Registered in England &amp; Wales · Company No. 14872931</p>
+        </div>
+      </div>
+    </footer>
+  )
+}
+
+// ─── Forgot password screen ───────────────────────────────────────────────────
+
+function ForgotPasswordScreen({
+  onBack,
+  onOpenResetDemo,
+}: {
+  onBack: () => void
+  onOpenResetDemo: (token: string) => void
+}) {
+  const [email, setEmail] = useState('')
+  const [sent, setSent] = useState(false)
+  const [resent, setResent] = useState(false)
+  const canSubmit = email.includes('@')
+
+  function handleSend() {
+    if (!canSubmit) return
+    setSent(true)
+  }
+
+  function handleResend() {
+    setResent(true)
+    setTimeout(() => setResent(false), 3000)
+  }
+
+  const DEMO_TOKEN = 'demo-reset-token-a1b2c3'
+
+  return (
+    <div className="auth-page">
+      <div className="auth-shell">
+        <p className="auth-wordmark">Travel Guide</p>
+
+        {!sent ? (
+          <>
+            <button className="auth-back-btn" onClick={onBack} aria-label="Back to login">
+              <IconArrowLeft /> Back to login
+            </button>
+
+            <div className="auth-heading-block">
+              <h1 className="auth-heading">Reset your password</h1>
+              <p className="auth-subtitle">
+                Enter the email address linked to your account and we'll send you a reset link.
+              </p>
+            </div>
+
+            <div className="form-stack">
+              <div className="field-block">
+                <label className="field-label" htmlFor="forgot-email">Email address</label>
+                <input
+                  id="forgot-email"
+                  type="email"
+                  className="field-input"
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSend()}
+                />
+              </div>
+              <button className="btn-primary" disabled={!canSubmit} onClick={handleSend}>
+                Send reset link
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="reset-sent-icon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                <path d="M2 7a2 2 0 0 1 2-2h20a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7Z" stroke="currentColor" strokeWidth="1.6"/>
+                <path d="M2 7l12 9 12-9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+              </svg>
+            </div>
+
+            <div className="auth-heading-block">
+              <h1 className="auth-heading">Check your inbox</h1>
+              <p className="auth-subtitle">
+                We've sent a password reset link to <strong>{email}</strong>. The link is valid for 24 hours.
+              </p>
+            </div>
+
+            <div className="reset-sent-steps">
+              {[
+                "Open the email from Travel Guide",
+                "Click the secure reset link",
+                "Choose a new password",
+              ].map((step, i) => (
+                <div key={i} className="reset-step">
+                  <span className="reset-step-num">{i + 1}</span>
+                  <span className="reset-step-text">{step}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="reset-sent-actions">
+              <button
+                className="btn-primary"
+                onClick={() => onOpenResetDemo(DEMO_TOKEN)}
+              >
+                Open reset link <span className="reset-demo-badge">Demo</span>
+              </button>
+              <div className="auth-toggle" style={{ justifyContent: 'center' }}>
+                <span>Didn't get it?</span>
+                <button className="auth-toggle-link" onClick={handleResend}>
+                  {resent ? 'Sent!' : 'Resend email'}
+                </button>
+              </div>
+              <button className="auth-back-btn auth-back-btn-center" onClick={onBack}>
+                Back to login
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+      <AppFooter />
+    </div>
+  )
+}
+
+// ─── Reset password screen ─────────────────────────────────────────────────────
+
+function StrengthBar({ password }: { password: string }) {
+  const score = [
+    password.length >= 8,
+    /[A-Z]/.test(password),
+    /[0-9]/.test(password),
+    /[^A-Za-z0-9]/.test(password),
+  ].filter(Boolean).length
+
+  const labels = ['', 'Weak', 'Fair', 'Good', 'Strong']
+  const colors = ['', '#E53E3E', '#DD6B20', '#38A169', '#1A5568']
+
+  return (
+    <div className="pw-strength">
+      <div className="pw-strength-bars">
+        {[1, 2, 3, 4].map(n => (
+          <div
+            key={n}
+            className="pw-strength-bar"
+            style={{ background: n <= score ? colors[score] : 'var(--border-mid)' }}
+          />
+        ))}
+      </div>
+      {password.length > 0 && (
+        <span className="pw-strength-label" style={{ color: colors[score] }}>
+          {labels[score]}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function ResetPasswordScreen({
+  token,
+  onDone,
+}: {
+  token: string
+  onDone: () => void
+}) {
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [done, setDone] = useState(false)
+
+  const requirements = [
+    { label: 'At least 8 characters', met: password.length >= 8 },
+    { label: 'One uppercase letter', met: /[A-Z]/.test(password) },
+    { label: 'One number', met: /[0-9]/.test(password) },
+    { label: 'One special character', met: /[^A-Za-z0-9]/.test(password) },
+  ]
+  const allMet = requirements.every(r => r.met)
+  const matches = password === confirm && confirm.length > 0
+  const canSubmit = allMet && matches
+
+  function handleSubmit() {
+    if (!canSubmit) return
+    setDone(true)
+  }
+
+  return (
+    <div className="auth-page">
+      <div className="auth-shell">
+        <p className="auth-wordmark">Travel Guide</p>
+
+        {!done ? (
+          <>
+            <div className="auth-heading-block">
+              <h1 className="auth-heading">Choose a new password</h1>
+              <p className="auth-subtitle">
+                Your reset link is valid. Pick something you haven't used before.
+              </p>
+            </div>
+
+            <div className="reset-token-badge">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                <rect x="2" y="7" width="12" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M5 7V5a3 3 0 1 1 6 0v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              Secure link · expires in 24 h
+            </div>
+
+            <div className="form-stack">
+              <div className="field-block">
+                <label className="field-label" htmlFor="reset-pw">New password</label>
+                <PasswordField
+                  id="reset-pw"
+                  value={password}
+                  onChange={setPassword}
+                  autoComplete="new-password"
+                />
+                <StrengthBar password={password} />
+                <ul className="pw-requirements">
+                  {requirements.map(r => (
+                    <li key={r.label} className={`pw-req${r.met ? ' pw-req-met' : ''}`}>
+                      <span className="pw-req-dot" aria-hidden="true" />
+                      {r.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="field-block">
+                <label className="field-label" htmlFor="reset-confirm">Confirm password</label>
+                <PasswordField
+                  id="reset-confirm"
+                  value={confirm}
+                  onChange={setConfirm}
+                  autoComplete="new-password"
+                />
+                {confirm.length > 0 && (
+                  <p className={`pw-match-msg${matches ? ' pw-match-ok' : ' pw-match-err'}`}>
+                    {matches ? 'Passwords match' : "Passwords don't match"}
+                  </p>
+                )}
+              </div>
+
+              <button className="btn-primary" disabled={!canSubmit} onClick={handleSubmit}>
+                Set new password
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="reset-done-icon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                <circle cx="14" cy="14" r="12" stroke="currentColor" strokeWidth="1.6"/>
+                <path d="M8.5 14l4 4 7-8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="auth-heading-block">
+              <h1 className="auth-heading">Password updated</h1>
+              <p className="auth-subtitle">
+                Your password has been changed successfully. You can now log in with your new credentials.
+              </p>
+            </div>
+            <button className="btn-primary" onClick={onDone}>
+              Back to login
+            </button>
+          </>
+        )}
+      </div>
+      <AppFooter />
+    </div>
+  )
+}
+
+// ─── Terms & Conditions screen ────────────────────────────────────────────────
+
+const LOREM = [
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+  "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Curabitur pretium tincidunt lacus. Nulla gravida orci a odio. Nullam varius, turpis molestie dictum semper, enim lorem fringilla turpis, dictum pharetra libero dui nec eros.",
+  "Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Proin vel ante a orci tempus eleifend ut et magna. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus luctus urna sed urna ultricies ac tempor dui sagittis.",
+  "In condimentum facilisis porta. Sed nec diam eu diam mattis viverra. Nulla fringilla, orci ac euismod semper, magna diam porttitor mauris, quis sollicitudin sapien justo in libero. Vestibulum mollis mauris enim. Morbi euismod magna ac lorem rutrum elementum.",
+  "Donec viverra mi quis quam. In pellentesque massa placerat dui. Aenean scelerisque aliquet odio. Integer vitae nibh elit. Nulla eget dolor vehicula nisi mattis consequat. Aliquam erat volutpat. Phasellus feugiat vulputate enim, sit amet sodales turpis lobortis eu.",
+  "Fusce consequat. Nulla nisl. Nunc nisl. Duis bibendum, felis sed interdum venenatis, turpis enim blandit mi, in porttitor pede justo eu massa. Donec dui, consequat in, commodo a, commodo vel, arcu. Proin condimentum, ipsum at sagittis commodo, nunc dui faucibus arcu, non fringilla metus nisl non tellus.",
+  "Phasellus fermentum in, dolor. Pellentesque facilisis. Nulla imperdiet sit amet magna. Vestibulum dapibus, mauris nec malesuada fames ac turpis velit, rhoncus eu, luctus et interdum adipiscing wisi. Aliquam erat ac ipsum. Integer aliquam purus. Quisque lorem tortor fringilla sed.",
+  "Vestibulum elementum felis sit amet ante. In in orci fringilla hendrerit. Morbi scelerisque luctus velit. Sed malesuada porttitor risus. Etiam quis urna. Phasellus at dui in ligula mollis ultricies. Integer placerat tristique nisl. Praesent augue. Fusce commodo.",
+  "Pellentesque ut neque. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. In dui magna, posuere eget, vestibulum et, tempor auctor, justo. In ac felis quis tortor malesuada pretium. Pellentesque auctor neque.",
+  "Aenean ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu.",
+]
+
+function TermsScreen({ onBack }: { onBack: () => void }) {
+  return (
+    <>
+      <header className="page-header">
+        <button className="page-header-btn" onClick={onBack} aria-label="Back">
+          <IconArrowLeft />
+        </button>
+        <span className="page-title" style={{ fontSize: 15 }}>Terms &amp; Conditions</span>
+        <div style={{ width: 36 }} />
+      </header>
+
+      <div className="page-body">
+        <div className="terms-content">
+          <p className="terms-updated">Last updated: 15 August 2026</p>
+          {LOREM.map((para, i) => (
+            <div key={i} className="terms-section">
+              <h2 className="terms-section-title">
+                {[
+                  'Acceptance of Terms', 'Use of the Service', 'User Accounts',
+                  'Privacy & Data', 'Intellectual Property', 'Disclaimers',
+                  'Limitation of Liability', 'Changes to Terms', 'Governing Law',
+                  'Contact',
+                ][i]}
+              </h2>
+              <p className="terms-para">{para}</p>
+            </div>
+          ))}
+        </div>
+        <AppFooter />
+      </div>
+    </>
+  )
+}
+
 // ─── Profile screen ───────────────────────────────────────────────────────────
 
-function ProfileScreen() {
+function ProfileScreen({ onOpenTerms }: { onOpenTerms: () => void }) {
   const [firstName, setFirstName] = useState('Sarah')
   const [lastName, setLastName] = useState('Dreischer')
   const [saved, setSaved] = useState(false)
@@ -1793,7 +2277,7 @@ function ProfileScreen() {
           Account
         </span>
         <div style={{ borderTop: '1px solid var(--border)' }}>
-          <button className="profile-action-row">
+          <button className="profile-action-row" onClick={onOpenTerms}>
             <span>Terms &amp; Conditions</span>
             <IconChevronRight />
           </button>
@@ -1807,6 +2291,7 @@ function ProfileScreen() {
         <div className="profile-delete-row">
           <button className="profile-delete-btn">Delete account</button>
         </div>
+        <AppFooter />
       </div>
     </>
   )
@@ -1875,6 +2360,7 @@ function SavedTipsScreen({
             ))}
           </div>
         )}
+        <AppFooter />
       </div>
     </>
   )
@@ -1886,6 +2372,9 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>({ view: 'login' })
   const [trips, setTrips] = useState<Trip[]>(SAMPLE_TRIPS)
   const [savedTips, setSavedTips] = useState<SavedTip[]>([])
+  const [showCookieBanner, setShowCookieBanner] = useState(() => {
+    try { return !localStorage.getItem('cookie-consent') } catch { return true }
+  })
 
   function toggleSavedTip(tip: SavedTip) {
     setSavedTips(prev =>
@@ -1915,22 +2404,47 @@ export default function App() {
 
   const hideNav = screen.view === 'new-trip' || screen.view === 'edit-trip'
 
+  const cookie = showCookieBanner && <CookieBanner onDismiss={() => setShowCookieBanner(false)} />
+
   if (screen.view === 'login') {
-    return (
+    return (<>
       <LoginScreen
         onLogin={() => setScreen({ view: 'destinations' })}
         onGoSignup={() => setScreen({ view: 'signup' })}
+        onForgotPassword={() => setScreen({ view: 'forgot-password' })}
       />
-    )
+      {cookie}
+    </>)
   }
 
   if (screen.view === 'signup') {
-    return (
+    return (<>
       <SignupScreen
         onComplete={() => setScreen({ view: 'destinations' })}
         onGoLogin={() => setScreen({ view: 'login' })}
       />
-    )
+      {cookie}
+    </>)
+  }
+
+  if (screen.view === 'forgot-password') {
+    return (<>
+      <ForgotPasswordScreen
+        onBack={() => setScreen({ view: 'login' })}
+        onOpenResetDemo={token => setScreen({ view: 'reset-password', token })}
+      />
+      {cookie}
+    </>)
+  }
+
+  if (screen.view === 'reset-password') {
+    return (<>
+      <ResetPasswordScreen
+        token={screen.token}
+        onDone={() => setScreen({ view: 'login' })}
+      />
+      {cookie}
+    </>)
   }
 
   return (
@@ -2029,12 +2543,19 @@ export default function App() {
         )
       })()}
 
-      {screen.view === 'profile' && <ProfileScreen />}
+      {screen.view === 'profile' && (
+        <ProfileScreen onOpenTerms={() => setScreen({ view: 'terms' })} />
+      )}
+
+      {screen.view === 'terms' && (
+        <TermsScreen onBack={() => setScreen({ view: 'profile' })} />
+      )}
 
       {!hideNav && (
         <BottomNav active={navActive()} onNavigate={handleNavNavigate} />
       )}
       </div>
+      {cookie}
     </div>
   )
 }

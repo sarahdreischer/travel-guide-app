@@ -1828,7 +1828,7 @@ textarea {
   background: var(--bg);
 }
 
-@media (min-width: 640px) {
+@media (min-width: 640px) and (max-width: 899px) {
   .auth-shell {
     border-left: 1px solid var(--border);
     border-right: 1px solid var(--border);
@@ -1841,12 +1841,12 @@ textarea {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent);
-  margin-bottom: 36px;
+  margin-bottom: 28px;
   min-height: unset;
 }
 
 .auth-heading-block {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .auth-heading {
@@ -1958,6 +1958,10 @@ textarea {
 .auth-shell .btn-primary:disabled {
   opacity: 0.25;
   cursor: not-allowed;
+}
+
+.auth-shell .form-stack {
+  gap: 20px;
 }
 
 /* ─── Side nav (hidden on mobile, shown on desktop) ───────────── */
@@ -2138,13 +2142,15 @@ textarea {
     height: 260px;
   }
 
-  /* Auth screens: card on desktop */
+  /* Auth screens: centred card on desktop.
+     The shell stays full-height with justify-content:center from base rules,
+     so content is naturally vertically centred. We just make it look like a card. */
   .auth-shell {
-    background: var(--bg);
+    max-width: 440px;
+    padding: 44px 40px 48px;
+    background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 12px;
-    max-width: 440px;
-    padding: 48px 44px 52px;
     box-shadow: 0 2px 16px rgba(17, 19, 24, 0.06);
   }
 

@@ -51,7 +51,8 @@ const TRAVEL_STYLES = ['Adventure', 'Relaxed', 'Cultural', 'Luxury', 'Budget', '
 const ACTIVITY_OPTIONS = [
   'Hiking', 'Swimming', 'Surfing', 'Cycling', 'Snorkelling',
   'Rock climbing', 'Yoga', 'Museums', 'Food tours', 'Nightlife',
-  'Photography', 'Wildlife', 'Sailing', 'Skiing',
+  'Photography', 'Wildlife', 'Sailing', 'Skiing', 'Scuba diving',
+  'Freediving',
 ] as const
 
 const STEPS = [
