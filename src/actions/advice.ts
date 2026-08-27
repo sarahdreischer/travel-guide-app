@@ -3,7 +3,7 @@
 // Advice Server Actions — Requirements 4.2, 4.3, 4.4, 4.7, 4.8
 import { AdviceStore } from '@/lib/advice-store'
 import type { CacheKey, AdviceRecord } from '@/lib/advice-store'
-import { LLMAdapter, AdviceTimeoutError, AIRateLimitedError } from '@/lib/llm-adapter'
+import { LLMAdapter, AdviceTimeoutError } from '@/lib/llm-adapter'
 import { getSubQuestions } from '@/lib/sub-questions'
 import { CATEGORIES } from '@/lib/destinations'
 import { canCallAI, getRateLimitStatus } from '@/lib/ai-rate-limiter'
