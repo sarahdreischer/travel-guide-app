@@ -2329,17 +2329,17 @@ textarea {
   opacity: 0;
   transform: translateY(6px);
   visibility: hidden;
-  transition: opacity 0.8s cubic-bezier(0.25, 0.1, 0.25, 1),
-              transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1),
-              visibility 0s linear 0.8s;
+  transition: opacity 1.2s cubic-bezier(0.25, 0.1, 0.25, 1),
+              transform 1.2s cubic-bezier(0.25, 0.1, 0.25, 1),
+              visibility 0s linear 1.2s;
 }
 
 .app-footer-visible {
   opacity: 1;
   transform: translateY(0);
   visibility: visible;
-  transition: opacity 0.8s cubic-bezier(0.25, 0.1, 0.25, 1),
-              transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1),
+  transition: opacity 1.2s cubic-bezier(0.25, 0.1, 0.25, 1),
+              transform 1.2s cubic-bezier(0.25, 0.1, 0.25, 1),
               visibility 0s linear 0s;
 }
 
@@ -2942,4 +2942,58 @@ textarea {
   align-items: center;
   justify-content: center;
   margin-bottom: 24px;
+}
+
+/* ─── Transport cost toggle row ───────────────────────────────── */
+
+.transport-cost-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.transport-cost-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  min-height: unset;
+}
+
+.transport-cost-checkbox {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.transport-info-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.13s, background 0.13s;
+  flex-shrink: 0;
+}
+
+.transport-info-btn:hover {
+  color: var(--accent);
+  background: var(--row-hover);
+}
+
+.transport-cost-row-disabled {
+  opacity: 0.4;
+  pointer-events: none;
 }

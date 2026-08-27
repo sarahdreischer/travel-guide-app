@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { AuthService } from '@/lib/auth'
-import { validateTripDates, derivebudgetRange } from '@/lib/validators'
+import { validateTripDates } from '@/lib/validators'
 import { DESTINATIONS } from '@/lib/destinations'
 import { db } from '@/db'
 import { trips } from '@/db/schema'
@@ -32,7 +32,9 @@ export async function updateTripAction(tripId: string, formData: FormData): Prom
   const endDateStr = formData.get('endDate') as string | null
   const travelMode = formData.get('travelMode') as string | null
   const transportMode = formData.get('transportMode') as string | null
+  const startingLocation = formData.get('startingLocation') as string | null
   const budgetStr = formData.get('budget') as string | null
+  const transportCostIncludedStr = formData.get('transportCostIncluded') as string | null
   const travelStyle = formData.get('travelStyle') as string | null
   const activityPreferences = formData.getAll('activityPreferences') as string[]
 
@@ -95,7 +97,9 @@ export async function updateTripAction(tripId: string, formData: FormData): Prom
       endDate: endDateStr!,
       travelMode: travelMode!,
       transportMode: transportMode!,
+      startingLocation: startingLocation || null,
       budgetUsd: budget!,
+      transportCostIncluded: transportCostIncludedStr === 'true',
       travelStyle: travelStyle!,
       activityPreferences,
     })

@@ -63,7 +63,9 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
   const endDateStr = formData.get('endDate') as string | null
   const travelMode = formData.get('travelMode') as string | null
   const transportMode = formData.get('transportMode') as string | null
+  const startingLocation = formData.get('startingLocation') as string | null
   const budgetStr = formData.get('budget') as string | null
+  const transportCostIncludedStr = formData.get('transportCostIncluded') as string | null
   const travelStyle = formData.get('travelStyle') as string | null
   const activityPreferences = formData.getAll('activityPreferences') as string[]
 
@@ -163,7 +165,9 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
       endDate: endDateStr!,
       travelMode: travelMode!,
       transportMode: transportMode!,
+      startingLocation: startingLocation || null,
       budgetUsd: budget!,
+      transportCostIncluded: transportCostIncludedStr === 'true',
       travelStyle: travelStyle!,
       activityPreferences,
     })
@@ -178,6 +182,12 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
     travellerType: travelMode!.toLowerCase(),
     budgetRange: derivebudgetRange(budget!),
     transportMode: transportMode ?? undefined,
+    startingLocation: startingLocation || undefined,
+    totalBudgetUsd: budget!,
+    transportCostIncluded: transportCostIncludedStr === 'true',
+    tripDurationDays: Math.max(1, Math.round((new Date(endDateStr!).getTime() - new Date(startDateStr!).getTime()) / 86400000)),
+    partySize: travelMode!.toLowerCase(),
+    activities: activityPreferences,
   }
 
   // 7. Trigger advice generation (fire and don't block redirect)

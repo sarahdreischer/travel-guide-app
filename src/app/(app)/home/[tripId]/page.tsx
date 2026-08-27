@@ -108,6 +108,13 @@ export default async function HomePage({
       endMonth,
       travellerType: trip.travelMode.toLowerCase(),
       budgetRange: derivebudgetRange(trip.budgetUsd),
+      transportMode: (trip as { transportMode?: string | null }).transportMode ?? undefined,
+      startingLocation: (trip as { startingLocation?: string | null }).startingLocation ?? undefined,
+      totalBudgetUsd: trip.budgetUsd,
+      transportCostIncluded: (trip as { transportCostIncluded?: boolean }).transportCostIncluded ?? true,
+      tripDurationDays: Math.max(1, Math.round((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / 86400000)),
+      partySize: trip.travelMode.toLowerCase(),
+      activities: trip.activityPreferences,
     })
     adviceRecords = await AdviceStore.getForTrip(tripId)
   }
@@ -125,6 +132,12 @@ export default async function HomePage({
     travellerType: trip.travelMode.toLowerCase(),
     budgetRange: derivebudgetRange(trip.budgetUsd),
     transportMode: (trip as { transportMode?: string | null }).transportMode ?? undefined,
+    startingLocation: (trip as { startingLocation?: string | null }).startingLocation ?? undefined,
+    totalBudgetUsd: trip.budgetUsd,
+    transportCostIncluded: (trip as { transportCostIncluded?: boolean }).transportCostIncluded ?? true,
+    tripDurationDays: Math.max(1, Math.round((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / 86400000)),
+    partySize: trip.travelMode.toLowerCase(),
+    activities: trip.activityPreferences,
   }
 
   // Check if group tips are already cached

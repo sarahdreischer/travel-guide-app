@@ -14,6 +14,13 @@ export type CacheKey = {
   travellerType: string // party type (solo/couple/friends/family)
   budgetRange: string // "budget" | "mid" | "luxury"
   transportMode?: string // optional: fly | drive | rail | sail (context only, not a cache dimension)
+  // Extended context for LLM prompts (not used as cache dimensions)
+  startingLocation?: string // city, country the traveller departs from
+  totalBudgetUsd?: number // total budget for all travellers
+  transportCostIncluded?: boolean // whether transport cost is included in total budget
+  tripDurationDays?: number // number of days in the trip
+  partySize?: string // e.g. "solo", "couple", "friends", "family"
+  activities?: string[] // selected activity preferences
 }
 
 /**

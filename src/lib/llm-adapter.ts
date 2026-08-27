@@ -84,19 +84,43 @@ function buildBatchPrompt(
     ? `\n- Primary Transport Mode: ${cacheKey.transportMode}`
     : ''
 
-  return `You are a concise travel advice expert. Keep each answer to ${MAX_ANSWER_CHARS} characters maximum. Be direct and practical — no filler.
+  const startingLine = cacheKey.startingLocation
+    ? `\n- Travelling From: ${cacheKey.startingLocation}`
+    : ''
+
+  // Build budget context line with daily budget estimation
+  let budgetLine = `\n- Budget Range: ${describeBudgetRange(cacheKey.budgetRange)}`
+  if (cacheKey.totalBudgetUsd && cacheKey.tripDurationDays) {
+    const totalBudget = cacheKey.totalBudgetUsd
+    const days = cacheKey.tripDurationDays
+    const transportNote = cacheKey.transportCostIncluded
+      ? ' (transportation costs ARE included in this total — estimate and subtract travel costs before calculating daily spending)'
+      : ' (transportation costs are NOT included — this is purely destination spending money)'
+    budgetLine = `\n- Total Budget: $${totalBudget.toLocaleString()} USD for ${days} days${transportNote}`
+  }
+
+  const activitiesLine = cacheKey.activities && cacheKey.activities.length > 0
+    ? `\n- Planned Activities: ${cacheKey.activities.join(', ')}`
+    : ''
+
+  return `You are a concise, practical travel advice expert. Keep each answer to ${MAX_ANSWER_CHARS} characters maximum. Be direct — no filler.
+
+CRITICAL RULES:
+1. **Coherence**: Your answers MUST be consistent across all categories. Do NOT contradict yourself. For example, if you recommend against renting a car due to road conditions in one category, do not recommend car rental in another. Review your full set of answers for logical consistency before finalising.
+2. **Budget-aware**: Factor the traveller's total budget into ALL cost-related recommendations. Estimate a realistic daily budget and use it to inform advice on accommodation, food, activities, and transport.
+3. **Activity-aware**: Tailor recommendations to the traveller's selected activities and interests.
 
 Trip context:
 - Destination: ${cacheKey.destination}
 - Travel Month(s): ${cacheKey.startMonth === cacheKey.endMonth ? cacheKey.startMonth : `${cacheKey.startMonth} to ${cacheKey.endMonth}`}
-- Traveller Type: ${cacheKey.travellerType}
-- Budget Range: ${describeBudgetRange(cacheKey.budgetRange)}${transportLine}
+- Traveller Type: ${cacheKey.travellerType}${budgetLine}${transportLine}${startingLine}${activitiesLine}
 
 Answer ALL questions below grouped by category. Return a JSON object where:
 - Top-level keys MUST be the EXACT category names as written below (copy them verbatim, including dashes and special characters)
 - Each category value is an object mapping the EXACT question text to a concise answer (max ${MAX_ANSWER_CHARS} chars each)
 
 IMPORTANT: Use the category names EXACTLY as they appear in the headings below. Do NOT shorten, rename, or paraphrase them.
+IMPORTANT: Ensure all answers are mutually consistent — no contradictions between categories.
 
 ${categoryBlocks}`
 }
@@ -334,13 +358,30 @@ async function generateGroupTips(
     ? `\n- Primary Transport Mode: ${cacheKey.transportMode}`
     : ''
 
-  const prompt = `You are a concise travel advisor. Answer each numbered question below about the destination. Each answer must be max ${MAX_GROUP_TIP_CHARS} characters. Be direct and practical.
+  const startingLine = cacheKey.startingLocation
+    ? `\n- Travelling From: ${cacheKey.startingLocation}`
+    : ''
+
+  let budgetLine = `\n- Budget Range: ${describeBudgetRange(cacheKey.budgetRange)}`
+  if (cacheKey.totalBudgetUsd && cacheKey.tripDurationDays) {
+    const totalBudget = cacheKey.totalBudgetUsd
+    const days = cacheKey.tripDurationDays
+    const transportNote = cacheKey.transportCostIncluded
+      ? ' (transport costs included in total)'
+      : ' (transport costs excluded — destination spending only)'
+    budgetLine = `\n- Total Budget: $${totalBudget.toLocaleString()} USD for ${days} days${transportNote}`
+  }
+
+  const activitiesLine = cacheKey.activities && cacheKey.activities.length > 0
+    ? `\n- Planned Activities: ${cacheKey.activities.join(', ')}`
+    : ''
+
+  const prompt = `You are a concise travel advisor. Answer each numbered question below about the destination. Each answer must be max ${MAX_GROUP_TIP_CHARS} characters. Be direct and practical. Ensure all answers are consistent with each other — no contradictions.
 
 Trip context:
 - Destination: ${cacheKey.destination}
 - Travel Month(s): ${cacheKey.startMonth === cacheKey.endMonth ? cacheKey.startMonth : `${cacheKey.startMonth} to ${cacheKey.endMonth}`}
-- Traveller Type: ${cacheKey.travellerType}
-- Budget Range: ${describeBudgetRange(cacheKey.budgetRange)}${transportLine}
+- Traveller Type: ${cacheKey.travellerType}${budgetLine}${transportLine}${startingLine}${activitiesLine}
 
 Answer these questions. Return a JSON object with exactly these keys: ${groups.map((g) => `"${g.id}"`).join(', ')}. Each value is your answer as a string (max ${MAX_GROUP_TIP_CHARS} chars).
 

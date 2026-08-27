@@ -85,14 +85,17 @@ interface WizardData {
   endDate: string
   party: string
   transportMode: string
+  startingLocation: string
   budget: string
+  transportCostIncluded: boolean
   travelStyle: string[]
   activities: string[]
 }
 
 const EMPTY: WizardData = {
   destination: '', startDate: '', endDate: '', party: '',
-  transportMode: '', budget: '', travelStyle: [], activities: [],
+  transportMode: '', startingLocation: '', budget: '', transportCostIncluded: true,
+  travelStyle: [], activities: [],
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -202,6 +205,93 @@ function Step2({ form, setForm }: {
   form: WizardData
   setForm: React.Dispatch<React.SetStateAction<WizardData>>
 }) {
+  const [showTransportInfo, setShowTransportInfo] = useState(false)
+  const [locationQuery, setLocationQuery] = useState(form.startingLocation)
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
+  const [locationOpen, setLocationOpen] = useState(false)
+  const [locationError, setLocationError] = useState('')
+  const locationWrapRef = useRef<HTMLDivElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const hasBudget = form.budget.length > 0 && parseInt(form.budget) > 0
+
+  // Fetch city suggestions from OpenStreetMap Nominatim (free, no key required)
+  function fetchCitySuggestions(query: string) {
+    if (query.length < 2) {
+      setLocationSuggestions([])
+      return
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1&accept-language=en`,
+          { headers: { 'User-Agent': 'TravelGuideApp/1.0' } }
+        )
+        if (!res.ok) return
+        const data = await res.json()
+        const results: string[] = []
+        const seen = new Set<string>()
+        for (const item of data) {
+          const addr = item.address || {}
+          const city = addr.city || addr.town || addr.village || addr.state || item.name || ''
+          const country = addr.country || ''
+          if (!city || !country) continue
+          const label = `${city}, ${country}`
+          if (seen.has(label.toLowerCase())) continue
+          seen.add(label.toLowerCase())
+          results.push(label)
+          if (results.length >= 6) break
+        }
+        setLocationSuggestions(results)
+        setLocationOpen(results.length > 0)
+      } catch {
+        // Silently fail — suggestions are optional
+      }
+    }, 300)
+  }
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (locationWrapRef.current && !locationWrapRef.current.contains(e.target as Node)) {
+        setLocationOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
+
+  function handleLocationChange(value: string) {
+    setLocationQuery(value)
+    setLocationError('')
+    setForm((f) => ({ ...f, startingLocation: '' }))
+    fetchCitySuggestions(value)
+  }
+
+  function handleLocationSelect(city: string) {
+    setLocationQuery(city)
+    setForm((f) => ({ ...f, startingLocation: city }))
+    setLocationOpen(false)
+    setLocationError('')
+  }
+
+  function handleLocationBlur() {
+    // Small delay to allow click on suggestion
+    setTimeout(() => {
+      if (locationQuery && !form.startingLocation) {
+        // Check if typed value matches a suggestion
+        const match = locationSuggestions.find(
+          (s) => s.toLowerCase() === locationQuery.toLowerCase()
+        )
+        if (match) {
+          handleLocationSelect(match)
+        } else if (locationQuery.length >= 2) {
+          setLocationError('Please select a city from the suggestions.')
+        }
+      }
+    }, 200)
+  }
+
   return (
     <div className="form-stack">
       <div className="field-block">
@@ -221,8 +311,44 @@ function Step2({ form, setForm }: {
       </div>
 
       <div className="field-block">
+        <label className="field-label" htmlFor="starting-location-input">Where are you travelling from?</label>
+        <div className="dest-wrapper" ref={locationWrapRef}>
+          <input
+            id="starting-location-input"
+            type="text"
+            className="field-input"
+            placeholder="City, Country"
+            autoComplete="off"
+            value={locationQuery}
+            onChange={(e) => handleLocationChange(e.target.value)}
+            onFocus={() => { if (locationSuggestions.length > 0) setLocationOpen(true) }}
+            onBlur={handleLocationBlur}
+            aria-autocomplete="list"
+            aria-expanded={locationOpen}
+          />
+          {locationOpen && locationSuggestions.length > 0 && (
+            <ul className="dest-dropdown" role="listbox">
+              {locationSuggestions.map((city) => (
+                <li
+                  key={city}
+                  className="dest-item"
+                  role="option"
+                  aria-selected={form.startingLocation === city}
+                  onMouseDown={() => handleLocationSelect(city)}
+                >
+                  {city}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {locationError && <p className="field-error">{locationError}</p>}
+        <p className="field-hint">Helps estimate travel time and transport costs.</p>
+      </div>
+
+      <div className="field-block">
         <label className="field-label" htmlFor="budget-input">
-          What&apos;s your rough budget? <span className="field-label-note">— optional</span>
+          What&apos;s your rough total budget? <span className="field-label-note">— optional</span>
         </label>
         <div className="budget-wrapper">
           <span className="budget-prefix" aria-hidden="true">$</span>
@@ -231,7 +357,36 @@ function Step2({ form, setForm }: {
             onChange={(e) => setForm((f) => ({ ...f, budget: e.target.value.replace(/\D/g, '') }))} />
           <span className="budget-suffix" aria-hidden="true">USD</span>
         </div>
-        <p className="field-hint">Used to tailor cost advice and recommendations.</p>
+        <div className={`transport-cost-row${!hasBudget ? ' transport-cost-row-disabled' : ''}`}>
+          <label className="transport-cost-label" htmlFor="transport-cost-toggle">
+            <input
+              id="transport-cost-toggle"
+              type="checkbox"
+              className="transport-cost-checkbox"
+              checked={form.transportCostIncluded}
+              disabled={!hasBudget}
+              onChange={(e) => setForm((f) => ({ ...f, transportCostIncluded: e.target.checked }))}
+            />
+            <span>Include transportation cost in budget</span>
+          </label>
+          <button
+            type="button"
+            className="transport-info-btn"
+            onClick={() => setShowTransportInfo((v) => !v)}
+            aria-label="More information about transportation cost"
+            disabled={!hasBudget}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
+            </svg>
+          </button>
+        </div>
+        {showTransportInfo && hasBudget && (
+          <p className="field-hint" style={{ marginTop: 6 }}>
+            When checked, the AI will factor estimated travel costs (flights, trains, etc.) into your total budget when recommending daily spending. When unchecked, your budget is treated as spending money at the destination only.
+          </p>
+        )}
+        <p className="field-hint">Total budget for all travellers. Used to tailor cost advice and daily budget recommendations.</p>
       </div>
 
       <div className="field-block">
@@ -349,7 +504,9 @@ export default function TripForm({ destinationImages = {}, editTripId, initialDa
     fd.set('endDate', form.endDate)
     fd.set('travelMode', form.party)
     fd.set('transportMode', form.transportMode)
+    fd.set('startingLocation', form.startingLocation)
     fd.set('budget', form.budget || '1000')
+    fd.set('transportCostIncluded', form.transportCostIncluded ? 'true' : 'false')
     fd.set('travelStyle', form.travelStyle.join(', '))
     for (const a of form.activities) fd.append('activityPreferences', a)
 
