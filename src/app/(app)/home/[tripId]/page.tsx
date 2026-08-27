@@ -94,7 +94,8 @@ export default async function HomePage({
     .from(destinationImages)
     .where(eq(destinationImages.destination, trip.destination))
     .limit(1)
-  const heroUrl = heroRow?.imageUrl ?? null
+  const HERO_FALLBACK = 'https://images.unsplash.com/photo-1498637841888-108c6b723fcb?w=1080&q=80&fit=crop'
+  const heroUrl = heroRow?.imageUrl ?? HERO_FALLBACK
 
   // Fetch + reconcile advice
   let adviceRecords = await AdviceStore.getForTrip(tripId)
