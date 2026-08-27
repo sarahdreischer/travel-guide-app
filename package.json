@@ -10,7 +10,8 @@
     "type-check": "tsc --noEmit",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
-    "test:file": "jest --passWithNoTests"
+    "test:file": "jest --passWithNoTests",
+    "reconcile": "tsx scripts/reconcile.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "1.0.7",

@@ -81,6 +81,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run test:file -- <pattern>` | Run specific test file (e.g. `npm run test:file -- sub-questions`) |
 | `npm run type-check` | TypeScript check without emitting |
 | `npm run lint` | ESLint |
+| `npm run reconcile` | Force-reconcile missing AI advice for all trips |
+| `npm run reconcile -- <tripId>` | Reconcile a specific trip |
 
 ## Database Management
 
