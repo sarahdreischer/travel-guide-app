@@ -3021,3 +3021,27 @@ textarea {
   from { transform: translateY(-50%) rotate(0deg); }
   to   { transform: translateY(-50%) rotate(360deg); }
 }
+
+/* ─── Photo attribution (Unsplash compliance) ─────────────────── */
+
+.trip-hero-attribution {
+  position: absolute;
+  bottom: 6px;
+  right: 10px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  min-height: unset;
+  z-index: 2;
+}
+
+.trip-hero-attribution a {
+  color: rgba(255, 255, 255, 0.65);
+  text-decoration: underline;
+  text-underline-offset: 1px;
+  min-height: unset;
+  transition: color 0.13s;
+}
+
+.trip-hero-attribution a:hover {
+  color: #fff;
+}

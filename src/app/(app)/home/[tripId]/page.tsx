@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { db } from '@/db'
-import { trips, destinationImages, savedTips } from '@/db/schema'
+import { trips, savedTips } from '@/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { AuthService } from '@/lib/auth'
 import { AdviceStore, deriveMonthRange } from '@/lib/advice-store'
@@ -88,14 +88,9 @@ export default async function HomePage({
   const [trip] = await db.select().from(trips).where(eq(trips.id, tripId)).limit(1)
   if (!trip) notFound()
 
-  // Fetch hero image (may be null for destinations without a stored image)
-  const [heroRow] = await db
-    .select()
-    .from(destinationImages)
-    .where(eq(destinationImages.destination, trip.destination))
-    .limit(1)
-  const HERO_FALLBACK = 'https://images.unsplash.com/photo-1498637841888-108c6b723fcb?w=1080&q=80&fit=crop'
-  const heroUrl = heroRow?.imageUrl ?? HERO_FALLBACK
+  // Fetch hero image (auto-fetches from Unsplash if missing, persists to DB)
+  const { getDestinationImageWithAttribution } = await import('@/lib/destination-image')
+  const { imageUrl: heroUrl, attribution: heroAttribution } = await getDestinationImageWithAttribution(trip.destination)
 
   // Fetch + reconcile advice
   let adviceRecords = await AdviceStore.getForTrip(tripId)
@@ -230,6 +225,11 @@ export default async function HomePage({
             <p className="trip-hero-destination">{trip.destination}</p>
             <p className="trip-hero-detail">{detail}</p>
           </div>
+          {heroAttribution && (
+            <p className="trip-hero-attribution">
+              Photo by <a href={`https://unsplash.com?utm_source=travel_guide&utm_medium=referral`} target="_blank" rel="noopener noreferrer">{heroAttribution}</a> on <a href="https://unsplash.com?utm_source=travel_guide&utm_medium=referral" target="_blank" rel="noopener noreferrer">Unsplash</a>
+            </p>
+          )}
         </div>
       ) : (
         <div className="trip-overview-meta">

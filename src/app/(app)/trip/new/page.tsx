@@ -1,17 +1,13 @@
-import { db } from '@/db'
-import { destinationImages } from '@/db/schema'
+import { DESTINATIONS } from '@/lib/destinations'
+import { getDestinationImages } from '@/lib/destination-image'
 import TripForm from '@/components/forms/TripForm'
 
 /**
- * New trip page — fetches destination images from DB and passes to wizard.
+ * New trip page — fetches destination images (from DB cache or Unsplash) and passes to wizard.
  */
 export default async function NewTripPage() {
-  // Fetch all destination image URLs for the reveal + summary hero
-  const rows = await db.select().from(destinationImages)
-  const imageMap: Record<string, string> = {}
-  for (const row of rows) {
-    imageMap[row.destination] = row.imageUrl
-  }
+  // Get images for all destinations (cached in DB, auto-fetched if missing)
+  const imageMap = await getDestinationImages([...DESTINATIONS])
 
   return <TripForm destinationImages={imageMap} />
 }
