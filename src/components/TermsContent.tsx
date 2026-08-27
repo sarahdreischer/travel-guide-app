@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import AppFooter from '@/components/AppFooter'
 
 function IconArrowLeft() {
@@ -39,16 +40,20 @@ const PARAGRAPHS = [
 export default function TermsContent() {
   return (
     <>
-      <header className="page-header">
+      <header className="page-header page-header-legal">
         <a href="/profile" className="page-header-btn" aria-label="Back">
           <IconArrowLeft />
         </a>
-        <span className="page-title" style={{ fontSize: 15 }}>Terms of Service</span>
+        <div className="page-brand">
+          <Image src="/app-icon.png" alt="" width={22} height={22} className="page-brand-icon" aria-hidden="true" />
+          <span className="page-brand-label">Travel Guide</span>
+        </div>
         <div style={{ width: 36 }} />
       </header>
 
       <div className="page-body">
         <div className="terms-content">
+          <h1 className="legal-page-title">Terms of Service</h1>
           <p className="terms-updated">Last updated: 15 August 2026</p>
           {SECTIONS.map((title, i) => (
             <div key={i} className="terms-section">

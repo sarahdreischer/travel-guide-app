@@ -162,6 +162,10 @@ export default function ProfileContent({ user }: ProfileContentProps) {
             <span>Privacy Policy</span>
             <IconChevronRight />
           </a>
+          <a href="/cookies" className="profile-action-row">
+            <span>Cookie Policy</span>
+            <IconChevronRight />
+          </a>
           <button className="profile-action-row" onClick={handleLogout} disabled={loggingOut}>
             <span>{loggingOut ? 'Logging out…' : 'Log out'}</span>
             <IconChevronRight />
