@@ -174,6 +174,7 @@ export default async function HomePage({
     trip.travelMode,
     trip.travelStyle,
     (trip as { transportMode?: string | null }).transportMode ?? null,
+    trip.budgetUsd ? `$${trip.budgetUsd} Total Budget` : null,
   ]
     .filter(Boolean)
     .join('  ·  ')
