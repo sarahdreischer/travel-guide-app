@@ -40,10 +40,14 @@ export default async function EditTripPage({
     redirect(`/home/${tripId}`)
   }
 
-  // Fetch destination images
+  // Fetch destination images with attribution
   const rows = await db.select().from(destinationImages)
   const imageMap: Record<string, string> = {}
-  for (const row of rows) imageMap[row.destination] = row.imageUrl
+  const attributionMap: Record<string, string | null> = {}
+  for (const row of rows) {
+    imageMap[row.destination] = row.imageUrl
+    attributionMap[row.destination] = row.attribution
+  }
 
   // Map DB trip to wizard form shape
   const initialData = {
@@ -60,6 +64,7 @@ export default async function EditTripPage({
   return (
     <TripForm
       destinationImages={imageMap}
+      destinationAttributions={attributionMap}
       editTripId={tripId}
       initialData={initialData}
       cancelHref={`/home/${tripId}`}

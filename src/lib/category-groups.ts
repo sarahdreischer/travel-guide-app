@@ -1,7 +1,7 @@
 /**
  * Frontend grouping layer for the 17 backend advice categories.
  *
- * The backend generates raw categories (Transportation – Self Driving,
+ * The backend generates raw categories (Transportation – Driving,
  * Transportation - Car Rental, etc.). This module collapses them into 8
  * display groups so the advice page fits on one screen.
  *
@@ -41,31 +41,31 @@ const GROUP_DEFS: Array<{
     id: 'accommodation',
     name: 'Accommodation',
     question: 'What is the best accommodation for a tourist?',
-    match: (c) => c.category === 'Accommodation',
+    match: (c) => ['Recommended Areas', 'Hotels', 'Hostels', 'Holiday Rentals'].includes(c.category),
   },
   {
     id: 'money',
     name: 'Money',
     question: 'What is the preferred payment method in this location?',
-    match: (c) => c.category === 'Budget & Money',
+    match: (c) => c.category === 'Money',
   },
   {
-    id: 'daily',
-    name: 'Food & daily life',
+    id: 'food-and-drinks',
+    name: 'Food & Drinks',
     question: 'What food is a must try and within weekly budget?',
     match: (c) =>
-      ['Food', 'Laundry', 'Daily Logistics', 'Connectivity'].includes(c.category),
+      ['Food & Tipping Culture', 'Groceries & Drinking Water', 'Alcoholic Drinks'].includes(c.category),
   },
   {
     id: 'health',
     name: 'Health & safety',
     question: 'What health and safety aspects are most important?',
-    match: (c) => ['Safety', 'Packing'].includes(c.category),
+    match: (c) => ['Health', 'Safety'].includes(c.category),
   },
   {
     id: 'activities',
     name: 'Activities',
-    question: 'Which activities are the best in the area?',
+    question: 'Which activities are the available in the area according to my preferences?',
     match: (c) => c.category === 'Activities',
   },
   {
@@ -75,10 +75,28 @@ const GROUP_DEFS: Array<{
     match: (c) => c.category === 'Weather',
   },
   {
+    id: 'connectivity',
+    name: 'Connectivity',
+    question: 'Which mobile connectivity options are widely available?',
+    match: (c) => c.category === 'WiFi & Mobile Data',
+  },
+  {
     id: 'culture',
-    name: 'Culture & tips',
+    name: 'Culture & Tips',
     question: 'What cultural activities are a must do?',
     match: (c) => ['Local Etiquette', 'Miscellaneous'].includes(c.category),
+  },
+  {
+    id: 'packing-and-preparation',
+    name: 'Packing & Preparation',
+    question: 'How should I pack for the trip?',
+    match: (c) => ['Clothing & Accessories'].includes(c.category),
+  },
+  {
+    id: 'maintenance',
+    name: 'Maintenance',
+    question: 'Which services are widely availalbe for maintenance (e.g. laundry)?',
+    match: (c) => ['Laundry'].includes(c.category),
   },
 ]
 
@@ -86,7 +104,7 @@ const GROUP_DEFS: Array<{
 
 /**
  * Strip the group prefix from a sub-category name so it reads cleanly.
- * "Transportation – Self Driving" → "Self Driving"
+ * "Transportation – Driving" → "Self Driving"
  * "Transportation - Car Rental"  → "Car Rental"
  */
 export function cleanSubLabel(name: string): string {
@@ -101,6 +119,34 @@ export function cleanSubLabel(name: string): string {
  */
 export function getGroupQuestions(): Array<{ id: string; name: string; question: string }> {
   return GROUP_DEFS.map((d) => ({ id: d.id, name: d.name, question: d.question }))
+}
+
+/**
+ * Split categories into priority (first N groups shown above the fold on the home
+ * page) and the rest, based on GROUP_DEFS order. Used by the two-phase advice
+ * generation so the most-visible groups are generated first.
+ *
+ * @param categories - all category names to split
+ * @param priorityGroupCount - how many leading groups count as "priority" (default 5)
+ */
+export function splitCategoriesByGroupPriority(
+  categories: string[],
+  priorityGroupCount = 5
+): { priority: string[]; remaining: string[] } {
+  const priorityDefs = GROUP_DEFS.slice(0, priorityGroupCount)
+  const isPriority = (category: string) => {
+    // Build a minimal CategorySection-like object for the matcher
+    const stub = { category } as CategorySection
+    return priorityDefs.some((def) => def.match(stub))
+  }
+
+  const priority: string[] = []
+  const remaining: string[] = []
+  for (const c of categories) {
+    if (isPriority(c)) priority.push(c)
+    else remaining.push(c)
+  }
+  return { priority, remaining }
 }
 
 // ─── Main grouping function ───────────────────────────────────────────────────

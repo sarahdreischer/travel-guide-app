@@ -19,7 +19,7 @@ jest.mock('@/components/voting/VoteButtons', () => {
 import ExpandedCard from './ExpandedCard'
 
 describe('ExpandedCard', () => {
-  const category = 'Transportation – Self Driving'
+  const category = 'Transportation – Driving'
 
   const mockAdviceRecord = {
     id: '123e4567-e89b-12d3-a456-426614174000',
@@ -31,7 +31,7 @@ describe('ExpandedCard', () => {
     answers: {
       'Is driving recommended?': 'Yes, driving is highly recommended for exploring.',
       'Are roads easy to drive on?': 'Main roads are good, secondary roads can be rough.',
-      'Are mountain roads difficult?': 'Some mountain roads are steep and winding.',
+      'Are there mountain roads that are difficult to drive?': 'Some mountain roads are steep and winding.',
     },
     generatedAt: new Date(),
   }
@@ -135,7 +135,7 @@ describe('ExpandedCard', () => {
     )
 
     const sections = screen.getAllByTestId('expanded-card-question-section')
-    // Transportation – Self Driving has 3 sub-questions
+    // Transportation – Driving has 3 sub-questions
     expect(sections).toHaveLength(3)
   })
 

@@ -529,6 +529,80 @@ textarea {
   gap: 7px;
 }
 
+/* ─── Grouped activity chips (collapsible) ───────────────────── */
+
+.activity-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.activity-group {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.activity-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.13s;
+  min-height: unset;
+}
+
+.activity-group-header:hover {
+  background: var(--row-hover);
+}
+
+.activity-group-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  min-height: unset;
+  flex: 1;
+}
+
+.activity-group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  min-height: unset;
+}
+
+.activity-group-chevron {
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.activity-group-open .activity-group-chevron {
+  transform: rotate(180deg);
+}
+
+/* The chip group inside an expanded activity group */
+.activity-group .chip-group {
+  padding: 0 14px 14px;
+}
+
 .chip {
   height: 34px;
   min-height: 34px;
@@ -2350,7 +2424,8 @@ textarea {
 
 .app-footer-cols {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  /* grid-template-columns: 2fr 1fr 1fr 1fr; */
+  grid-template-columns: 2fr 1fr 1fr;
   gap: 24px;
   margin-bottom: 28px;
 }
@@ -3043,5 +3118,29 @@ textarea {
 }
 
 .trip-hero-attribution a:hover {
+  color: #fff;
+}
+
+/* ─── Destination reveal attribution ──────────────────────────── */
+
+.dest-reveal-attribution {
+  position: absolute;
+  bottom: 6px;
+  right: 10px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  min-height: unset;
+  z-index: 2;
+}
+
+.dest-reveal-attribution a {
+  color: rgba(255, 255, 255, 0.65);
+  text-decoration: underline;
+  text-underline-offset: 1px;
+  min-height: unset;
+  transition: color 0.13s;
+}
+
+.dest-reveal-attribution a:hover {
   color: #fff;
 }

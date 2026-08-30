@@ -82,9 +82,7 @@ export async function updateTripAction(tripId: string, formData: FormData): Prom
     }
   }
 
-  if (!activityPreferences || activityPreferences.length === 0) {
-    errors.activityPreferences = 'Please select at least one activity preference.'
-  }
+  // Activity preferences are optional — no validation required.
 
   if (Object.keys(errors).length > 0) return { success: false, errors }
 

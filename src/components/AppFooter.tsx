@@ -92,7 +92,7 @@ export default function AppFooter() {
         </div>
         <div className="app-footer-bottom">
           <p className="app-footer-copy">&copy; 2026 Travel Guide Ltd. All rights reserved.</p>
-          <p className="app-footer-copy">Registered in England &amp; Wales &middot; Company No. 14872931</p>
+          {/* <p className="app-footer-copy">Registered in England &amp; Wales &middot; Company No. 14872931</p> */}
         </div>
       </div>
     </footer>

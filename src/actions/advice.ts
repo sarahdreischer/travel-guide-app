@@ -8,6 +8,10 @@ import { getSubQuestions } from '@/lib/sub-questions'
 import { CATEGORIES } from '@/lib/destinations'
 import { canCallAI, getRateLimitStatus } from '@/lib/ai-rate-limiter'
 import { findAnswer } from '@/lib/answer-lookup'
+import { getGroupQuestions } from '@/lib/category-groups'
+
+// Category name used to store the AI-generated group headline tips in advice_cache
+const GROUP_TIPS_CATEGORY = '_group_tips'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,15 +46,11 @@ export async function getOrGenerateAdviceAction(
   const results: CategoryResult[] = []
   const errors: string[] = []
 
-  // Determine which categories power the concise home page cards (priority)
-  const { CONCISE_TOPIC_MAPPING } = await import('@/lib/travel-config')
-  const conciseCategories: Set<string> = new Set(
-    Object.values(CONCISE_TOPIC_MAPPING).map((m) => m.category)
-  )
-
-  // Split categories into priority (concise) and remaining (comprehensive)
-  const priorityCategories = CATEGORIES.filter((c) => conciseCategories.has(c))
-  const remainingCategories = CATEGORIES.filter((c) => !conciseCategories.has(c))
+  // Split categories into priority (the leading home-page group cards) and
+  // remaining (comprehensive), based on GROUP_DEFS order in category-groups.ts.
+  const { splitCategoriesByGroupPriority } = await import('@/lib/category-groups')
+  const { priority: priorityCategories, remaining: remainingCategories } =
+    splitCategoriesByGroupPriority([...CATEGORIES])
 
   // Helper: check cache for all categories, return which are missing or stale
   const getMissing = async (cats: string[]) => {
@@ -182,7 +182,9 @@ export async function reconcileMissingAdviceAction(
   }
 
   if (missingCategories.length === 0) {
-    return { generated: 0, skipped, errors: 0, rateLimited: false }
+    // Categories are all complete — still make sure group tips are reconciled.
+    const groupResult = await reconcileGroupTipsAction(cacheKey)
+    return { generated: 0, skipped, errors: 0, rateLimited: groupResult.rateLimited }
   }
 
   // Fire parallel requests — each category as a separate batch call for resilience
@@ -207,5 +209,79 @@ export async function reconcileMissingAdviceAction(
     }
   }
 
+  // After category advice is reconciled, ensure the group headline tips exist too.
+  // (Group tips summarise the sub-question answers, so this runs last.)
+  if (!rateLimited) {
+    await reconcileGroupTipsAction(cacheKey)
+  }
+
   return { generated, skipped, errors, rateLimited }
+}
+
+/**
+ * Ensure the AI-generated group headline tips (the one-liner shown on each
+ * home-page group card) exist and cover every current group. If the cached
+ * `_group_tips` record is missing or stale (missing a tip for any current
+ * group), it is regenerated from the latest sub-question answers so the
+ * headlines stay consistent with the detailed advice.
+ *
+ * Safe to call after category reconciliation from the page, the manual
+ * reconcile script, and the scheduled reconciler.
+ */
+export async function reconcileGroupTipsAction(
+  cacheKey: CacheKey
+): Promise<{ generated: boolean; skipped: boolean; rateLimited: boolean }> {
+  const groups = getGroupQuestions()
+  const groupIds = groups.map((g) => g.id)
+
+  // Check the cached group tips record for completeness
+  const existingRecord = await AdviceStore.findByCacheKey(cacheKey, GROUP_TIPS_CATEGORY)
+  if (existingRecord) {
+    const tips = existingRecord.answers as Record<string, string> | null
+    const hasAllGroups = tips != null && groupIds.every((id) => typeof tips[id] === 'string' && tips[id].length > 0)
+    if (hasAllGroups) {
+      return { generated: false, skipped: true, rateLimited: false }
+    }
+    // Stale — delete so it can be regenerated with the full set of groups
+    console.log('[reconcileGroupTips] Stale group tips — regenerating')
+    await AdviceStore.deleteByCacheKey(cacheKey, GROUP_TIPS_CATEGORY)
+  }
+
+  if (!canCallAI()) {
+    return { generated: false, skipped: false, rateLimited: true }
+  }
+
+  // Build context from existing sub-question answers so tips stay consistent
+  // with the detailed advice. (CATEGORIES never includes the group-tips key.)
+  const existingAdvice: Record<string, Record<string, string>> = {}
+  for (const category of CATEGORIES) {
+    const cached = await AdviceStore.findByCacheKey(cacheKey, category)
+    const answers = cached?.answers as Record<string, string> | null | undefined
+    if (answers && Object.keys(answers).length > 0) {
+      existingAdvice[category] = answers
+    }
+  }
+
+  try {
+    const aiTips = await LLMAdapter.generateGroupTips(cacheKey, groups, existingAdvice)
+    if (Object.keys(aiTips).length > 0) {
+      await AdviceStore.save({
+        destination: cacheKey.destination,
+        startMonth: cacheKey.startMonth,
+        endMonth: cacheKey.endMonth,
+        travellerType: cacheKey.travellerType,
+        budgetRange: cacheKey.budgetRange,
+        category: GROUP_TIPS_CATEGORY,
+        answers: aiTips,
+      })
+      return { generated: true, skipped: false, rateLimited: false }
+    }
+    return { generated: false, skipped: false, rateLimited: false }
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'AIRateLimitedError') {
+      return { generated: false, skipped: false, rateLimited: true }
+    }
+    console.error('[reconcileGroupTips] Failed to generate group tips:', error)
+    return { generated: false, skipped: false, rateLimited: false }
+  }
 }

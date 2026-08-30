@@ -49,25 +49,22 @@ const TRANSPORT_MODES = [
 
 const TRAVEL_STYLES = ['Adventure', 'Relaxed', 'Cultural', 'Luxury', 'Budget', 'Family'] as const
 
-const ACTIVITY_OPTIONS = [
-  'Cycling',
-  'Food tours',
-  'Freediving',
-  'Hiking',
-  'Museums',
-  'Nightlife',
-  'Paddleboarding',
-  'Photography',
-  'Rock climbing',
-  'Scuba diving',
-  'Snorkelling',
-  'Sailing',
-  'Skiing',
-  'Surfing',
-  'Swimming',
-  'Wildlife',
-  'Yoga',
-] as const
+// Activity preferences grouped by theme. Each option must remain unique across
+// groups (the value stored per trip is the activity label).
+const ACTIVITY_GROUPS: { label: string; options: string[] }[] = [
+  {
+    label: 'Water sports',
+    options: ['Bodysurfing', 'Freediving', 'Paddleboarding', 'Sailing', 'Scuba diving', 'Snorkelling', 'Surfing', 'Swimming'],
+  },
+  {
+    label: 'Mountains & outdoors',
+    options: ['Cycling', 'Hiking', 'Rock climbing', 'Skiing', 'Walking', 'Wildlife'],
+  },
+  {
+    label: 'Culture & leisure',
+    options: ['Food exploration', 'Museums', 'Nightlife', 'Photography', 'Yoga'],
+  },
+]
 
 const STEPS = [
   { label: 'Where to?', subtitle: 'Pick your destination and travel dates.' },
@@ -122,10 +119,11 @@ function IconArrowLeft() {
 
 // ─── Step 1 ───────────────────────────────────────────────────────────────────
 
-function Step1({ form, setForm, destImg }: {
+function Step1({ form, setForm, destImg, destAttribution }: {
   form: WizardData
   setForm: React.Dispatch<React.SetStateAction<WizardData>>
   destImg: string | null
+  destAttribution: string | null
 }) {
   const [query, setQuery] = useState(form.destination)
   const [open, setOpen] = useState(false)
@@ -186,13 +184,18 @@ function Step1({ form, setForm, destImg }: {
 
       {/* Destination image reveal */}
       {form.destination && destImg && (
-        <div className="dest-reveal" aria-hidden="true">
+        <div className="dest-reveal">
           <img className="dest-reveal-img" src={destImg} alt="" />
           <div className="dest-reveal-scrim" />
           <div className="dest-reveal-meta">
             <p className="dest-reveal-name">{form.destination}</p>
             <p className="dest-reveal-ready">Ready when you are</p>
           </div>
+          {destAttribution && (
+            <p className="dest-reveal-attribution">
+              Photo by <a href="https://unsplash.com?utm_source=travel_guide&utm_medium=referral" target="_blank" rel="noopener noreferrer">{destAttribution}</a> on <a href="https://unsplash.com?utm_source=travel_guide&utm_medium=referral" target="_blank" rel="noopener noreferrer">Unsplash</a>
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -442,20 +445,55 @@ function Step3({ form, setForm, destImg }: {
   }))
   const duration = getDuration(form.startDate, form.endDate)
 
+  // All groups expanded by default; users can collapse ones they don't care about.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const toggleGroup = (label: string) => setCollapsed((prev) => {
+    const next = new Set(prev)
+    if (next.has(label)) next.delete(label)
+    else next.add(label)
+    return next
+  })
+
   return (
     <div className="form-stack">
       <div className="field-block">
-        <label className="field-label">What do you love doing? <span className="field-label-note">— pick at least one</span></label>
-        <div className="chip-group" role="group" aria-label="Activity preferences">
-          {ACTIVITY_OPTIONS.map((a) => (
-            <button key={a} type="button" className={`chip ${form.activities.includes(a) ? 'chip-on' : 'chip-idle'}`}
-              aria-pressed={form.activities.includes(a)} onClick={() => toggleActivity(a)}>{a}</button>
-          ))}
+        <label className="field-label">What do you love doing? <span className="field-label-note">— optional</span></label>
+        <div className="activity-groups">
+          {ACTIVITY_GROUPS.map((group) => {
+            const isOpen = !collapsed.has(group.label)
+            const selectedCount = group.options.filter((o) => form.activities.includes(o)).length
+            return (
+              <div key={group.label} className={`activity-group${isOpen ? ' activity-group-open' : ''}`}>
+                <button
+                  type="button"
+                  className="activity-group-header"
+                  aria-expanded={isOpen}
+                  onClick={() => toggleGroup(group.label)}
+                >
+                  <span className="activity-group-label">{group.label}</span>
+                  {selectedCount > 0 && (
+                    <span className="activity-group-count">{selectedCount}</span>
+                  )}
+                  <span className="activity-group-chevron" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+                  </span>
+                </button>
+                {isOpen && (
+                  <div className="chip-group" role="group" aria-label={group.label}>
+                    {group.options.map((a) => (
+                      <button key={a} type="button" className={`chip ${form.activities.includes(a) ? 'chip-on' : 'chip-idle'}`}
+                        aria-pressed={form.activities.includes(a)} onClick={() => toggleActivity(a)}>{a}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
       {/* Emotional closing message */}
-      {form.destination && form.activities.length > 0 && (
+      {form.destination && (
         <div className="trip-ready-msg">
           <p className="trip-ready-text">
             You&apos;re all set. We&apos;ll build a personalised guide for{' '}
@@ -496,6 +534,7 @@ function Step3({ form, setForm, destImg }: {
 
 interface TripFormProps {
   destinationImages?: Record<string, string>
+  destinationAttributions?: Record<string, string | null>
   /** If set, the wizard is in edit mode — pre-populates and updates instead of creating */
   editTripId?: string
   initialData?: Partial<WizardData>
@@ -503,7 +542,7 @@ interface TripFormProps {
   cancelHref?: string
 }
 
-export default function TripForm({ destinationImages = {}, editTripId, initialData, cancelHref }: TripFormProps) {
+export default function TripForm({ destinationImages = {}, destinationAttributions = {}, editTripId, initialData, cancelHref }: TripFormProps) {
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<WizardData>({ ...EMPTY, ...initialData })
   const [serverErrors, setServerErrors] = useState<(CreateTripResult & { success: false }) | null>(null)
@@ -513,10 +552,12 @@ export default function TripForm({ destinationImages = {}, editTripId, initialDa
 
   const canAdvance1 = form.destination !== '' && form.party !== '' && form.startDate !== '' && form.endDate !== '' && new Date(form.endDate) > new Date(form.startDate)
   const canAdvance2 = form.transportMode !== '' && form.travelStyle.length > 0
-  const canSubmit = form.activities.length > 0
+  // Activity preferences are optional — the final step can always be submitted.
+  const canSubmit = true
   const canContinue = step === 1 ? canAdvance1 : step === 2 ? canAdvance2 : canSubmit
 
   const destImg = destinationImages[form.destination] || (form.destination ? FALLBACK_IMAGE : null)
+  const destAttribution = destinationAttributions[form.destination] ?? null
 
   function handleSubmit() {
     const fd = new FormData()
@@ -592,7 +633,7 @@ export default function TripForm({ destinationImages = {}, editTripId, initialDa
           <p className="wizard-step-subtitle">{STEPS[step - 1].subtitle}</p>
         </div>
 
-        {step === 1 && <Step1 form={form} setForm={setForm} destImg={destImg} />}
+        {step === 1 && <Step1 form={form} setForm={setForm} destImg={destImg} destAttribution={destAttribution} />}
         {step === 2 && <Step2 form={form} setForm={setForm} />}
         {step === 3 && <Step3 form={form} setForm={setForm} destImg={destImg} />}
       </main>

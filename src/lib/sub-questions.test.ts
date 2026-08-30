@@ -8,21 +8,19 @@ describe('getSubQuestions', () => {
     expect(() => getSubQuestions('Unknown Category' as Category)).toThrow()
   })
 
-  it('returns the correct sub-questions for Transportation – Self Driving', () => {
-    expect(getSubQuestions('Transportation – Self Driving')).toEqual([
+  it('returns the correct sub-questions for Transportation – Driving', () => {
+    expect(getSubQuestions('Transportation – Driving')).toEqual([
       'Is driving recommended?',
       'Are roads easy to drive on?',
-      'Are mountain roads difficult?',
+      'Are there mountain roads that are difficult to drive?',
     ])
   })
 
-  it('returns the correct sub-questions for Transportation - Car Rental', () => {
-    expect(getSubQuestions('Transportation - Car Rental')).toEqual([
-      'Is rental car recommended?',
-      'What should I watch out for when renting a car?',
-      'How much do car rentals cost on average?',
-      'What type of car is recommended for rental?',
-      'Which providers are best for car rentals?',
+  it('returns the correct sub-questions for Transportation – Parking', () => {
+    expect(getSubQuestions('Transportation – Parking')).toEqual([
+      'Is parking easy?',
+      'Is parking widely available?',
+      'What are the parking rules?',
     ])
   })
 
@@ -36,49 +34,88 @@ describe('getSubQuestions', () => {
     ])
   })
 
-  it('returns the correct sub-questions for Transportation – Serviced', () => {
-    expect(getSubQuestions('Transportation – Serviced')).toEqual([
-      'Should I book airport transport in advance?',
+  it('returns the correct sub-questions for Transportation – Ride-Hailing Services', () => {
+    expect(getSubQuestions('Transportation – Ride-Hailing Services')).toEqual([
+      'How much are taxis on average?',
+      'Are ride-hailing services available and widely used?',
+      'How much are ride-hailing service trips on average?',
+    ])
+  })
+
+  it('returns the correct sub-questions for Transportation – Airport Transfer', () => {
+    expect(getSubQuestions('Transportation – Ride-Hailing Services')).toEqual([
       'How much does airport transport cost on average?',
-      'Are taxis or other transportation companies readily available?',
-      'Which transportation companies other than local taxis are widely used?',
+      'Should I book airport transport in advance?',
     ])
   })
 
-  it('returns the correct sub-questions for Accommodation', () => {
-    expect(getSubQuestions('Accommodation')).toEqual([
-      'Which accommodations should I book according to my budget?',
-      'Which area should I stay in according to my budget?',
-      'What are the top 3 accommodations to book according to my budget?',
-      'Is accommodation likely to sell out?',
+  it('returns the correct sub-questions for Transportation - Car Rental', () => {
+    expect(getSubQuestions('Transportation - Car Rental')).toEqual([
+      'Are car rentals recommended?',
+      'What should I watch out for when renting a car?',
+      'How much do car rentals cost on average?',
+      'What type of car is recommended for rental?',
+      'Which providers are best for car rentals?',
     ])
   })
 
-  it('returns the correct sub-questions for Budget & Money', () => {
-    expect(getSubQuestions('Budget & Money')).toEqual([
-      'Do I need to bring cash?',
-      'Do most places take card or cash?',
+  it('returns the correct sub-questions for Recommended Areas', () => {
+    expect(getSubQuestions('Recommended Areas')).toEqual([
+      'Which area should I stay in according to my budget and activity preferences?'
+    ])
+  })
+
+  it('returns the correct sub-questions for Hotels', () => {
+    expect(getSubQuestions('Hotels')).toEqual([
+      'What are the top 3 hotels to book according to my budget?',
+      'What are average hotel prices?',
+      'Are hotels likely to sell out?',
+    ])
+  })
+
+  it('returns the correct sub-questions for Hostels', () => {
+    expect(getSubQuestions('Hostels')).toEqual([
+      'What are the top 3 hostels to book according to my budget?',
+      'What are average hostel prices?',
+      'Are hostels likely to sell out?',
+    ])
+  })
+
+  it('returns the correct sub-questions for Holiday Rentals', () => {
+    expect(getSubQuestions('Holiday Rentals')).toEqual([
+      'What are the top 3 holiday rentals according to my budget?',
+      'What are average holiday rental prices?',
+      'Are holiday rentals likely to sell out?',
+    ])
+  })
+
+  it('returns the correct sub-questions for Money', () => {
+    expect(getSubQuestions('Money')).toEqual([
+      'Should I bring cash in advance of the trip?',
+      'Are ATMs widely available?',
+      'What is the average fee charge for withdrawals from ATMs?',
+      'Do most places accept card payment?',
       'Which cards are widely accepted?',
-      'How expensive is the destination?',
+      'Is my current budget realistic?',
       'What is a realistic daily budget?',
     ])
   })
 
-  it('returns the correct sub-questions for Connectivity', () => {
-    expect(getSubQuestions('Connectivity')).toEqual([
+  it('returns the correct sub-questions for WiFi & Mobile Data', () => {
+    expect(getSubQuestions('WiFi & Mobile Data')).toEqual([
+      'Is Wi-Fi generally reliable?',
+      'How reliable is mobile data?',
+      'Does the area provide 4G (LTE) and 5G coverage reliable?',
       'Should I buy an eSIM?',
       'Which eSIM provider offers the best prices?',
-      'How reliable is mobile data?',
-      'Is Wi-Fi generally reliable?',
       'Is the destination suitable for remote work?',
     ])
   })
 
-  it('returns the correct sub-questions for Packing', () => {
-    expect(getSubQuestions('Packing')).toEqual([
-      'Should I pack shorts/tops/t-shirts?',
-      'Should I pack long trousers/shirts?',
-      'Do I need hiking shoes?',
+  it('returns the correct sub-questions for Clothing & Accessories', () => {
+    expect(getSubQuestions('Clothing & Accessories')).toEqual([
+      'What type of clothes should I pack?',
+      'What type of clothes should I pack for my activity preferences?',
       'Do I need insect repellent?',
       'Do I need sunscreen?',
       'What SPF is recommended?',
@@ -88,12 +125,27 @@ describe('getSubQuestions', () => {
     ])
   })
 
-  it('returns the correct sub-questions for Food', () => {
-    expect(getSubQuestions('Food')).toEqual([
-      'Is tipping expected?',
+  it('returns the correct sub-questions for Health', () => {
+    expect(getSubQuestions('Health')).toEqual([
+      'Are mosquitos and other insects prevalent?',
+      'Do I need insect repellent?',
+      'What is the expected UV strength?',
+      'Do I need sunscreen and, if yes, what SPF is recommended?',
+      'Which vaccinations do I need to have?',
+      'Do I need to proof my vaccination status on arrival?',
+      'What vaccinations are recommended for me considering my starting location?',
+      'What are popular pharmacies?',
+    ])
+  })
+
+  it('returns the correct sub-questions for Food & Tipping Culture', () => {
+    expect(getSubQuestions('Food & Tipping Culture')).toEqual([
+      'Which top 3 restaurants should I try?',
       'Where do locals eat?',
       'What local dishes should I try?',
+      'Is tipping expected?',
       'Is street food safe?',
+      'Which international fast food chains are available?',
       'What are average meal prices?',
     ])
   })
@@ -104,25 +156,22 @@ describe('getSubQuestions', () => {
       'How expensive are self-service laundrettes?',
       'Are there service wash laundrettes?',
       'How expensive are service wash laundrettes?',
-      'Do laundrettes take cash and/or card?',
+      'Do laundrettes take cash and/ or card?',
     ])
   })
 
-  it('returns the correct sub-questions for Daily Logistics', () => {
-    expect(getSubQuestions('Daily Logistics')).toEqual([
+  it('returns the correct sub-questions for Groceries & Drinking Water', () => {
+    expect(getSubQuestions('Groceries & Drinking Water')).toEqual([
       'What supermarkets are recommended?',
-      'Can I drink tap water?',
-      'What are popular pharmacies?',
-      'Are ATMs widely available?',
-      'Is sunscreen expensive?',
+      'Is tap water safe to drink?',
     ])
   })
 
   it('returns the correct sub-questions for Activities', () => {
     expect(getSubQuestions('Activities')).toEqual([
-      'Which activities are worth booking?',
+      'Which activities are worth booking in advance according to my activity preferences?',
       'Which activities are tourist traps?',
-      'Should I book ahead?',
+      'Which additional activities are popular?',
       'What are hidden gems?',
       'Is it advised to swim in nearby beaches?',
     ])
@@ -130,10 +179,12 @@ describe('getSubQuestions', () => {
 
   it('returns the correct sub-questions for Weather', () => {
     expect(getSubQuestions('Weather')).toEqual([
+      'What is the weather likely going to look like?',
       'Are rain showers common?',
       'Is it mostly sunny?',
       'Does it rain occasionally?',
       'Is drizzle rain common?',
+      'What are the average humidity levels?',
       'Are there specific times to avoid going outside?',
     ])
   })
@@ -149,22 +200,26 @@ describe('getSubQuestions', () => {
     ])
   })
 
-  it('returns an empty array for Local Etiquette (TBD)', () => {
+  it('returns the correct sub-questions for Local Etiquette', () => {
     expect(getSubQuestions('Local Etiquette')).toEqual([
       'What are common ways to greet people?',
       'What is taboo?',
     ])
   })
 
-  it('does NOT throw for Local Etiquette', () => {
-    expect(() => getSubQuestions('Local Etiquette')).not.toThrow()
+  it('returns the correct sub-questions for Alcoholic Drinks', () => {
+    expect(getSubQuestions('Alcoholic Drinks')).toEqual([
+      'How much are alcoholic drinks on average (at restaurants/ bars/ pubs etc.)?',
+      'What are the top 3 bars?',
+      'What are the top 3 pubs?',
+      'Where can I easily buy alcoholic drinks for private use?',
+      'Are alcoholic drinks highly taxed?',
+    ])
   })
 
   it('returns the correct sub-questions for Miscellaneous', () => {
     expect(getSubQuestions('Miscellaneous')).toEqual([
       'What are things I wish I had known?',
-      'Where can I easily buy alcoholic drinks?',
-      'Are alcoholic drinks highly taxed?',
     ])
   })
 

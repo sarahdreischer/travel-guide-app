@@ -115,17 +115,32 @@ export async function getDestinationImageWithAttribution(destination: string): P
 export async function getDestinationImages(
   destinations: string[]
 ): Promise<Record<string, string>> {
+  const data = await getDestinationImagesWithAttribution(destinations)
   const result: Record<string, string> = {}
+  for (const [dest, info] of Object.entries(data)) {
+    result[dest] = info.imageUrl
+  }
+  return result
+}
+
+/**
+ * Get images and attribution for multiple destinations.
+ * Returns a map of destination → { imageUrl, attribution }.
+ */
+export async function getDestinationImagesWithAttribution(
+  destinations: string[]
+): Promise<Record<string, { imageUrl: string; attribution: string | null }>> {
+  const result: Record<string, { imageUrl: string; attribution: string | null }> = {}
 
   // First, bulk-fetch all existing from DB
   const existing = await db.select().from(destinationImages)
-  const existingMap = new Map(existing.map((r) => [r.destination, r.imageUrl]))
+  const existingMap = new Map(existing.map((r) => [r.destination, { imageUrl: r.imageUrl, attribution: r.attribution }]))
 
   const missing: string[] = []
   for (const dest of destinations) {
-    const url = existingMap.get(dest)
-    if (url) {
-      result[dest] = url
+    const data = existingMap.get(dest)
+    if (data) {
+      result[dest] = data
     } else {
       missing.push(dest)
     }
@@ -137,12 +152,12 @@ export async function getDestinationImages(
     const batch = missing.slice(i, i + CONCURRENCY)
     const fetched = await Promise.all(
       batch.map(async (dest) => {
-        const url = await getDestinationImage(dest)
-        return { dest, url }
+        const info = await getDestinationImageWithAttribution(dest)
+        return { dest, imageUrl: info.imageUrl, attribution: info.attribution }
       })
     )
-    for (const { dest, url } of fetched) {
-      result[dest] = url
+    for (const { dest, imageUrl, attribution } of fetched) {
+      result[dest] = { imageUrl, attribution }
     }
   }
 
