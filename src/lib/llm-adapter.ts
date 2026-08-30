@@ -101,7 +101,7 @@ function buildBatchPrompt(
 
   const activitiesLine = cacheKey.activities && cacheKey.activities.length > 0
     ? `\n- Planned Activities: ${cacheKey.activities.join(', ')}`
-    : ''
+    : '\n- Planned Activities: None specified (no particular activity preferences)'
 
   return `You are a concise, practical travel advice expert. Keep each answer to ${MAX_ANSWER_CHARS} characters maximum. Be direct — no filler.
 
@@ -379,7 +379,7 @@ async function generateGroupTips(
 
   const activitiesLine = cacheKey.activities && cacheKey.activities.length > 0
     ? `\n- Planned Activities: ${cacheKey.activities.join(', ')}`
-    : ''
+    : '\n- Planned Activities: None specified (no particular activity preferences)'
 
   // Build a context block from existing sub-question answers so tips are derived from actual advice
   let adviceContext = ''

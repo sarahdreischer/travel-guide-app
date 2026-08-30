@@ -145,10 +145,7 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
     }
   }
 
-  // Activity preferences validation
-  if (!activityPreferences || activityPreferences.length === 0) {
-    errors.activityPreferences = 'Please select at least one activity preference.'
-  }
+  // Activity preferences are optional — no validation required.
 
   // 4. If any validation errors, return them
   if (Object.keys(errors).length > 0) {

@@ -51,7 +51,7 @@ const TRAVEL_STYLES = ['Adventure', 'Relaxed', 'Cultural', 'Luxury', 'Budget', '
 
 const ACTIVITY_OPTIONS = [
   'Cycling',
-  'Food & Tipping Culture tours',
+  'Food exploration',
   'Freediving',
   'Hiking',
   'Museums',
@@ -452,7 +452,7 @@ function Step3({ form, setForm, destImg }: {
   return (
     <div className="form-stack">
       <div className="field-block">
-        <label className="field-label">What do you love doing? <span className="field-label-note">— pick at least one</span></label>
+        <label className="field-label">What do you love doing? <span className="field-label-note">— optional</span></label>
         <div className="chip-group" role="group" aria-label="Activity preferences">
           {ACTIVITY_OPTIONS.map((a) => (
             <button key={a} type="button" className={`chip ${form.activities.includes(a) ? 'chip-on' : 'chip-idle'}`}
@@ -462,7 +462,7 @@ function Step3({ form, setForm, destImg }: {
       </div>
 
       {/* Emotional closing message */}
-      {form.destination && form.activities.length > 0 && (
+      {form.destination && (
         <div className="trip-ready-msg">
           <p className="trip-ready-text">
             You&apos;re all set. We&apos;ll build a personalised guide for{' '}
@@ -521,7 +521,8 @@ export default function TripForm({ destinationImages = {}, destinationAttributio
 
   const canAdvance1 = form.destination !== '' && form.party !== '' && form.startDate !== '' && form.endDate !== '' && new Date(form.endDate) > new Date(form.startDate)
   const canAdvance2 = form.transportMode !== '' && form.travelStyle.length > 0
-  const canSubmit = form.activities.length > 0
+  // Activity preferences are optional — the final step can always be submitted.
+  const canSubmit = true
   const canContinue = step === 1 ? canAdvance1 : step === 2 ? canAdvance2 : canSubmit
 
   const destImg = destinationImages[form.destination] || (form.destination ? FALLBACK_IMAGE : null)
