@@ -8,17 +8,17 @@ describe('getSubQuestions', () => {
     expect(() => getSubQuestions('Unknown Category' as Category)).toThrow()
   })
 
-  it('returns the correct sub-questions for Transportation – Self Driving', () => {
-    expect(getSubQuestions('Transportation – Self Driving')).toEqual([
+  it('returns the correct sub-questions for Transportation – Driving', () => {
+    expect(getSubQuestions('Transportation – Driving')).toEqual([
       'Is driving recommended?',
       'Are roads easy to drive on?',
-      'Are mountain roads difficult?',
+      'Are there mountain roads that are difficult to drive?',
     ])
   })
 
   it('returns the correct sub-questions for Transportation - Car Rental', () => {
     expect(getSubQuestions('Transportation - Car Rental')).toEqual([
-      'Is rental car recommended?',
+      'Are car rentals recommended?',
       'What should I watch out for when renting a car?',
       'How much do car rentals cost on average?',
       'What type of car is recommended for rental?',

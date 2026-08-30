@@ -65,13 +65,13 @@ export type Destination = (typeof DESTINATIONS)[number]
 // category, just append to the array.
 
 export const CATEGORY_CONFIG = {
-  'Transportation – Self Driving': [
+  'Transportation – Driving': [
     'Is driving recommended?',
     'Are roads easy to drive on?',
-    'Are mountain roads difficult?',
+    'Are there mountain roads that are difficult to drive?',
   ],
   'Transportation - Car Rental': [
-    'Is rental car recommended?',
+    'Are car rentals recommended?',
     'What should I watch out for when renting a car?',
     'How much do car rentals cost on average?',
     'What type of car is recommended for rental?',
@@ -202,7 +202,7 @@ export function getSubQuestions(category: string): string[] {
 export const CONCISE_TOPIC_MAPPING = {
   'Rental car': {
     category: 'Transportation - Car Rental',
-    question: 'Is rental car recommended?',
+    question: 'Are car rentals recommended?',
   },
   'Parking': {
     category: 'Transportation - Parking',

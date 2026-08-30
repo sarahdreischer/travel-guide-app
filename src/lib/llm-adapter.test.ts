@@ -63,21 +63,21 @@ describe('LLMAdapter', () => {
         startMonth: 'january', endMonth: 'january',
         travellerType: 'solo',
         budgetRange: 'mid',
-        category: 'Transportation – Self Driving',
+        category: 'Transportation – Driving',
         answers,
         generatedAt: new Date(),
       }
 
       // Batch response: category name → answers object
       mockGenerateObject.mockResolvedValue({
-        object: { 'Transportation – Self Driving': answers },
+        object: { 'Transportation – Driving': answers },
       } as any)
 
       mockSave.mockResolvedValue(savedRecord)
 
       const result = await LLMAdapter.generateAdvice({
         cacheKey: sampleCacheKey,
-        category: 'Transportation – Self Driving',
+        category: 'Transportation – Driving',
         subQuestions: ['Is driving recommended?', 'Are roads in good condition?'],
       })
 
@@ -88,7 +88,7 @@ describe('LLMAdapter', () => {
         startMonth: 'january', endMonth: 'january',
         travellerType: 'solo',
         budgetRange: 'mid',
-        category: 'Transportation – Self Driving',
+        category: 'Transportation – Driving',
         answers,
       })
     })

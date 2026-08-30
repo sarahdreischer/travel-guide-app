@@ -62,12 +62,12 @@ const ADVICE: Record<string, AdviceCategory[]> = {
   'Costa Rica': [
     {
       id: 'transport-self-driving',
-      name: 'Transportation – Self Driving',
+      name: 'Transportation – Driving',
       keyTip: 'A rental car is strongly recommended — get a 4x4 for remote areas.',
       items: [
         { question: 'Is driving recommended?', answer: 'Yes. Most tourist areas are accessible by car and having your own wheels lets you visit national parks on your own schedule.' },
         { question: 'Are road conditions good?', answer: 'Main highways are paved and in reasonable condition. Secondary roads to beach towns and national parks can be rough, especially in wet season.' },
-        { question: 'Are mountain roads difficult?', answer: 'Some roads to highland areas are steep, narrow, and winding. Drive cautiously and avoid them after heavy rain.' },
+        { question: 'Are there mountain roads that are difficult to drive?', answer: 'Some roads to highland areas are steep, narrow, and winding. Drive cautiously and avoid them after heavy rain.' },
       ],
     },
     {
@@ -330,7 +330,7 @@ function groupAdvice(cats: AdviceCategory[]): DisplayGroup[] {
 }
 
 function cleanSubLabel(name: string): string {
-  // "Transportation – Self Driving" → "Self Driving"
+  // "Transportation – Driving" → "Self Driving"
   return name.replace(/^[^–\-]+[–\-]\s*/, '').trim() || name
 }
 

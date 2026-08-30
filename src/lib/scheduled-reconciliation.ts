@@ -16,6 +16,7 @@ import { CATEGORIES, getSubQuestions } from '@/lib/destinations'
 import { derivebudgetRange } from '@/lib/validators'
 import { canCallAI } from '@/lib/ai-rate-limiter'
 import { reconcileMissingAdviceAction } from '@/actions/advice'
+import { findAnswer } from '@/lib/answer-lookup'
 
 const INTERVAL_MINUTES = parseInt(process.env.RECONCILIATION_INTERVAL_MINUTES ?? '10', 10)
 const INTERVAL_MS = INTERVAL_MINUTES * 60 * 1000
@@ -38,10 +39,24 @@ async function runReconciliation() {
     let skipped = 0
 
     for (const trip of allTrips) {
-      // Check if this trip has incomplete advice
+      // Check if this trip has incomplete advice.
+      // Count records per category and verify each category actually has all its
+      // current sub-question answers (a category can exist but be stale/incomplete).
       const records = await AdviceStore.getForTrip(trip.id)
+      const recordsByCategory = new Map<string, Record<string, string> | null>()
+      for (const r of records) {
+        recordsByCategory.set(r.category, r.answers as Record<string, string> | null)
+      }
 
-      if (records.length >= categoriesWithQuestions.length) {
+      const hasMissingOrStale = categoriesWithQuestions.some((category) => {
+        const answers = recordsByCategory.get(category)
+        if (!answers) return true // category not generated yet
+        const subQuestions = getSubQuestions(category)
+        // Stale if any current sub-question lacks an answer
+        return !subQuestions.every((q) => findAnswer(answers, q) !== undefined)
+      })
+
+      if (!hasMissingOrStale) {
         skipped++
         continue
       }
@@ -59,6 +74,13 @@ async function runReconciliation() {
         endMonth,
         travellerType: trip.travelMode.toLowerCase(),
         budgetRange: derivebudgetRange(trip.budgetUsd),
+        transportMode: (trip as { transportMode?: string | null }).transportMode ?? undefined,
+        startingLocation: (trip as { startingLocation?: string | null }).startingLocation ?? undefined,
+        totalBudgetUsd: trip.budgetUsd,
+        transportCostIncluded: (trip as { transportCostIncluded?: boolean }).transportCostIncluded ?? true,
+        tripDurationDays: Math.max(1, Math.round((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / 86400000)),
+        partySize: trip.travelMode.toLowerCase(),
+        activities: trip.activityPreferences,
       }
 
       const result = await reconcileMissingAdviceAction(cacheKey)

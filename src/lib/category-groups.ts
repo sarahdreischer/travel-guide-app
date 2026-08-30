@@ -1,7 +1,7 @@
 /**
  * Frontend grouping layer for the 17 backend advice categories.
  *
- * The backend generates raw categories (Transportation – Self Driving,
+ * The backend generates raw categories (Transportation – Driving,
  * Transportation - Car Rental, etc.). This module collapses them into 8
  * display groups so the advice page fits on one screen.
  *
@@ -86,7 +86,7 @@ const GROUP_DEFS: Array<{
 
 /**
  * Strip the group prefix from a sub-category name so it reads cleanly.
- * "Transportation – Self Driving" → "Self Driving"
+ * "Transportation – Driving" → "Self Driving"
  * "Transportation - Car Rental"  → "Car Rental"
  */
 export function cleanSubLabel(name: string): string {
