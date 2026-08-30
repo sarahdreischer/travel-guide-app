@@ -26,6 +26,11 @@ export function middleware(request: NextRequest) {
   const sessionToken = request.cookies.get("session_token");
   const setupComplete = request.cookies.get("setup_complete");
 
+  // The /demo experience is public (no auth) — always allow it through.
+  if (pathname === "/demo" || pathname.startsWith("/demo/")) {
+    return NextResponse.next();
+  }
+
   // Special handling for /setup route
   if (pathname === "/setup") {
     // Already authenticated + setup done → redirect away

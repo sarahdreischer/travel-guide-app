@@ -8,9 +8,19 @@
  * To change groupings: edit GROUP_DEFS. The backend is untouched.
  */
 
-import type { CategorySection } from '@/app/(app)/home/[tripId]/page'
-
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+/**
+ * A single advice category with its answers. Produced by the home page's
+ * buildSections() (from AdviceStore records) and by the demo data builder.
+ */
+export interface CategorySection {
+  category: string
+  /** One-line fallback tip derived from the first answer (used for ungrouped categories) */
+  conciseTip: string | null
+  answers: Record<string, string> | null
+  subQuestions: string[]
+}
 
 export interface GroupSection {
   id: string

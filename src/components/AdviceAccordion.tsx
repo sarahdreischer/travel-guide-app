@@ -13,6 +13,10 @@ interface AdviceAccordionProps {
   savedKeys: Set<string>
   /** Initial count of saved tips (for showing the banner) */
   initialSavedCount: number
+  /** Optional path prefix (e.g. "/demo") applied to the saved-tips link */
+  basePath?: string
+  /** When true, bookmarks toggle client-side only (no server action / no DB) */
+  demoMode?: boolean
 }
 
 function makeSavedKey(category: string, question: string) {
@@ -63,14 +67,21 @@ const GROUP_ICONS: Record<string, React.ReactElement> = {
 
 // ─── Bookmark button ──────────────────────────────────────────────────────────
 
-function BookmarkBtn({ tripId, category, question, answer, initialSaved, onSavedChange }: {
-  tripId: string; category: string; question: string; answer: string; initialSaved: boolean; onSavedChange?: (key: string, saved: boolean) => void
+function BookmarkBtn({ tripId, category, question, answer, initialSaved, onSavedChange, demoMode }: {
+  tripId: string; category: string; question: string; answer: string; initialSaved: boolean; onSavedChange?: (key: string, saved: boolean) => void; demoMode?: boolean
 }) {
   const [saved, setSaved] = useState(initialSaved)
   const [pending, startTransition] = useTransition()
 
   function handleToggle(e: React.MouseEvent) {
     e.stopPropagation()
+    // Demo mode: toggle in-memory only, never hit the server action / DB.
+    if (demoMode) {
+      const next = !saved
+      setSaved(next)
+      onSavedChange?.(makeSavedKey(category, question), next)
+      return
+    }
     startTransition(async () => {
       const result = await toggleSavedTipAction({ tripId, category, question, answer })
       setSaved(result.saved)
@@ -94,8 +105,8 @@ function BookmarkBtn({ tripId, category, question, answer, initialSaved, onSaved
 
 // ─── Group row ────────────────────────────────────────────────────────────────
 
-function GroupRow({ group, index, tripId, savedKeys, onSavedChange }: {
-  group: GroupSection; index: number; tripId: string; savedKeys: Set<string>; onSavedChange: (key: string, saved: boolean) => void
+function GroupRow({ group, index, tripId, savedKeys, onSavedChange, demoMode }: {
+  group: GroupSection; index: number; tripId: string; savedKeys: Set<string>; onSavedChange: (key: string, saved: boolean) => void; demoMode?: boolean
 }) {
   const [open, setOpen] = useState(false)
   // -1 means "All" tab; 0+ means individual source tabs
@@ -180,6 +191,7 @@ function GroupRow({ group, index, tripId, savedKeys, onSavedChange }: {
                             answer={answer}
                             initialSaved={savedKeys.has(key)}
                             onSavedChange={onSavedChange}
+                            demoMode={demoMode}
                           />
                         )}
                       </div>
@@ -200,7 +212,7 @@ function GroupRow({ group, index, tripId, savedKeys, onSavedChange }: {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function AdviceAccordion({ groups, tripId, savedKeys: initialSavedKeys, initialSavedCount }: AdviceAccordionProps) {
+export default function AdviceAccordion({ groups, tripId, savedKeys: initialSavedKeys, initialSavedCount, basePath = '', demoMode }: AdviceAccordionProps) {
   const [savedKeys, setSavedKeys] = useState<Set<string>>(initialSavedKeys)
   const savedCount = savedKeys.size || initialSavedCount
 
@@ -217,7 +229,7 @@ export default function AdviceAccordion({ groups, tripId, savedKeys: initialSave
     <>
       {savedCount > 0 && (
         <div className="saved-tips-entry">
-          <a href={`/home/${tripId}/saved`} className="saved-tips-link">
+          <a href={`${basePath}/home/${tripId}/saved`} className="saved-tips-link">
             <span className="saved-tips-icon">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
@@ -230,7 +242,7 @@ export default function AdviceAccordion({ groups, tripId, savedKeys: initialSave
       )}
       <div className="category-list">
         {groups.map((group, i) => (
-          <GroupRow key={group.id} group={group} index={i} tripId={tripId} savedKeys={savedKeys} onSavedChange={handleSavedChange} />
+          <GroupRow key={group.id} group={group} index={i} tripId={tripId} savedKeys={savedKeys} onSavedChange={handleSavedChange} demoMode={demoMode} />
         ))}
       </div>
     </>

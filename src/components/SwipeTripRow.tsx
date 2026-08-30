@@ -9,6 +9,8 @@ interface SwipeTripRowProps {
   destination: string
   href: string
   isPast?: boolean
+  /** When true, swipe-to-delete is disabled (used by the read-only demo) */
+  disableDelete?: boolean
   children: React.ReactNode
 }
 
@@ -16,7 +18,7 @@ interface SwipeTripRowProps {
  * Wraps a trip row with swipe-to-delete behaviour.
  * Drag left past 80px → red "Delete" zone reveals. On release the confirm modal shows.
  */
-export default function SwipeTripRow({ tripId, destination, href, isPast, children }: SwipeTripRowProps) {
+export default function SwipeTripRow({ tripId, destination, href, isPast, disableDelete, children }: SwipeTripRowProps) {
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
   const [offsetX, setOffsetX] = useState(0)
@@ -38,7 +40,7 @@ export default function SwipeTripRow({ tripId, destination, href, isPast, childr
 
   function handleTouchEnd() {
     dragging.current = false
-    if (offsetX < -80) {
+    if (!disableDelete && offsetX < -80) {
       didSwipe.current = true
       setShowModal(true)
     }
@@ -61,7 +63,7 @@ export default function SwipeTripRow({ tripId, destination, href, isPast, childr
   function handleMouseUp() {
     if (!dragging.current) return
     dragging.current = false
-    if (offsetX < -80) {
+    if (!disableDelete && offsetX < -80) {
       didSwipe.current = true
       setShowModal(true)
     }
