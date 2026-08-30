@@ -117,6 +117,13 @@ export const DEMO_ADVICE_GENERATED: Record<string, DemoAdviceEntry> = {
         "Which international fast food chains are available?": "McDonald's, Burger King, and Subway are available in major cities.",
         "What are average meal prices?": "Expect to pay $5-$15 for local meals and $15-$30 for dining at nicer restaurants."
       },
+      "Laundry": {
+        "Are there self-service laundrettes?": "Yes, self-service laundrettes are available in major towns and tourist areas.",
+        "How expensive are self-service laundrettes?": "Expect to pay around $5-$10 per load.",
+        "Are there service wash laundrettes?": "Yes, service wash options are available in many locations.",
+        "How expensive are service wash laundrettes?": "Service wash costs range from $10-$20 per load.",
+        "Do laundrettes take cash and/ or card?": "Most laundrettes accept cash; some may accept cards."
+      },
       "Groceries & Drinking Water": {
         "What supermarkets are recommended?": "Look for Auto Mercado and Mas x Menos for groceries. They offer a good selection and reasonable prices.",
         "Is tap water safe to drink?": "Yes, tap water is generally safe to drink in Costa Rica, but bottled water is recommended in rural areas."

@@ -240,13 +240,44 @@ export function buildDemoSections(destination: string): CategorySection[] {
  * Build the group headline tips map for a demo trip (keyed by group id),
  * derived from the live group definitions so it stays in sync.
  */
+/**
+ * Resolve a group's headline tip:
+ * 1. Prefer the real, pre-generated LLM group tip from demo-advice.generated.ts.
+ * 2. Fall back to the example patterns in fallbackGroupTip() for any group id
+ *    not present (e.g. a newly added group).
+ */
+function resolveGroupTip(destination: string, groupId: string, groupName: string): string {
+  const generated = DEMO_ADVICE_GENERATED[destination]?.groupTips?.[groupId]
+  if (generated) return generated
+  return fallbackGroupTip(destination, groupId, groupName)
+}
+
+/**
+ * Hand-written example group tips, keyed by group id. Used only when no real
+ * generated tip exists. Any unknown group id gets a sensible generic line.
+ */
+function fallbackGroupTip(destination: string, groupId: string, groupName: string): string {
+  const d = destination
+  switch (groupId) {
+    case 'transport': return `Getting around ${d} is easiest with a mix of walking and local transport; a rental car helps for remote spots.`
+    case 'accommodation': return `Stay central in ${d} and book a few weeks ahead — the best-value places fill up in peak season.`
+    case 'money': return `Cards are widely accepted in ${d}, but carry some cash for markets, taxis and small vendors.`
+    case 'food-and-drinks': return `Eat where the locals do in ${d} — family-run spots off the main streets offer the best value and flavour.`
+    case 'health': return `${d} is low-risk for healthy travellers; pack sunscreen and any personal medication, and check routine vaccinations.`
+    case 'activities': return `Book ${d}'s signature experiences ahead of time and leave room for spontaneous local discoveries.`
+    case 'weather': return `Pack for changeable weather in ${d} — layers plus a compact rain jacket cover most conditions.`
+    case 'connectivity': return `Staying connected in ${d} is easy — grab an eSIM before you fly and rely on café/hotel Wi-Fi.`
+    case 'culture': return `A little local etiquette goes a long way in ${d}: greet warmly, dress respectfully, and ask before photos.`
+    case 'packing-and-preparation': return `Pack light for ${d} with versatile layers, comfortable shoes and the essentials for your planned activities.`
+    case 'maintenance': return `Self-service laundrettes are available in ${d}'s larger towns and are inexpensive for longer trips.`
+    default: return `${groupName} in ${d}: demo highlights tailored to this trip. Tap to read the full advice.`
+  }
+}
+
 export function buildDemoGroupTips(destination: string): Record<string, string> {
-  const generated = DEMO_ADVICE_GENERATED[destination]?.groupTips ?? {}
   const tips: Record<string, string> = {}
   for (const g of getGroupQuestions()) {
-    // Prefer the real generated group tip; fall back to a generic demo line.
-    tips[g.id] = generated[g.id]
-      ?? `${g.name} in ${destination}: demo highlights tailored to this trip. Tap to read the full advice.`
+    tips[g.id] = resolveGroupTip(destination, g.id, g.name)
   }
   return tips
 }
