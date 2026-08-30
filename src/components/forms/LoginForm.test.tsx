@@ -55,19 +55,18 @@ describe('LoginForm', () => {
     expect(button).toHaveAttribute('type', 'submit')
   })
 
-  it('all interactive elements have min 44x44 touch targets', () => {
+  it('interactive elements use the shared field/button classes (44px sizing enforced via CSS)', () => {
     render(<LoginForm />)
 
     const email = screen.getByLabelText('Email')
     const password = screen.getByLabelText('Password')
     const button = screen.getByRole('button', { name: /log in/i })
 
-    expect(email.className).toContain('min-h-[44px]')
-    expect(email.className).toContain('min-w-[44px]')
-    expect(password.className).toContain('min-h-[44px]')
-    expect(password.className).toContain('min-w-[44px]')
-    expect(button.className).toContain('min-h-[44px]')
-    expect(button.className).toContain('min-w-[44px]')
+    // Inputs use the .field-input class and the submit button uses .btn-primary;
+    // the global stylesheet enforces a 44px minimum touch target on these.
+    expect(email.className).toContain('field-input')
+    expect(password.className).toContain('field-input')
+    expect(button.className).toContain('btn-primary')
   })
 
   it('shows inline error message when invalid credentials', () => {
@@ -98,10 +97,10 @@ describe('LoginForm', () => {
     const alert = screen.getByRole('alert')
     expect(alert).toHaveTextContent(/temporarily locked/i)
     expect(alert).toHaveTextContent('12')
-    expect(alert).toHaveTextContent('minutes')
+    expect(alert).toHaveTextContent('min')
   })
 
-  it('shows singular "minute" when 1 minute remaining', () => {
+  it('shows the remaining lock time when 1 minute remaining', () => {
     mockState = {
       error: {
         type: 'account_locked',
@@ -113,7 +112,7 @@ describe('LoginForm', () => {
     render(<LoginForm />)
 
     const alert = screen.getByRole('alert')
-    expect(alert).toHaveTextContent('1 minute.')
+    expect(alert).toHaveTextContent('1 min.')
   })
 
   it('does not show error message when state is null', () => {

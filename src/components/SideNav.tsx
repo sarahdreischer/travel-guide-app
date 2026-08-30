@@ -51,7 +51,10 @@ const navItems = [
   { label: 'Profile', href: '/profile', Icon: IconUser },
 ]
 
-export default function SideNav() {
+/**
+ * @param basePath Optional path prefix (e.g. "/demo") applied to every nav link.
+ */
+export default function SideNav({ basePath = '' }: { basePath?: string }) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
 
@@ -78,11 +81,12 @@ export default function SideNav() {
       </div>
       <div className="side-nav-items">
         {navItems.map(({ label, href, Icon }) => {
-          const isActive = pathname === href || pathname.startsWith(href + '/')
+          const fullHref = `${basePath}${href}`
+          const isActive = pathname === fullHref || pathname.startsWith(fullHref + '/')
           return (
             <Link
               key={href}
-              href={href}
+              href={fullHref}
               className={`side-nav-item${isActive ? ' side-nav-item-active' : ''}`}
               aria-current={isActive ? 'page' : undefined}
               title={collapsed ? label : undefined}

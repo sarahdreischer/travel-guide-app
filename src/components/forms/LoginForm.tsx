@@ -105,6 +105,10 @@ export default function LoginForm() {
         <span>New here?</span>
         <a href="/setup" className="auth-toggle-link">Create an account</a>
       </div>
+
+      <div className="auth-demo-cta">
+        <a href="/demo" className="auth-demo-link">Explore the demo — no account needed</a>
+      </div>
     </div>
     <AppFooter />
     </div>

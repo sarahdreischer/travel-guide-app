@@ -64,7 +64,10 @@ const navItems = [
   { label: 'Profile',      href: '/profile',      Icon: IconUser  },
 ]
 
-export default function AppNav() {
+/**
+ * @param basePath Optional path prefix (e.g. "/demo") applied to every nav link.
+ */
+export default function AppNav({ basePath = '' }: { basePath?: string }) {
   const pathname = usePathname()
 
   return (
@@ -72,11 +75,12 @@ export default function AppNav() {
       {/* inner row constrained to the same max-width as the content */}
       <div className="app-nav-inner">
         {navItems.map(({ label, href, Icon }) => {
-          const isActive = pathname === href || pathname.startsWith(href + '/')
+          const fullHref = `${basePath}${href}`
+          const isActive = pathname === fullHref || pathname.startsWith(fullHref + '/')
           return (
             <Link
               key={href}
-              href={href}
+              href={fullHref}
               className={`app-nav-item${isActive ? ' app-nav-item-active' : ''}`}
               aria-current={isActive ? 'page' : undefined}
             >

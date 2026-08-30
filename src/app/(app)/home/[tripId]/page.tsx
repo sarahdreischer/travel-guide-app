@@ -12,21 +12,14 @@ import { reconcileMissingAdviceAction, reconcileGroupTipsAction } from '@/action
 import { CATEGORIES, getSubQuestions } from '@/lib/destinations'
 import { findAnswer } from '@/lib/answer-lookup'
 import { fmtDateShort, fmtDate, nightCount } from '@/lib/format-date'
-import { groupSections } from '@/lib/category-groups'
+import { groupSections, type CategorySection } from '@/lib/category-groups'
 import AdviceAccordion from '@/components/AdviceAccordion'
 import DeleteTripButton from '@/components/DeleteTripButton'
 import EditTripButton from '@/components/EditTripButton'
 import AppFooter from '@/components/AppFooter'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface CategorySection {
-  category: string
-  /** One-line fallback tip derived from the first answer (used for ungrouped categories) */
-  conciseTip: string | null
-  answers: Record<string, string> | null
-  subQuestions: string[]
-}
+// Re-exported for backward compatibility with existing importers.
+export type { CategorySection }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

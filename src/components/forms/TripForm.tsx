@@ -134,6 +134,19 @@ function Step1({ form, setForm, destImg, destAttribution }: {
   const duration = getDuration(form.startDate, form.endDate)
   const today = new Date().toISOString().split('T')[0]
 
+  // Add N days to an ISO date string (YYYY-MM-DD), returning ISO. Empty → ''.
+  // Uses UTC throughout to avoid timezone round-trip errors (a local-midnight
+  // Date converted via toISOString() can shift the day in negative-UTC zones).
+  const addDays = (iso: string, days: number): string => {
+    if (!iso) return ''
+    const [y, m, d] = iso.split('-').map(Number)
+    const dt = new Date(Date.UTC(y, m - 1, d))
+    dt.setUTCDate(dt.getUTCDate() + days)
+    return dt.toISOString().split('T')[0]
+  }
+  // Earliest allowed end date = start date + 1 day (a trip is at least one night).
+  const minEndDate = form.startDate ? addDays(form.startDate, 1) : today
+
   useEffect(() => {
     function onOut(e: MouseEvent) { if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false) }
     document.addEventListener('mousedown', onOut)
@@ -174,9 +187,22 @@ function Step1({ form, setForm, destImg, destAttribution }: {
         <label className="field-label">When are you going?</label>
         <div className="date-row">
           <input type="date" className="field-input" aria-label="Start date" value={form.startDate} min={today}
-            onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} />
+            onChange={(e) => setForm((f) => {
+              const startDate = e.target.value
+              if (!startDate) {
+                // Start cleared — leave the end date as-is (it may have been
+                // picked before the start).
+                return { ...f, startDate }
+              }
+              // A start date was picked. The earliest valid end is start + 1 day
+              // (a trip is at least one night). Auto-fill the end to that only
+              // when it's empty or now too early; otherwise keep the user's end.
+              const earliestEnd = addDays(startDate, 1)
+              const endDate = !f.endDate || f.endDate < earliestEnd ? earliestEnd : f.endDate
+              return { ...f, startDate, endDate }
+            })} />
           <span className="date-row-sep" aria-hidden="true">→</span>
-          <input type="date" className="field-input" aria-label="End date" value={form.endDate} min={form.startDate || today}
+          <input type="date" className="field-input" aria-label="End date" value={form.endDate} min={minEndDate}
             onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))} />
         </div>
         {duration && <p className="duration-tag" aria-live="polite">{duration}</p>}

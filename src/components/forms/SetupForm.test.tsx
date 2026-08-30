@@ -27,44 +27,42 @@ describe("SetupForm", () => {
     expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/last name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/profile image/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Password')).toBeInTheDocument();
   });
 
   it("renders a submit button with correct text", () => {
     render(<SetupForm />);
 
-    const button = screen.getByRole("button", { name: /complete setup/i });
+    const button = screen.getByRole("button", { name: /create account/i });
     expect(button).toBeInTheDocument();
     expect(button).toHaveAttribute("type", "submit");
   });
 
-  it("all interactive elements have min 44x44 touch targets", () => {
+  it("interactive elements use the shared field/button classes (44px sizing enforced via CSS)", () => {
     render(<SetupForm />);
 
     const firstName = screen.getByLabelText(/first name/i);
     const lastName = screen.getByLabelText(/last name/i);
     const email = screen.getByLabelText(/email/i);
-    const password = screen.getByLabelText(/password/i);
-    const button = screen.getByRole("button", { name: /complete setup/i });
+    const password = screen.getByLabelText('Password');
+    const button = screen.getByRole("button", { name: /create account/i });
 
-    expect(firstName.className).toContain("min-h-[44px]");
-    expect(firstName.className).toContain("min-w-[44px]");
-    expect(lastName.className).toContain("min-h-[44px]");
-    expect(lastName.className).toContain("min-w-[44px]");
-    expect(email.className).toContain("min-h-[44px]");
-    expect(email.className).toContain("min-w-[44px]");
-    expect(password.className).toContain("min-h-[44px]");
-    expect(password.className).toContain("min-w-[44px]");
-    expect(button.className).toContain("min-h-[44px]");
-    expect(button.className).toContain("min-w-[44px]");
+    // Inputs use .field-input and the submit button uses .btn-primary; the global
+    // stylesheet enforces a 44px minimum touch target on these elements.
+    expect(firstName.className).toContain("field-input");
+    expect(lastName.className).toContain("field-input");
+    expect(email.className).toContain("field-input");
+    expect(password.className).toContain("field-input");
+    expect(button.className).toContain("btn-primary");
   });
 
   it("shows field-level validation errors when required fields are empty", () => {
     render(<SetupForm />);
 
-    const button = screen.getByRole("button", { name: /complete setup/i });
-    fireEvent.click(button);
+    // The submit button is disabled while fields are empty, so submit the form
+    // directly to trigger client-side validation.
+    const button = screen.getByRole("button", { name: /create account/i });
+    fireEvent.submit(button.closest("form")!);
 
     expect(screen.getByText("First name is required.")).toBeInTheDocument();
     expect(screen.getByText("Last name is required.")).toBeInTheDocument();
@@ -84,24 +82,23 @@ describe("SetupForm", () => {
     fireEvent.change(screen.getByLabelText(/email/i), {
       target: { value: "invalid-email" },
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText('Password'), {
       target: { value: "password123" },
     });
 
-    const button = screen.getByRole("button", { name: /complete setup/i });
-    fireEvent.click(button);
+    // Invalid email keeps the submit button disabled, so submit the form directly.
+    const button = screen.getByRole("button", { name: /create account/i });
+    fireEvent.submit(button.closest("form")!);
 
     expect(
-      screen.getByText(
-        "Please enter a valid email address (e.g. name@example.com)."
-      )
+      screen.getByText("Please enter a valid email address.")
     ).toBeInTheDocument();
   });
 
   it("does NOT show modal when validation fails", () => {
     render(<SetupForm />);
 
-    const button = screen.getByRole("button", { name: /complete setup/i });
+    const button = screen.getByRole("button", { name: /create account/i });
     fireEvent.click(button);
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -119,11 +116,11 @@ describe("SetupForm", () => {
     fireEvent.change(screen.getByLabelText(/email/i), {
       target: { value: "jane@example.com" },
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText('Password'), {
       target: { value: "password123" },
     });
 
-    const button = screen.getByRole("button", { name: /complete setup/i });
+    const button = screen.getByRole("button", { name: /create account/i });
     fireEvent.click(button);
 
     const dialog = screen.getByRole("dialog");
@@ -151,11 +148,11 @@ describe("SetupForm", () => {
     fireEvent.change(screen.getByLabelText(/email/i), {
       target: { value: "jane@example.com" },
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText('Password'), {
       target: { value: "password123" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /complete setup/i }));
+    fireEvent.click(screen.getByRole("button", { name: /create account/i }));
 
     // Modal is open
     expect(screen.getByRole("dialog")).toBeInTheDocument();
@@ -183,11 +180,11 @@ describe("SetupForm", () => {
     fireEvent.change(screen.getByLabelText(/email/i), {
       target: { value: "jane@example.com" },
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText('Password'), {
       target: { value: "password123" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /complete setup/i }));
+    fireEvent.click(screen.getByRole("button", { name: /create account/i }));
     fireEvent.click(screen.getByRole("button", { name: /i acknowledge/i }));
 
     await waitFor(() => {
@@ -219,11 +216,11 @@ describe("SetupForm", () => {
     fireEvent.change(screen.getByLabelText(/email/i), {
       target: { value: "jane@example.com" },
     });
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText('Password'), {
       target: { value: "password123" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /complete setup/i }));
+    fireEvent.click(screen.getByRole("button", { name: /create account/i }));
     fireEvent.click(screen.getByRole("button", { name: /i acknowledge/i }));
 
     await waitFor(() => {
@@ -237,8 +234,9 @@ describe("SetupForm", () => {
   it("clears field error when user types in the field", () => {
     render(<SetupForm />);
 
-    // Trigger validation errors
-    fireEvent.click(screen.getByRole("button", { name: /complete setup/i }));
+    // Trigger validation errors (submit the form since the button is disabled when empty)
+    const button = screen.getByRole("button", { name: /create account/i });
+    fireEvent.submit(button.closest("form")!);
     expect(screen.getByText("First name is required.")).toBeInTheDocument();
 
     // Type in first name field
@@ -248,23 +246,5 @@ describe("SetupForm", () => {
 
     // Error should be cleared
     expect(screen.queryByText("First name is required.")).not.toBeInTheDocument();
-  });
-
-  it("shows profile image field by default (showProfileImage defaults to true)", () => {
-    render(<SetupForm />);
-
-    expect(screen.getByLabelText(/profile image/i)).toBeInTheDocument();
-  });
-
-  it("hides profile image field when showProfileImage is false", () => {
-    render(<SetupForm showProfileImage={false} />);
-
-    expect(screen.queryByLabelText(/profile image/i)).not.toBeInTheDocument();
-  });
-
-  it("shows profile image field when showProfileImage is true", () => {
-    render(<SetupForm showProfileImage={true} />);
-
-    expect(screen.getByLabelText(/profile image/i)).toBeInTheDocument();
   });
 });

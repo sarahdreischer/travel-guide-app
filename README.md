@@ -84,6 +84,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run reconcile` | Force-reconcile missing AI advice for all trips |
 | `npm run reconcile -- <tripId>` | Reconcile a specific trip |
 | `npm run clear-cache -- <tripId>` | Delete all cached AI advice for a trip (regenerates on next load) |
+| `npm run generate-demo-advice` | Regenerate real LLM advice for the `/demo` trips (writes `src/lib/demo-advice.generated.ts`) |
 
 ## Database Management
 
