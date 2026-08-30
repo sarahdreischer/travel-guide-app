@@ -82,7 +82,7 @@ const GROUP_DEFS: Array<{
   },
   {
     id: 'culture',
-    name: 'Culture & tips',
+    name: 'Culture & Tips',
     question: 'What cultural activities are a must do?',
     match: (c) => ['Local Etiquette', 'Miscellaneous'].includes(c.category),
   },

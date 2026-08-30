@@ -49,26 +49,22 @@ const TRANSPORT_MODES = [
 
 const TRAVEL_STYLES = ['Adventure', 'Relaxed', 'Cultural', 'Luxury', 'Budget', 'Family'] as const
 
-const ACTIVITY_OPTIONS = [
-  'Cycling',
-  'Food exploration',
-  'Freediving',
-  'Hiking',
-  'Museums',
-  'Nightlife',
-  'Paddleboarding',
-  'Photography',
-  'Rock climbing',
-  'Sailing',
-  'Scuba diving',
-  'Skiing',
-  'Snorkelling',
-  'Surfing',
-  'Swimming',
-  'Walking',
-  'Wildlife',
-  'Yoga',
-] as const
+// Activity preferences grouped by theme. Each option must remain unique across
+// groups (the value stored per trip is the activity label).
+const ACTIVITY_GROUPS: { label: string; options: string[] }[] = [
+  {
+    label: 'Water sports',
+    options: ['Bodysurfing', 'Freediving', 'Paddleboarding', 'Sailing', 'Scuba diving', 'Snorkelling', 'Surfing', 'Swimming'],
+  },
+  {
+    label: 'Mountains & outdoors',
+    options: ['Cycling', 'Hiking', 'Rock climbing', 'Skiing', 'Walking', 'Wildlife'],
+  },
+  {
+    label: 'Culture & leisure',
+    options: ['Food exploration', 'Museums', 'Nightlife', 'Photography', 'Yoga'],
+  },
+]
 
 const STEPS = [
   { label: 'Where to?', subtitle: 'Pick your destination and travel dates.' },
@@ -449,15 +445,50 @@ function Step3({ form, setForm, destImg }: {
   }))
   const duration = getDuration(form.startDate, form.endDate)
 
+  // All groups expanded by default; users can collapse ones they don't care about.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const toggleGroup = (label: string) => setCollapsed((prev) => {
+    const next = new Set(prev)
+    if (next.has(label)) next.delete(label)
+    else next.add(label)
+    return next
+  })
+
   return (
     <div className="form-stack">
       <div className="field-block">
         <label className="field-label">What do you love doing? <span className="field-label-note">— optional</span></label>
-        <div className="chip-group" role="group" aria-label="Activity preferences">
-          {ACTIVITY_OPTIONS.map((a) => (
-            <button key={a} type="button" className={`chip ${form.activities.includes(a) ? 'chip-on' : 'chip-idle'}`}
-              aria-pressed={form.activities.includes(a)} onClick={() => toggleActivity(a)}>{a}</button>
-          ))}
+        <div className="activity-groups">
+          {ACTIVITY_GROUPS.map((group) => {
+            const isOpen = !collapsed.has(group.label)
+            const selectedCount = group.options.filter((o) => form.activities.includes(o)).length
+            return (
+              <div key={group.label} className={`activity-group${isOpen ? ' activity-group-open' : ''}`}>
+                <button
+                  type="button"
+                  className="activity-group-header"
+                  aria-expanded={isOpen}
+                  onClick={() => toggleGroup(group.label)}
+                >
+                  <span className="activity-group-label">{group.label}</span>
+                  {selectedCount > 0 && (
+                    <span className="activity-group-count">{selectedCount}</span>
+                  )}
+                  <span className="activity-group-chevron" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+                  </span>
+                </button>
+                {isOpen && (
+                  <div className="chip-group" role="group" aria-label={group.label}>
+                    {group.options.map((a) => (
+                      <button key={a} type="button" className={`chip ${form.activities.includes(a) ? 'chip-on' : 'chip-idle'}`}
+                        aria-pressed={form.activities.includes(a)} onClick={() => toggleActivity(a)}>{a}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
