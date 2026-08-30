@@ -14,6 +14,7 @@ import type { Trip } from '@/db/schema'
 import { CATEGORIES, getSubQuestions } from '@/lib/destinations'
 import type { CategorySection } from '@/lib/category-groups'
 import { getGroupQuestions } from '@/lib/category-groups'
+import { DEMO_ADVICE_GENERATED } from '@/lib/demo-advice.generated'
 
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
@@ -27,7 +28,7 @@ function isoDate(offsetDays: number): string {
 
 // ─── Demo trips (2 upcoming + 2 past) ───────────────────────────────────────────
 
-interface DemoTripSeed {
+export interface DemoTripSeed {
   id: string
   destination: string
   startOffset: number // days from today
@@ -43,7 +44,7 @@ interface DemoTripSeed {
   heroAttribution: string
 }
 
-const DEMO_SEEDS: DemoTripSeed[] = [
+export const DEMO_SEEDS: DemoTripSeed[] = [
   {
     id: 'demo-costa-rica',
     destination: 'Costa Rica',
@@ -149,11 +150,24 @@ export function getDemoHero(tripId: string): { imageUrl: string; attribution: st
 // ─── Demo advice generation ─────────────────────────────────────────────────────
 
 /**
- * Hand-written answers for a handful of common questions, keyed loosely by
- * substrings so they survive minor wording changes. Everything else falls back
- * to a generic, destination-aware demo answer.
+ * Resolve the answer for a demo trip's (category, question):
+ * 1. Prefer the real, pre-generated LLM answer from demo-advice.generated.ts.
+ * 2. Fall back to the example patterns in fallbackDemoAnswer() for any
+ *    category/question that isn't present (new or reworded questions).
  */
-function demoAnswer(destination: string, category: string, question: string): string {
+function resolveAnswer(destination: string, category: string, question: string): string {
+  const generated = DEMO_ADVICE_GENERATED[destination]?.categories?.[category]?.[question]
+  if (generated) return generated
+  return fallbackDemoAnswer(destination, category, question)
+}
+
+/**
+ * Hand-written example answers for a handful of common questions, keyed loosely
+ * by substrings so they survive minor wording changes. Used only when no real
+ * generated answer exists. Everything else falls back to a generic,
+ * destination-aware demo answer.
+ */
+function fallbackDemoAnswer(destination: string, category: string, question: string): string {
   const q = question.toLowerCase()
   const d = destination
 
@@ -205,7 +219,7 @@ export function buildDemoSections(destination: string): CategorySection[] {
     const subQuestions = getSubQuestions(category)
     const answers: Record<string, string> = {}
     for (const question of subQuestions) {
-      answers[question] = demoAnswer(destination, category, question)
+      answers[question] = resolveAnswer(destination, category, question)
     }
     const firstQuestion = subQuestions[0]
     const firstAnswer = firstQuestion ? answers[firstQuestion] : null
@@ -227,9 +241,12 @@ export function buildDemoSections(destination: string): CategorySection[] {
  * derived from the live group definitions so it stays in sync.
  */
 export function buildDemoGroupTips(destination: string): Record<string, string> {
+  const generated = DEMO_ADVICE_GENERATED[destination]?.groupTips ?? {}
   const tips: Record<string, string> = {}
   for (const g of getGroupQuestions()) {
-    tips[g.id] = `${g.name} in ${destination}: demo highlights tailored to this trip. Tap to read the full advice.`
+    // Prefer the real generated group tip; fall back to a generic demo line.
+    tips[g.id] = generated[g.id]
+      ?? `${g.name} in ${destination}: demo highlights tailored to this trip. Tap to read the full advice.`
   }
   return tips
 }
