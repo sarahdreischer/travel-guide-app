@@ -67,7 +67,7 @@ describe('getSubQuestions', () => {
       'What is the average fee charge for withdrawals from ATMs?',
       'Do most places accept card payment?',
       'Which cards are widely accepted?',
-      'Is my budget appropriate for the destination?',
+      'Is my current budget realistic?',
       'What is a realistic daily budget?',
     ])
   })
@@ -155,6 +155,7 @@ describe('getSubQuestions', () => {
       'Is it mostly sunny?',
       'Does it rain occasionally?',
       'Is drizzle rain common?',
+      'What are the average humidity levels?',
       'Are there specific times to avoid going outside?',
     ])
   })

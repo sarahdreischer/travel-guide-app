@@ -42,15 +42,11 @@ export async function getOrGenerateAdviceAction(
   const results: CategoryResult[] = []
   const errors: string[] = []
 
-  // Determine which categories power the concise home page cards (priority)
-  const { CONCISE_TOPIC_MAPPING } = await import('@/lib/travel-config')
-  const conciseCategories: Set<string> = new Set(
-    Object.values(CONCISE_TOPIC_MAPPING).map((m) => m.category)
-  )
-
-  // Split categories into priority (concise) and remaining (comprehensive)
-  const priorityCategories = CATEGORIES.filter((c) => conciseCategories.has(c))
-  const remainingCategories = CATEGORIES.filter((c) => !conciseCategories.has(c))
+  // Split categories into priority (the leading home-page group cards) and
+  // remaining (comprehensive), based on GROUP_DEFS order in category-groups.ts.
+  const { splitCategoriesByGroupPriority } = await import('@/lib/category-groups')
+  const { priority: priorityCategories, remaining: remainingCategories } =
+    splitCategoriesByGroupPriority([...CATEGORIES])
 
   // Helper: check cache for all categories, return which are missing or stale
   const getMissing = async (cats: string[]) => {

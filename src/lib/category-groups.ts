@@ -121,6 +121,34 @@ export function getGroupQuestions(): Array<{ id: string; name: string; question:
   return GROUP_DEFS.map((d) => ({ id: d.id, name: d.name, question: d.question }))
 }
 
+/**
+ * Split categories into priority (first N groups shown above the fold on the home
+ * page) and the rest, based on GROUP_DEFS order. Used by the two-phase advice
+ * generation so the most-visible groups are generated first.
+ *
+ * @param categories - all category names to split
+ * @param priorityGroupCount - how many leading groups count as "priority" (default 5)
+ */
+export function splitCategoriesByGroupPriority(
+  categories: string[],
+  priorityGroupCount = 5
+): { priority: string[]; remaining: string[] } {
+  const priorityDefs = GROUP_DEFS.slice(0, priorityGroupCount)
+  const isPriority = (category: string) => {
+    // Build a minimal CategorySection-like object for the matcher
+    const stub = { category } as CategorySection
+    return priorityDefs.some((def) => def.match(stub))
+  }
+
+  const priority: string[] = []
+  const remaining: string[] = []
+  for (const c of categories) {
+    if (isPriority(c)) priority.push(c)
+    else remaining.push(c)
+  }
+  return { priority, remaining }
+}
+
 // ─── Main grouping function ───────────────────────────────────────────────────
 
 /**

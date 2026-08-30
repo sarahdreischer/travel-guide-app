@@ -2,7 +2,7 @@
  * Central configuration for all travel topics, categories, questions, and mappings.
  *
  * To add a new category: add it to CATEGORY_CONFIG below with its sub-questions.
- * To add a new concise topic: add it to CONCISE_TOPIC_MAPPING below.
+ * To change how categories are grouped on the home page: edit GROUP_DEFS in category-groups.ts.
  * To add a new destination: add it to DESTINATIONS.
  *
  * Everything else (types, helper functions) is derived automatically.
@@ -110,7 +110,7 @@ export const CATEGORY_CONFIG = {
     'What is the average fee charge for withdrawals from ATMs?',
     'Do most places accept card payment?',
     'Which cards are widely accepted?',
-    'Is my budget appropriate for the destination?',
+    'Is my current budget realistic?',
     'What is a realistic daily budget?',
   ],
   'WiFi & Mobile Data': [
@@ -174,6 +174,7 @@ export const CATEGORY_CONFIG = {
     'Is it mostly sunny?',
     'Does it rain occasionally?',
     'Is drizzle rain common?',
+    'What are the average humidity levels?',
     'Are there specific times to avoid going outside?',
   ],
   'Safety': [
@@ -214,61 +215,3 @@ export function getSubQuestions(category: string): string[] {
   return [...CATEGORY_CONFIG[category as Category]]
 }
 
-// ─── Concise Topic Mapping ────────────────────────────────────────────────────
-//
-// Maps the 12 summary cards on the home page to a specific (category, question).
-// To add a new concise topic: add an entry here. It will auto-appear on the home page.
-
-export const CONCISE_TOPIC_MAPPING = {
-  'Rental car': {
-    category: 'Transportation - Car Rental',
-    question: 'Are car rentals recommended?',
-  },
-  'Parking': {
-    category: 'Transportation - Parking',
-    question: 'Is parking easy?',
-  },
-  'Public transport': {
-    category: 'Transportation – Public Transport',
-    question: 'Is public transport sufficient?',
-  },
-  'Laundry': {
-    category: 'Laundry',
-    question: 'Are there self-service laundrettes?',
-  },
-  'Airport transport': {
-    category: 'Transportation – Ride-Hailing Services',
-    question: 'Should I book airport transport in advance?',
-  },
-  'Mobile data': {
-    category: 'WiFi & Mobile Data',
-    question: 'How reliable is mobile data?',
-  },
-  'Cash needed': {
-    category: 'Money',
-    question: 'Should I bring cash in advance of the trip?',
-  },
-  'Tipping expected': {
-    category: 'Food & Tipping Culture',
-    question: 'Is tipping expected?',
-  },
-  'Where to eat': {
-    category: 'Food & Tipping Culture',
-    question: 'Where do locals eat?',
-  },
-  'Weather conditions': {
-    category: 'Weather',
-    question: 'Are rain showers common?',
-  },
-  'Safety rating': {
-    category: 'Safety',
-    question: 'Is it safe for solo travellers?',
-  },
-  'Mosquitos expected': {
-    category: 'Clothing & Accessories',
-    question: 'Do I need insect repellent?',
-  },
-} as const satisfies Record<string, { category: Category; question: string }>
-
-export type ConciseTopic = keyof typeof CONCISE_TOPIC_MAPPING
-export const CONCISE_TOPICS = Object.keys(CONCISE_TOPIC_MAPPING) as ConciseTopic[]

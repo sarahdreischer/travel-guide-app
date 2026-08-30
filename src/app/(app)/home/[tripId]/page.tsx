@@ -9,7 +9,7 @@ import { AdviceStore, deriveMonthRange } from '@/lib/advice-store'
 import type { AdviceRecord } from '@/lib/advice-store'
 import { derivebudgetRange } from '@/lib/validators'
 import { reconcileMissingAdviceAction } from '@/actions/advice'
-import { CATEGORIES, CONCISE_TOPIC_MAPPING, type ConciseTopic, type Category, getSubQuestions } from '@/lib/destinations'
+import { CATEGORIES, getSubQuestions } from '@/lib/destinations'
 import { findAnswer } from '@/lib/answer-lookup'
 import { fmtDateShort, fmtDate, nightCount } from '@/lib/format-date'
 import { groupSections, getGroupQuestions } from '@/lib/category-groups'
@@ -23,18 +23,13 @@ import AppFooter from '@/components/AppFooter'
 
 export interface CategorySection {
   category: string
+  /** One-line fallback tip derived from the first answer (used for ungrouped categories) */
   conciseTip: string | null
-  conciseTopic: string | null
   answers: Record<string, string> | null
   subQuestions: string[]
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const categoryToConciseTopic = new Map<string, ConciseTopic>(
-  (Object.entries(CONCISE_TOPIC_MAPPING) as [ConciseTopic, { category: Category; question: string }][])
-    .map(([topic, { category }]) => [category, topic])
-)
 
 function deriveSummary(text: string | undefined | null): string | null {
   if (!text) return null
@@ -50,14 +45,14 @@ function buildSections(adviceRecords: AdviceRecord[]): CategorySection[] {
     const record = byCategory.get(category)
     const answers = record?.answers as Record<string, string> | null | undefined
     const subQuestions = getSubQuestions(category)
-    const conciseTopic = categoryToConciseTopic.get(category) ?? null
-    const conciseQuestion = conciseTopic ? CONCISE_TOPIC_MAPPING[conciseTopic].question : null
-    const conciseFullAnswer = conciseQuestion ? findAnswer(answers ?? null, conciseQuestion) ?? null : null
+
+    // Fallback tip: derive a summary from the first available answer for this category
+    const firstQuestion = subQuestions[0]
+    const firstAnswer = firstQuestion ? findAnswer(answers ?? null, firstQuestion) ?? null : null
 
     return {
       category,
-      conciseTip: deriveSummary(conciseFullAnswer),
-      conciseTopic,
+      conciseTip: deriveSummary(firstAnswer),
       answers: answers ?? null,
       subQuestions,
     }
