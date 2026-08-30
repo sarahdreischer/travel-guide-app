@@ -80,7 +80,7 @@ describe('getOrGenerateAdviceAction', () => {
 
     const result = await getOrGenerateAdviceAction(mockCacheKey)
 
-    expect(result.results).toHaveLength(17)
+    expect(result.results).toHaveLength(CATEGORIES.length)
     expect(result.errors).toHaveLength(0)
     result.results.forEach((r) => {
       expect(r.status).toBe('success')

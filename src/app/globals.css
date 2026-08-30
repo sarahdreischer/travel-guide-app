@@ -1169,6 +1169,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
   gap: 8px;
   padding: 9px 16px;
   background: color-mix(in srgb, var(--accent) 8%, transparent);

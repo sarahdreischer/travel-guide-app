@@ -57,8 +57,8 @@ const DEMO_SEEDS: DemoTripSeed[] = [
     travelStyle: 'Adventure, Relaxed',
     activityPreferences: ['Hiking', 'Surfing', 'Wildlife'],
     heroImage:
-      'https://images.unsplash.com/photo-1580237072617-771c3ecc4a24?w=1080&q=80&fit=crop',
-    heroAttribution: 'Etienne Delorieux',
+      'https://images.unsplash.com/photo-1580259679654-9276b39fd2d5?w=1080&q=80&fit=crop',
+    heroAttribution: 'Fabian Schneider',
   },
   {
     id: 'demo-japan',

@@ -50,6 +50,16 @@ export default function SetupForm() {
     if (Object.keys(newErrors).length === 0) setShowDisclaimer(true)
   }
 
+  // Clear a single field's validation error as the user corrects it.
+  function clearError(field: keyof typeof errors) {
+    setErrors((prev) => {
+      if (!prev[field]) return prev
+      const next = { ...prev }
+      delete next[field]
+      return next
+    })
+  }
+
   async function handleAcknowledge() {
     setSubmitting(true)
     const fd = new FormData()
@@ -87,7 +97,7 @@ export default function SetupForm() {
             <input
               ref={firstRef} id="signup-first" type="text" className="field-input"
               placeholder="First name" autoComplete="given-name"
-              value={firstName} onChange={(e) => setFirstName(e.target.value)}
+              value={firstName} onChange={(e) => { setFirstName(e.target.value); clearError('firstName') }}
             />
             {errors.firstName && <p className="field-error">{errors.firstName}</p>}
           </div>
@@ -97,7 +107,7 @@ export default function SetupForm() {
             <input
               id="signup-last" type="text" className="field-input"
               placeholder="Last name" autoComplete="family-name"
-              value={lastName} onChange={(e) => setLastName(e.target.value)}
+              value={lastName} onChange={(e) => { setLastName(e.target.value); clearError('lastName') }}
             />
             {errors.lastName && <p className="field-error">{errors.lastName}</p>}
           </div>
@@ -107,7 +117,7 @@ export default function SetupForm() {
             <input
               id="signup-email" type="email" className="field-input"
               placeholder="you@example.com" autoComplete="email"
-              value={email} onChange={(e) => setEmail(e.target.value)}
+              value={email} onChange={(e) => { setEmail(e.target.value); clearError('email') }}
             />
             {errors.email && <p className="field-error">{errors.email}</p>}
           </div>
@@ -118,7 +128,7 @@ export default function SetupForm() {
               <input
                 id="signup-password" type={showPw ? 'text' : 'password'}
                 className="field-input" placeholder="••••••••" autoComplete="new-password"
-                value={password} onChange={(e) => setPassword(e.target.value)}
+                value={password} onChange={(e) => { setPassword(e.target.value); clearError('password') }}
               />
               <button type="button" className="pw-toggle" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? 'Hide password' : 'Show password'}>
                 {showPw ? <IconEyeOff /> : <IconEye />}

@@ -16,8 +16,8 @@ describe('getSubQuestions', () => {
     ])
   })
 
-  it('returns the correct sub-questions for Transportation – Parking', () => {
-    expect(getSubQuestions('Transportation – Parking')).toEqual([
+  it('returns the correct sub-questions for Transportation - Parking', () => {
+    expect(getSubQuestions('Transportation - Parking')).toEqual([
       'Is parking easy?',
       'Is parking widely available?',
       'What are the parking rules?',
@@ -34,16 +34,16 @@ describe('getSubQuestions', () => {
     ])
   })
 
-  it('returns the correct sub-questions for Transportation – Ride-Hailing Services', () => {
-    expect(getSubQuestions('Transportation – Ride-Hailing Services')).toEqual([
+  it('returns the correct sub-questions for Transportation – Taxis and Ride-Hailing Services', () => {
+    expect(getSubQuestions('Transportation – Taxis and Ride-Hailing Services')).toEqual([
       'How much are taxis on average?',
       'Are ride-hailing services available and widely used?',
       'How much are ride-hailing service trips on average?',
     ])
   })
 
-  it('returns the correct sub-questions for Transportation – Airport Transfer', () => {
-    expect(getSubQuestions('Transportation – Ride-Hailing Services')).toEqual([
+  it('returns the correct sub-questions for Transportation - Airport Transfer', () => {
+    expect(getSubQuestions('Transportation - Airport Transfer')).toEqual([
       'How much does airport transport cost on average?',
       'Should I book airport transport in advance?',
     ])
