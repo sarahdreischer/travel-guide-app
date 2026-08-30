@@ -103,7 +103,7 @@ const ADVICE: Record<string, AdviceCategory[]> = {
     },
     {
       id: 'transport-serviced',
-      name: 'Transportation – Serviced',
+      name: 'Transportation – Ride-Hailing Services',
       keyTip: 'Yes, booking airport transport in advance is advisable for convenience.',
       items: [
         { question: 'Should I book airport transfer in advance?', answer: 'Yes, especially for late arrivals. Shared shuttles cost $30–60 and are far safer than unofficial taxis soliciting outside the terminal.' },
@@ -123,7 +123,7 @@ const ADVICE: Record<string, AdviceCategory[]> = {
     },
     {
       id: 'money',
-      name: 'Budget & Money',
+      name: 'Money',
       keyTip: 'Yes, it\'s advisable to bring some cash for small purchases.',
       items: [
         { question: 'Do I need local currency?', answer: 'The colón is official but USD is accepted at most hotels, restaurants, and tourist businesses. You\'ll need colónes for buses, local sodas, and market stalls.' },
@@ -134,7 +134,7 @@ const ADVICE: Record<string, AdviceCategory[]> = {
     },
     {
       id: 'connectivity',
-      name: 'Connectivity',
+      name: 'WiFi & Mobile Data',
       keyTip: 'Mobile data is generally reliable in urban areas.',
       items: [
         { question: 'Should I get a local SIM?', answer: 'Yes — Kolbi and Claro sell affordable tourist SIMs at the airport and convenience stores. Expect $15–25 for a week of data.' },
@@ -144,7 +144,7 @@ const ADVICE: Record<string, AdviceCategory[]> = {
     },
     {
       id: 'packing',
-      name: 'Packing',
+      name: 'Clothing & Accessories',
       keyTip: 'Yes, insect repellent is advisable, especially in rural areas.',
       items: [
         { question: 'What should I pack?', answer: 'A lightweight waterproof jacket, quick-dry clothing, and waterproof bags for electronics. Humidity is high — natural fibres are more comfortable than synthetics.' },
@@ -154,7 +154,7 @@ const ADVICE: Record<string, AdviceCategory[]> = {
     },
     {
       id: 'food',
-      name: 'Food',
+      name: 'Food & Tipping Culture',
       keyTip: 'Locals often eat at sodas (small restaurants) for authentic cuisine.',
       items: [
         { question: 'What is a soda?', answer: 'A family-run Costa Rican restaurant serving traditional casados: rice, beans, a protein, salad, and fried plantain. Expect to pay $5–10 for a full meal.' },
@@ -174,7 +174,7 @@ const ADVICE: Record<string, AdviceCategory[]> = {
     },
     {
       id: 'daily-logistics',
-      name: 'Daily Logistics',
+      name: 'Groceries & Drinking Water',
       keyTip: 'Tap to read',
       items: [
         { question: 'What are typical opening hours?', answer: 'Shops generally open 8am–7pm; supermarkets until 9pm. Government offices and banks close by 4pm. Many businesses close on Sunday.' },
@@ -265,14 +265,14 @@ const GROUP_DEFS: Array<{
     id: 'money',
     name: 'Money',
     keyTip: 'USD is accepted almost everywhere. Carry cash for rural areas and local sodas.',
-    match: c => c.name === 'Budget & Money' || c.id === 'money',
+    match: c => c.name === 'Money' || c.id === 'money',
   },
   {
     id: 'daily',
-    name: 'Food & daily life',
+    name: 'Food & Drinks',
     keyTip: 'Eat at sodas for authentic local food. Mobile data is reliable in towns.',
     match: c =>
-      ['Food', 'Laundry', 'Daily Logistics', 'Connectivity'].includes(c.name) ||
+      ['Food & Tipping Culture', 'Laundry', 'Groceries & Drinking Water', 'WiFi & Mobile Data'].includes(c.name) ||
       ['food', 'connectivity'].includes(c.id),
   },
   {
@@ -280,7 +280,7 @@ const GROUP_DEFS: Array<{
     name: 'Health & safety',
     keyTip: 'Generally safe for solo travel. Pack DEET repellent — mosquitos are prevalent.',
     match: c =>
-      ['Safety', 'Packing'].includes(c.name) ||
+      ['Safety', 'Clothing & Accessories'].includes(c.name) ||
       ['safety'].includes(c.id),
   },
   {
@@ -357,7 +357,7 @@ const SAMPLE_TRIPS: Trip[] = [
     travelMode: 'fly',
     budget: '6000',
     travelStyle: ['Cultural', 'Relaxed'],
-    activities: ['Museums', 'Food tours', 'Photography'],
+    activities: ['Museums', 'Food & Tipping Culture tours', 'Photography'],
   },
 ]
 
@@ -417,7 +417,7 @@ const PARTY_OPTIONS = ['Solo', 'Couple', 'Friends', 'Family']
 const TRAVEL_STYLES = ['Adventure', 'Relaxed', 'Cultural', 'Luxury', 'Budget', 'Family']
 const ACTIVITIES = [
   'Hiking', 'Swimming', 'Surfing', 'Cycling', 'Snorkelling',
-  'Rock climbing', 'Yoga', 'Museums', 'Food tours', 'Nightlife',
+  'Rock climbing', 'Yoga', 'Museums', 'Food & Tipping Culture tours', 'Nightlife',
   'Photography', 'Wildlife', 'Sailing', 'Skiing',
 ]
 

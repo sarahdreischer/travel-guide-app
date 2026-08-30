@@ -89,36 +89,41 @@ export const CATEGORY_CONFIG = {
     'How can I pay for trams if available?',
     'How can I pay for metros if available?',
   ],
-  'Transportation – Serviced': [
-    'Should I book airport transport in advance?',
+  'Transportation - Airport Transfer': [
     'How much does airport transport cost on average?',
-    'Are taxis or other transportation companies readily available?',
-    'Which transportation companies other than local taxis are widely used?',
+    'Should I book airport transport in advance?',
+  ],
+  'Transportation – Taxis and Ride-Hailing Services': [
+    'How much are taxis on average?',
+    'Are ride-hailing services available and widely used?',
+    'How much are ride-hailing service trips on average?',
   ],
   'Accommodation': [
     'Which accommodations should I book according to my budget?',
-    'Which area should I stay in according to my budget?',
+    'Which area should I stay in according to my budget and activity preferences??',
     'What are the top 3 accommodations to book according to my budget?',
-    'Is accommodation likely to sell out?',
+    'Are accommodations likely to sell out?',
   ],
-  'Budget & Money': [
-    'Do I need to bring cash?',
-    'Do most places take card or cash?',
+  'Money': [
+    'Should I bring cash in advance of the trip?',
+    'Are ATMs widely available?',
+    'What is the average fee charge for withdrawals from ATMs?',
+    'Do most places accept card payment?',
     'Which cards are widely accepted?',
-    'How expensive is the destination?',
+    'Is my budget appropriate for the destination?',
     'What is a realistic daily budget?',
   ],
-  'Connectivity': [
+  'WiFi & Mobile Data': [
+    'Is Wi-Fi generally reliable?',
+    'How reliable is mobile data?',
+    'Does the area provide 4G (LTE) and 5G coverage reliable?',
     'Should I buy an eSIM?',
     'Which eSIM provider offers the best prices?',
-    'How reliable is mobile data?',
-    'Is Wi-Fi generally reliable?',
     'Is the destination suitable for remote work?',
   ],
-  'Packing': [
-    'Should I pack shorts/tops/t-shirts?',
-    'Should I pack long trousers/shirts?',
-    'Do I need hiking shoes?',
+  'Clothing & Accessories': [
+    'What type of clothes should I pack?',
+    'What type of clothes should I pack for my activity preferences?',
     'Do I need insect repellent?',
     'Do I need sunscreen?',
     'What SPF is recommended?',
@@ -126,11 +131,23 @@ export const CATEGORY_CONFIG = {
     'Do I need an umbrella?',
     'Do I need a dry bag?',
   ],
-  'Food': [
-    'Is tipping expected?',
+  'Health': [
+    'Are mosquitos and other insects prevalent?',
+    'Do I need insect repellent?',
+    'What is the expected UV strength?',
+    'Do I need sunscreen and, if yes, what SPF is recommended?',
+    'Which vaccinations do I need to have?',
+    'Do I need to proof my vaccination status on arrival?',
+    'What vaccinations are recommended for me considering my starting location?',
+    'What are popular pharmacies?',
+  ],
+  'Food & Tipping Culture': [
+    'Which top 3 restaurants should I try?',
     'Where do locals eat?',
     'What local dishes should I try?',
+    'Is tipping expected?',
     'Is street food safe?',
+    'Which international fast food chains are available?',
     'What are average meal prices?',
   ],
   'Laundry': [
@@ -138,23 +155,21 @@ export const CATEGORY_CONFIG = {
     'How expensive are self-service laundrettes?',
     'Are there service wash laundrettes?',
     'How expensive are service wash laundrettes?',
-    'Do laundrettes take cash and/or card?',
+    'Do laundrettes take cash and/ or card?',
   ],
-  'Daily Logistics': [
+  'Groceries & Drinking Water': [
     'What supermarkets are recommended?',
-    'Can I drink tap water?',
-    'What are popular pharmacies?',
-    'Are ATMs widely available?',
-    'Is sunscreen expensive?',
+    'Is tap water safe to drink?',
   ],
   'Activities': [
-    'Which activities are worth booking?',
+    'Which activities are worth booking in advance according to my activity preferences?',
     'Which activities are tourist traps?',
-    'Should I book ahead?',
+    'Which additional activities are popular?',
     'What are hidden gems?',
     'Is it advised to swim in nearby beaches?',
   ],
   'Weather': [
+    'What is the weather likely going to look like?',
     'Are rain showers common?',
     'Is it mostly sunny?',
     'Does it rain occasionally?',
@@ -172,11 +187,16 @@ export const CATEGORY_CONFIG = {
   'Local Etiquette': [
     'What are common ways to greet people?',
     'What is taboo?',
-  ] as string[],
+  ],
+  'Alcoholic Drinks': [
+    'How much are alcoholic drinks on average (at restaurants/ bars/ pubs etc.)?',
+    'What are the top 3 bars?',
+    'What are the top 3 pubs?',
+    'Where can I easily buy alcoholic drinks for private use?',
+    'Are alcoholic drinks highly taxed?',
+  ],
   'Miscellaneous': [
     'What are things I wish I had known?',
-    'Where can I easily buy alcoholic drinks?',
-    'Are alcoholic drinks highly taxed?',
   ],
 } as const satisfies Record<string, readonly string[]>
 
@@ -217,23 +237,23 @@ export const CONCISE_TOPIC_MAPPING = {
     question: 'Are there self-service laundrettes?',
   },
   'Airport transport': {
-    category: 'Transportation – Serviced',
+    category: 'Transportation – Ride-Hailing Services',
     question: 'Should I book airport transport in advance?',
   },
   'Mobile data': {
-    category: 'Connectivity',
+    category: 'WiFi & Mobile Data',
     question: 'How reliable is mobile data?',
   },
   'Cash needed': {
-    category: 'Budget & Money',
-    question: 'Do I need to bring cash?',
+    category: 'Money',
+    question: 'Should I bring cash in advance of the trip?',
   },
   'Tipping expected': {
-    category: 'Food',
+    category: 'Food & Tipping Culture',
     question: 'Is tipping expected?',
   },
   'Where to eat': {
-    category: 'Food',
+    category: 'Food & Tipping Culture',
     question: 'Where do locals eat?',
   },
   'Weather conditions': {
@@ -245,7 +265,7 @@ export const CONCISE_TOPIC_MAPPING = {
     question: 'Is it safe for solo travellers?',
   },
   'Mosquitos expected': {
-    category: 'Packing',
+    category: 'Clothing & Accessories',
     question: 'Do I need insect repellent?',
   },
 } as const satisfies Record<string, { category: Category; question: string }>

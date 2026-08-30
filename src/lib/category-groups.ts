@@ -47,25 +47,25 @@ const GROUP_DEFS: Array<{
     id: 'money',
     name: 'Money',
     question: 'What is the preferred payment method in this location?',
-    match: (c) => c.category === 'Budget & Money',
+    match: (c) => c.category === 'Money',
   },
   {
-    id: 'daily',
-    name: 'Food & daily life',
+    id: 'food-and-drinks',
+    name: 'Food & Drinks',
     question: 'What food is a must try and within weekly budget?',
     match: (c) =>
-      ['Food', 'Laundry', 'Daily Logistics', 'Connectivity'].includes(c.category),
+      ['Food & Tipping Culture', 'Groceries & Drinking Water', 'Alcoholic Drinks'].includes(c.category),
   },
   {
     id: 'health',
     name: 'Health & safety',
     question: 'What health and safety aspects are most important?',
-    match: (c) => ['Safety', 'Packing'].includes(c.category),
+    match: (c) => ['Health', 'Safety'].includes(c.category),
   },
   {
     id: 'activities',
     name: 'Activities',
-    question: 'Which activities are the best in the area?',
+    question: 'Which activities are the available in the area according to my preferences?',
     match: (c) => c.category === 'Activities',
   },
   {
@@ -75,10 +75,28 @@ const GROUP_DEFS: Array<{
     match: (c) => c.category === 'Weather',
   },
   {
+    id: 'connectivity',
+    name: 'Connectivity',
+    question: 'Which mobile connectivity options are widely available?',
+    match: (c) => c.category === 'WiFi & Mobile Data',
+  },
+  {
     id: 'culture',
     name: 'Culture & tips',
     question: 'What cultural activities are a must do?',
     match: (c) => ['Local Etiquette', 'Miscellaneous'].includes(c.category),
+  },
+  {
+    id: 'packing-and-preparation',
+    name: 'Packing & Preparation',
+    question: 'How should I pack for the trip?',
+    match: (c) => ['Clothing & Accessories'].includes(c.category),
+  },
+  {
+    id: 'maintenance',
+    name: 'Maintenance',
+    question: 'Which services are widely availalbe for maintenance (e.g. laundry)?',
+    match: (c) => ['Laundry'].includes(c.category),
   },
 ]
 

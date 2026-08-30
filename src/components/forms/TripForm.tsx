@@ -51,7 +51,7 @@ const TRAVEL_STYLES = ['Adventure', 'Relaxed', 'Cultural', 'Luxury', 'Budget', '
 
 const ACTIVITY_OPTIONS = [
   'Cycling',
-  'Food tours',
+  'Food & Tipping Culture tours',
   'Freediving',
   'Hiking',
   'Museums',

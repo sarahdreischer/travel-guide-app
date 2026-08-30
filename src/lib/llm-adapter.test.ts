@@ -137,7 +137,7 @@ describe('LLMAdapter', () => {
       await expect(
         LLMAdapter.generateAdvice({
           cacheKey: sampleCacheKey,
-          category: 'Food',
+          category: 'Food & Tipping Culture',
           subQuestions: ['Is tipping expected?'],
         }),
       ).rejects.toThrow(AdviceTimeoutError)
