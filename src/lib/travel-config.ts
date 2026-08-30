@@ -98,11 +98,23 @@ export const CATEGORY_CONFIG = {
     'How much does airport transport cost on average?',
     'Should I book airport transport in advance?',
   ],
-  'Accommodation': [
-    'Which accommodations should I book according to my budget?',
-    'Which area should I stay in according to my budget and activity preferences??',
-    'What are the top 3 accommodations to book according to my budget?',
-    'Are accommodations likely to sell out?',
+  'Recommended Areas': [
+    'Which area should I stay in according to my budget and activity preferences?'
+  ],
+  'Hotels': [
+    'What are the top 3 hotels to book according to my budget?',
+    'What are average hotel prices?',
+    'Are hotels likely to sell out?',
+  ],
+  'Hostels': [
+    'What are the top 3 hostels to book according to my budget?',
+    'What are average hostel prices?',
+    'Are hostels likely to sell out?',
+  ],
+  'Holiday Rentals': [
+    'What are the top 3 holiday rentals according to my budget?',
+    'What are average holiday rental prices?',
+    'Are holiday rentals likely to sell out?',
   ],
   'Money': [
     'Should I bring cash in advance of the trip?',

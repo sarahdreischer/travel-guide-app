@@ -41,7 +41,7 @@ const GROUP_DEFS: Array<{
     id: 'accommodation',
     name: 'Accommodation',
     question: 'What is the best accommodation for a tourist?',
-    match: (c) => c.category === 'Accommodation',
+    match: (c) => ['Recommended Areas', 'Hotels', 'Hostels', 'Holiday Rentals'].includes(c.category),
   },
   {
     id: 'money',

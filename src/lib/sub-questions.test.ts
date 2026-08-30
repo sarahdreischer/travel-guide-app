@@ -59,12 +59,33 @@ describe('getSubQuestions', () => {
     ])
   })
 
-  it('returns the correct sub-questions for Accommodation', () => {
-    expect(getSubQuestions('Accommodation')).toEqual([
-      'Which accommodations should I book according to my budget?',
-      'Which area should I stay in according to my budget and activity preferences??',
-      'What are the top 3 accommodations to book according to my budget?',
-      'Are accommodations likely to sell out?',
+  it('returns the correct sub-questions for Recommended Areas', () => {
+    expect(getSubQuestions('Recommended Areas')).toEqual([
+      'Which area should I stay in according to my budget and activity preferences?'
+    ])
+  })
+
+  it('returns the correct sub-questions for Hotels', () => {
+    expect(getSubQuestions('Hotels')).toEqual([
+      'What are the top 3 hotels to book according to my budget?',
+      'What are average hotel prices?',
+      'Are hotels likely to sell out?',
+    ])
+  })
+
+  it('returns the correct sub-questions for Hostels', () => {
+    expect(getSubQuestions('Hostels')).toEqual([
+      'What are the top 3 hostels to book according to my budget?',
+      'What are average hostel prices?',
+      'Are hostels likely to sell out?',
+    ])
+  })
+
+  it('returns the correct sub-questions for Holiday Rentals', () => {
+    expect(getSubQuestions('Holiday Rentals')).toEqual([
+      'What are the top 3 holiday rentals according to my budget?',
+      'What are average holiday rental prices?',
+      'Are holiday rentals likely to sell out?',
     ])
   })
 
