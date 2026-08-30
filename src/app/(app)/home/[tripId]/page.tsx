@@ -8,12 +8,11 @@ import { AuthService } from '@/lib/auth'
 import { AdviceStore, deriveMonthRange } from '@/lib/advice-store'
 import type { AdviceRecord } from '@/lib/advice-store'
 import { derivebudgetRange } from '@/lib/validators'
-import { reconcileMissingAdviceAction } from '@/actions/advice'
+import { reconcileMissingAdviceAction, reconcileGroupTipsAction } from '@/actions/advice'
 import { CATEGORIES, getSubQuestions } from '@/lib/destinations'
 import { findAnswer } from '@/lib/answer-lookup'
 import { fmtDateShort, fmtDate, nightCount } from '@/lib/format-date'
-import { groupSections, getGroupQuestions } from '@/lib/category-groups'
-import { LLMAdapter } from '@/lib/llm-adapter'
+import { groupSections } from '@/lib/category-groups'
 import AdviceAccordion from '@/components/AdviceAccordion'
 import DeleteTripButton from '@/components/DeleteTripButton'
 import EditTripButton from '@/components/EditTripButton'
@@ -131,40 +130,13 @@ export default async function HomePage({
     activities: trip.activityPreferences,
   }
 
-  // Check if group tips are already cached
+  // Ensure group headline tips exist (generates + caches if missing/stale).
+  // Shared with the manual and scheduled reconcilers.
+  await reconcileGroupTipsAction(cacheKey)
   const groupTipRecord = await AdviceStore.findByCacheKey(cacheKey, '_group_tips')
-  let groupTips: Record<string, string> = {}
-
-  if (groupTipRecord) {
-    groupTips = groupTipRecord.answers as Record<string, string>
-  } else {
-    // Build context from existing sub-question answers so tips are consistent
-    const existingAdvice: Record<string, Record<string, string>> = {}
-    for (const record of adviceRecords) {
-      if (record.category === '_group_tips') continue
-      const answers = record.answers as Record<string, string> | null
-      if (answers && Object.keys(answers).length > 0) {
-        existingAdvice[record.category] = answers
-      }
-    }
-
-    // Generate group tips via AI, passing existing answers for coherence
-    const questions = getGroupQuestions()
-    const aiTips = await LLMAdapter.generateGroupTips(cacheKey, questions, existingAdvice)
-    if (Object.keys(aiTips).length > 0) {
-      // Cache for next visit
-      await AdviceStore.save({
-        destination: cacheKey.destination,
-        startMonth: cacheKey.startMonth,
-        endMonth: cacheKey.endMonth,
-        travellerType: cacheKey.travellerType,
-        budgetRange: cacheKey.budgetRange,
-        category: '_group_tips',
-        answers: aiTips,
-      })
-      groupTips = aiTips
-    }
-  }
+  const groupTips: Record<string, string> = groupTipRecord
+    ? (groupTipRecord.answers as Record<string, string>)
+    : {}
 
   const groups = groupSections(sections, groupTips)
 

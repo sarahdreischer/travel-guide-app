@@ -70,13 +70,6 @@ export const CATEGORY_CONFIG = {
     'Are roads easy to drive on?',
     'Are there mountain roads that are difficult to drive?',
   ],
-  'Transportation - Car Rental': [
-    'Are car rentals recommended?',
-    'What should I watch out for when renting a car?',
-    'How much do car rentals cost on average?',
-    'What type of car is recommended for rental?',
-    'Which providers are best for car rentals?',
-  ],
   'Transportation - Parking': [
     'Is parking easy?',
     'Is parking widely available?',
@@ -89,14 +82,21 @@ export const CATEGORY_CONFIG = {
     'How can I pay for trams if available?',
     'How can I pay for metros if available?',
   ],
-  'Transportation - Airport Transfer': [
-    'How much does airport transport cost on average?',
-    'Should I book airport transport in advance?',
-  ],
   'Transportation – Taxis and Ride-Hailing Services': [
     'How much are taxis on average?',
     'Are ride-hailing services available and widely used?',
     'How much are ride-hailing service trips on average?',
+  ],
+  'Transportation - Car Rental': [
+    'Are car rentals recommended?',
+    'What should I watch out for when renting a car?',
+    'How much do car rentals cost on average?',
+    'What type of car is recommended for rental?',
+    'Which providers are best for car rentals?',
+  ],
+  'Transportation - Airport Transfer': [
+    'How much does airport transport cost on average?',
+    'Should I book airport transport in advance?',
   ],
   'Accommodation': [
     'Which accommodations should I book according to my budget?',

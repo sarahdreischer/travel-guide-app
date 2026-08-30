@@ -21,6 +21,7 @@ async function main() {
   const { derivebudgetRange } = await import('../src/lib/validators')
   const { LLMAdapter } = await import('../src/lib/llm-adapter')
   const { findAnswer } = await import('../src/lib/answer-lookup')
+  const { reconcileGroupTipsAction } = await import('../src/actions/advice')
 
   async function reconcileTrip(trip: typeof trips.$inferSelect) {
     const { startMonth, endMonth } = deriveMonthRange(trip.startDate, trip.endDate)
@@ -60,18 +61,26 @@ async function main() {
 
     if (missing.length === 0) {
       console.log(`  ✓ All ${categoriesWithQuestions.length} categories complete`)
-      return
+    } else {
+      console.log(`  → ${missing.length} categories missing, generating...`)
+      try {
+        const records = await LLMAdapter.generateAdviceBatch(cacheKey, missing)
+        console.log(`  ✓ Generated ${records.length}/${missing.length} categories`)
+        const failed = missing.length - records.length
+        if (failed > 0) console.log(`  ⚠ ${failed} categories failed`)
+      } catch (err) {
+        console.error(`  ✗ Generation failed:`, (err as Error).message)
+      }
     }
 
-    console.log(`  → ${missing.length} categories missing, generating...`)
-
+    // Reconcile the group headline tips (generates/updates if missing or stale)
     try {
-      const records = await LLMAdapter.generateAdviceBatch(cacheKey, missing)
-      console.log(`  ✓ Generated ${records.length}/${missing.length} categories`)
-      const failed = missing.length - records.length
-      if (failed > 0) console.log(`  ⚠ ${failed} categories failed`)
+      const groupResult = await reconcileGroupTipsAction(cacheKey)
+      if (groupResult.generated) console.log('  ✓ Group tips generated')
+      else if (groupResult.skipped) console.log('  ✓ Group tips complete')
+      else if (groupResult.rateLimited) console.log('  ⚠ Group tips skipped — rate limited')
     } catch (err) {
-      console.error(`  ✗ Generation failed:`, (err as Error).message)
+      console.error('  ✗ Group tips generation failed:', (err as Error).message)
     }
   }
 

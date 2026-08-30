@@ -16,13 +16,11 @@ describe('getSubQuestions', () => {
     ])
   })
 
-  it('returns the correct sub-questions for Transportation - Car Rental', () => {
-    expect(getSubQuestions('Transportation - Car Rental')).toEqual([
-      'Are car rentals recommended?',
-      'What should I watch out for when renting a car?',
-      'How much do car rentals cost on average?',
-      'What type of car is recommended for rental?',
-      'Which providers are best for car rentals?',
+  it('returns the correct sub-questions for Transportation – Parking', () => {
+    expect(getSubQuestions('Transportation – Parking')).toEqual([
+      'Is parking easy?',
+      'Is parking widely available?',
+      'What are the parking rules?',
     ])
   })
 
@@ -36,6 +34,14 @@ describe('getSubQuestions', () => {
     ])
   })
 
+  it('returns the correct sub-questions for Transportation – Ride-Hailing Services', () => {
+    expect(getSubQuestions('Transportation – Ride-Hailing Services')).toEqual([
+      'How much are taxis on average?',
+      'Are ride-hailing services available and widely used?',
+      'How much are ride-hailing service trips on average?',
+    ])
+  })
+
   it('returns the correct sub-questions for Transportation – Airport Transfer', () => {
     expect(getSubQuestions('Transportation – Ride-Hailing Services')).toEqual([
       'How much does airport transport cost on average?',
@@ -43,11 +49,13 @@ describe('getSubQuestions', () => {
     ])
   })
 
-  it('returns the correct sub-questions for Transportation – Ride-Hailing Services', () => {
-    expect(getSubQuestions('Transportation – Ride-Hailing Services')).toEqual([
-      'How much are taxis on average?',
-      'Are ride-hailing services available and widely used?',
-      'How much are ride-hailing service trips on average?',
+  it('returns the correct sub-questions for Transportation - Car Rental', () => {
+    expect(getSubQuestions('Transportation - Car Rental')).toEqual([
+      'Are car rentals recommended?',
+      'What should I watch out for when renting a car?',
+      'How much do car rentals cost on average?',
+      'What type of car is recommended for rental?',
+      'Which providers are best for car rentals?',
     ])
   })
 

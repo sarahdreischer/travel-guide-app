@@ -17,6 +17,9 @@ import { derivebudgetRange } from '@/lib/validators'
 import { canCallAI } from '@/lib/ai-rate-limiter'
 import { reconcileMissingAdviceAction } from '@/actions/advice'
 import { findAnswer } from '@/lib/answer-lookup'
+import { getGroupQuestions } from '@/lib/category-groups'
+
+const GROUP_TIPS_CATEGORY = '_group_tips'
 
 const INTERVAL_MINUTES = parseInt(process.env.RECONCILIATION_INTERVAL_MINUTES ?? '10', 10)
 const INTERVAL_MS = INTERVAL_MINUTES * 60 * 1000
@@ -48,7 +51,7 @@ async function runReconciliation() {
         recordsByCategory.set(r.category, r.answers as Record<string, string> | null)
       }
 
-      const hasMissingOrStale = categoriesWithQuestions.some((category) => {
+      const hasMissingOrStaleCategories = categoriesWithQuestions.some((category) => {
         const answers = recordsByCategory.get(category)
         if (!answers) return true // category not generated yet
         const subQuestions = getSubQuestions(category)
@@ -56,7 +59,15 @@ async function runReconciliation() {
         return !subQuestions.every((q) => findAnswer(answers, q) !== undefined)
       })
 
-      if (!hasMissingOrStale) {
+      // Also treat the trip as needing reconciliation if the group headline tips
+      // are missing or don't cover every current group.
+      const groupTipAnswers = recordsByCategory.get(GROUP_TIPS_CATEGORY)
+      const groupIds = getGroupQuestions().map((g) => g.id)
+      const hasMissingOrStaleGroupTips =
+        !groupTipAnswers ||
+        !groupIds.every((id) => typeof groupTipAnswers[id] === 'string' && groupTipAnswers[id].length > 0)
+
+      if (!hasMissingOrStaleCategories && !hasMissingOrStaleGroupTips) {
         skipped++
         continue
       }
