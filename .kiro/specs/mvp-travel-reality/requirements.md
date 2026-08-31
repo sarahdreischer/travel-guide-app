@@ -2,7 +2,7 @@
 
 ## Introduction
 
-MVPTravel Reality is a web application that surfaces real-world, practical travel advice for a curated list of destinations. Travellers fill out a form describing their trip context (dates, travel mode, budget, style, activity preferences), and AI models generate structured, categorised answers covering everything from rental cars and safety to laundry and local food. These AI-generated answers are persisted to avoid redundant queries. Users can vote on the accuracy of answers over time, improving the quality of content. The MVP covers 10 initial destinations and is built as a mobile-friendly Next.js web app backed by PostgreSQL.
+MVPTravel Reality is a web application that surfaces real-world, practical travel briefing for a curated list of destinations. Travellers fill out a form describing their trip context (dates, travel mode, budget, style, activity preferences), and AI models generate structured, categorised answers covering everything from rental cars and safety to laundry and local food. These AI-generated answers are persisted to avoid redundant queries. Users can vote on the accuracy of answers over time, improving the quality of content. The MVP covers 10 initial destinations and is built as a mobile-friendly Next.js web app backed by PostgreSQL.
 
 ---
 
@@ -30,7 +30,7 @@ MVPTravel Reality is a web application that surfaces real-world, practical trave
 
 ### Requirement 1: User Authentication
 
-**User Story:** As a Guest, I want to log in with my email and password, so that I can access my personal trips and saved travel advice.
+**User Story:** As a Guest, I want to log in with my email and password, so that I can access my personal trips and saved travel briefing.
 
 #### Acceptance Criteria
 
@@ -63,7 +63,7 @@ MVPTravel Reality is a web application that surfaces real-world, practical trave
 
 ### Requirement 3: Add Travel Destination (Trip Creation)
 
-**User Story:** As a User, I want to create a trip by selecting a destination and providing my travel context, so that the System can generate personalised travel advice for my trip.
+**User Story:** As a User, I want to create a trip by selecting a destination and providing my travel context, so that the System can generate personalised travel briefing for my trip.
 
 #### Acceptance Criteria
 
@@ -79,7 +79,7 @@ MVPTravel Reality is a web application that surfaces real-world, practical trave
 
 ### Requirement 4: AI Advice Generation and Persistence
 
-**User Story:** As the System, I want to generate AI-powered travel advice once per unique cache key and persist it, so that repeated queries for the same context are served from storage rather than from the AI provider.
+**User Story:** As the System, I want to generate AI-powered travel briefing once per unique cache key and persist it, so that repeated queries for the same context are served from storage rather than from the AI provider.
 
 #### Acceptance Criteria
 
@@ -171,7 +171,7 @@ MVPTravel Reality is a web application that surfaces real-world, practical trave
 
 ### Requirement 10: Responsive and Mobile-Friendly UI
 
-**User Story:** As a User, I want the application to be fully usable on my mobile phone, so that I can look up travel advice on the go.
+**User Story:** As a User, I want the application to be fully usable on my mobile phone, so that I can look up travel briefing on the go.
 
 #### Acceptance Criteria
 

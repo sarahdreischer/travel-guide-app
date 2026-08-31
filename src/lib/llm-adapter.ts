@@ -37,7 +37,7 @@ export type CategoryQuestions = {
  * Maximum characters per answer. The LLM is instructed to keep each answer
  * within this limit. Change this single value to adjust answer length globally.
  */
-const MAX_ANSWER_CHARS = parseInt(process.env.AI_MAX_ANSWER_CHARS ?? '200', 10)
+const MAX_ANSWER_CHARS = parseInt(process.env.AI_MAX_ANSWER_CHARS ?? '320', 10)
 
 /**
  * Maximum characters per group tip answer. Separate from category answers
@@ -66,6 +66,20 @@ function describeBudgetRange(tier: string): string {
     case 'mid': return 'mid-range ($100–$499/day)'
     case 'luxury': return 'luxury ($500+/day)'
     default: return tier
+  }
+}
+
+/**
+ * Short natural-language description of the party type so the model can tailor
+ * advice (group size, safety framing, pacing, cost-splitting, etc.).
+ */
+function describeTravellerContext(travellerType: string): string {
+  switch (travellerType.toLowerCase()) {
+    case 'solo': return 'travelling alone — prioritise solo safety, social/meet-people spots, and single-occupancy value'
+    case 'couple': return 'travelling as a couple — favour romantic spots, tables/rooms for two, and shared-cost value'
+    case 'friends': return 'travelling as a group of friends — favour group-friendly bookings, nightlife/social options, and splitting costs'
+    case 'family': return 'travelling as a family — prioritise kid-friendly, safe, and convenient options with family sizing'
+    default: return ''
   }
 }
 
@@ -103,17 +117,26 @@ function buildBatchPrompt(
     ? `\n- Planned Activities: ${cacheKey.activities.join(', ')}`
     : '\n- Planned Activities: None specified (no particular activity preferences)'
 
-  return `You are a concise, practical travel advice expert. Keep each answer to ${MAX_ANSWER_CHARS} characters maximum. Be direct — no filler.
+  const travelStyleLine = cacheKey.travelStyle
+    ? `\n- Travel Style: ${cacheKey.travelStyle}`
+    : ''
+
+  const travellerContext = describeTravellerContext(cacheKey.travellerType)
+
+  return `You are an expert local travel advisor. Answer as if you know this destination first-hand and are briefing THIS specific traveller. Keep each answer to ${MAX_ANSWER_CHARS} characters maximum.
 
 CRITICAL RULES:
-1. **Coherence**: Your answers MUST be consistent across all categories. Do NOT contradict yourself. For example, if you recommend against renting a car due to road conditions in one category, do not recommend car rental in another. Review your full set of answers for logical consistency before finalising.
-2. **Budget-aware**: Factor the traveller's total budget into ALL cost-related recommendations. Estimate a realistic daily budget and use it to inform advice on accommodation, food, activities, and transport.
-3. **Activity-aware**: Tailor recommendations to the traveller's selected activities and interests.
+1. **Tailor to the traveller**: Genuinely understand and address this specific trip. A ${cacheKey.travellerType} traveller ${travellerContext} has different needs than others — reflect that in every relevant answer (safety framing, room/table sizing, pacing, social vs. quiet spots, splitting costs, etc.). Match the advice to their travel style${cacheKey.travelStyle ? ` (${cacheKey.travelStyle})` : ''}, budget, month of travel, and planned activities.
+2. **Always name concrete examples**: Whenever a question asks what/where/which to book, eat, stay, use, or visit, you MUST name specific real-world examples — actual business/operator names, neighbourhoods, dish names, apps, booking platforms, transit passes, or SIM/eSIM providers — plus typical prices in USD where relevant. Give 1–3 named examples, not a category. Do NOT answer with generic phrasing like "book in advance for the best spots" or "eat where the locals eat"; instead name the operators, dive shops, restaurants, districts, or platforms a traveller would actually use. If you are not certain of an exact current name, give the most likely well-known option and a reliable way to find it (e.g. a named booking site).
+   Example — BAD: "Book freediving and scuba diving trips in advance for the best spots." GOOD: "Book ahead with reputable dive shops — e.g. Rich Coast Diving or Sirenas Diving in Playas del Coco (~$90–120 for 2 tanks). Book via PADI Travel or the shop's own site 1–2 weeks out."
+3. **Be concise — no filler**: Every answer must carry useful, actionable information. No preambles ("It depends…", "There are many options…"), no restating the question, no hedging padding. Use the character budget for specifics (names, places, prices), not padding. If a direct yes/no applies, lead with it.
+4. **Coherence**: Answers MUST be consistent across all categories — never contradict yourself (e.g. don't advise against renting a car in one place and recommend it in another). Review the full set for consistency before finalising.
+5. **Budget-aware**: Factor the total budget into ALL cost-related recommendations. Estimate a realistic daily budget and align accommodation, food, activity, and transport suggestions to it.
 
 Trip context:
 - Destination: ${cacheKey.destination}
 - Travel Month(s): ${cacheKey.startMonth === cacheKey.endMonth ? cacheKey.startMonth : `${cacheKey.startMonth} to ${cacheKey.endMonth}`}
-- Traveller Type: ${cacheKey.travellerType}${budgetLine}${transportLine}${startingLine}${activitiesLine}
+- Traveller Type: ${cacheKey.travellerType}${travellerContext ? ` — ${travellerContext}` : ''}${travelStyleLine}${budgetLine}${transportLine}${startingLine}${activitiesLine}
 
 Answer ALL questions below grouped by category. Return a JSON object where:
 - Top-level keys MUST be the EXACT category names as written below (copy them verbatim, including dashes and special characters)
@@ -303,7 +326,7 @@ async function generateAdvice(params: {
  */
 async function summarise(fullAdvice: string): Promise<string> {
   try {
-    const summarisePrompt = `Summarise the following travel advice into a single concise sentence (max 15 words):\n\n${fullAdvice}`
+    const summarisePrompt = `Summarise the following travel briefing into a single concise sentence (max 15 words):\n\n${fullAdvice}`
 
     console.log('[LLM_Adapter] ▶ AI SUMMARISE REQUEST:', JSON.stringify({
       model: process.env.AI_MODEL ?? 'gpt-4o-mini',
@@ -381,6 +404,12 @@ async function generateGroupTips(
     ? `\n- Planned Activities: ${cacheKey.activities.join(', ')}`
     : '\n- Planned Activities: None specified (no particular activity preferences)'
 
+  const travelStyleLine = cacheKey.travelStyle
+    ? `\n- Travel Style: ${cacheKey.travelStyle}`
+    : ''
+
+  const travellerContext = describeTravellerContext(cacheKey.travellerType)
+
   // Build a context block from existing sub-question answers so tips are derived from actual advice
   let adviceContext = ''
   if (existingAdvice && Object.keys(existingAdvice).length > 0) {
@@ -392,14 +421,18 @@ async function generateGroupTips(
     adviceContext = `\n\n--- EXISTING DETAILED ADVICE (your tips MUST be consistent with these answers) ---\n${summaryLines.join('\n\n')}\n--- END OF EXISTING ADVICE ---\n`
   }
 
-  const prompt = `You are a concise travel advisor. For each group below, write a single headline tip that summarises the key insight from the detailed advice already generated for this trip. Each tip must be max ${MAX_GROUP_TIP_CHARS} characters. Be direct and practical.
+  const prompt = `You are an expert local travel advisor. For each group below, write a single headline tip summarising the key insight for THIS traveller from the detailed advice already generated. Each tip must be max ${MAX_GROUP_TIP_CHARS} characters.
 
-CRITICAL: Your headline tips MUST accurately reflect and be consistent with the existing detailed advice provided below. Do NOT contradict any of the detailed answers. Summarise the most important practical takeaway for each group.
+RULES:
+- **Consistency**: Tips MUST reflect and never contradict the detailed advice below.
+- **Concrete & specific**: Where it fits, name a real place, provider, dish, or figure rather than generic phrasing.
+- **No filler**: Lead with the actionable takeaway; no preambles or padding.
+- **Tailored**: Reflect that this is a ${cacheKey.travellerType} traveller${travellerContext ? ` (${travellerContext})` : ''}${cacheKey.travelStyle ? ` with a ${cacheKey.travelStyle} style` : ''}.
 
 Trip context:
 - Destination: ${cacheKey.destination}
 - Travel Month(s): ${cacheKey.startMonth === cacheKey.endMonth ? cacheKey.startMonth : `${cacheKey.startMonth} to ${cacheKey.endMonth}`}
-- Traveller Type: ${cacheKey.travellerType}${budgetLine}${transportLine}${startingLine}${activitiesLine}${adviceContext}
+- Traveller Type: ${cacheKey.travellerType}${travelStyleLine}${budgetLine}${transportLine}${startingLine}${activitiesLine}${adviceContext}
 
 Answer these questions. Return a JSON object with exactly these keys: ${groups.map((g) => `"${g.id}"`).join(', ')}. Each value is your headline tip as a string (max ${MAX_GROUP_TIP_CHARS} chars).
 

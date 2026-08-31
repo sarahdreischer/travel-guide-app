@@ -4,7 +4,7 @@ import { DEMO_TRIPS, getDemoTrip } from '@/lib/demo-data'
 import AppFooter from '@/components/AppFooter'
 
 export const metadata = {
-  title: 'Demo · Saved tips – Travel Guide',
+  title: 'Demo · Saved tips – Trip Guide',
 }
 
 export function generateStaticParams() {
@@ -31,7 +31,7 @@ export default async function DemoSavedPage({
   return (
     <>
       <header className="page-header">
-        <Link href={`/demo/home/${tripId}`} className="page-header-btn" aria-label="Back to travel advice">
+        <Link href={`/demo/home/${tripId}`} className="page-header-btn" aria-label="Back to travel briefing">
           <IconArrowLeft />
         </Link>
         <span className="page-title" style={{ fontSize: 15 }}>Saved tips</span>
@@ -49,7 +49,7 @@ export default async function DemoSavedPage({
           </Link>
           <div style={{ height: 12 }} />
           <Link href={`/demo/home/${tripId}`} className="auth-toggle-link">
-            Back to travel advice
+            Back to travel briefing
           </Link>
         </div>
         <AppFooter />

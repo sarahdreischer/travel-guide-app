@@ -21,6 +21,7 @@ export type CacheKey = {
   tripDurationDays?: number // number of days in the trip
   partySize?: string // e.g. "solo", "couple", "friends", "family"
   activities?: string[] // selected activity preferences
+  travelStyle?: string // e.g. "Adventure, Relaxed" — the traveller's chosen style(s)
 }
 
 /**

@@ -3,7 +3,7 @@ import Image from 'next/image'
 import AppFooter from '@/components/AppFooter'
 
 export const metadata = {
-  title: 'Demo · Profile – Travel Guide',
+  title: 'Demo · Profile – Trip Guide',
 }
 
 function IconChevronRight() {
@@ -27,7 +27,7 @@ export default function DemoProfilePage() {
         <h1 className="page-title">Profile</h1>
         <div className="page-brand">
           <Image src="/app-icon.png" alt="" width={22} height={22} className="page-brand-icon" aria-hidden="true" />
-          <span className="page-brand-label">Travel Guide</span>
+          <span className="page-brand-label">Trip Guide</span>
         </div>
         <span className="demo-badge" aria-label="Demo mode">Demo</span>
       </header>

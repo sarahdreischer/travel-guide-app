@@ -1,6 +1,6 @@
-# Travel Guide
+# Trip Guide
 
-AI-powered travel advice app. Create trips, get structured advice across categories like transportation, food, safety, and more.
+AI-powered travel briefing app. Create trips, get structured advice across categories like transportation, food, safety, and more.
 
 Built with Next.js 15 (App Router), TypeScript, Drizzle ORM, PostgreSQL, Tailwind CSS, and Vercel AI SDK.
 
@@ -85,6 +85,25 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run reconcile -- <tripId>` | Reconcile a specific trip |
 | `npm run clear-cache -- <tripId>` | Delete all cached AI advice for a trip (regenerates on next load) |
 | `npm run generate-demo-advice` | Regenerate real LLM advice for the `/demo` trips (writes `src/lib/demo-advice.generated.ts`) |
+| `npm run export-advice -- --weeks 4` | Export AI advice (group tips + per-category Q&A) for recent trips to a printable HTML file, one trip per page |
+
+### Exporting advice for quality review
+
+Dump AI advice for recently-created trips into a print-ready HTML file (one page
+per trip) so you can review LLM response quality and print it on paper:
+
+```bash
+npm run export-advice -- --weeks 4          # trips created in the last 4 weeks (default)
+npm run export-advice -- --days 10          # last 10 days
+npm run export-advice -- --months 3         # last 3 months
+npm run export-advice -- --by generated     # filter by advice generated date instead of trip created date
+npm run export-advice -- --weeks 2 --out review.html   # custom output filename
+```
+
+Open the resulting `.html` file in a browser and choose **Print → Save as PDF**
+(or print to paper). Each trip is laid out on its own page with its metadata,
+category group headline tips, and the full question/answer set per category.
+Requires `DATABASE_URL` in `.env.local`.
 
 ## Database Management
 

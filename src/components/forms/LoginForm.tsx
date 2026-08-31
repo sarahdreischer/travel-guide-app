@@ -47,12 +47,12 @@ export default function LoginForm() {
     <div className="auth-shell">
       <p className="auth-wordmark">
         <Image src="/app-icon.png" alt="" width={22} height={22} className="auth-wordmark-icon" aria-hidden="true" />
-        Travel Guide
+        Trip Guide
       </p>
 
       <div className="auth-heading-block">
         <h1 className="auth-heading">Welcome back</h1>
-        <p className="auth-subtitle">Log in to access your trips and travel advice.</p>
+        <p className="auth-subtitle">Log in to access your trips and travel briefing.</p>
       </div>
 
       <form

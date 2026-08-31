@@ -50,7 +50,7 @@ export default async function DestinationsPage() {
         <h1 className="page-title">Trips</h1>
         <div className="page-brand">
           <Image src="/app-icon.png" alt="" width={22} height={22} className="page-brand-icon" aria-hidden="true" />
-          <span className="page-brand-label">Travel Guide</span>
+          <span className="page-brand-label">Trip Guide</span>
         </div>
         <Link href="/trip/new" className="page-header-add" aria-label="Add a trip">
           <IconPlus />
@@ -63,7 +63,7 @@ export default async function DestinationsPage() {
         {upcomingTrips.length === 0 ? (
           <div className="empty-state">
             <p className="empty-state-text">
-              No trips planned yet. Add your first destination to get personalised travel advice.
+              No trips planned yet. Add your first destination to get personalised travel briefing.
             </p>
             <Link href="/trip/new" className="empty-state-btn">
               <IconPlus />

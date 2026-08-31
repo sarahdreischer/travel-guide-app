@@ -46,7 +46,7 @@ async function getTransport() {
 }
 
 export async function sendEmail({ to, subject, html, text }: SendEmailOptions): Promise<void> {
-  const from = process.env.SMTP_FROM || 'Travel Guide <noreply@travelguide.app>'
+  const from = process.env.SMTP_FROM || 'Trip Guide <noreply@tripguide.app>'
   const transport = await getTransport()
 
   const info = await transport.sendMail({ from, to, subject, html, text })

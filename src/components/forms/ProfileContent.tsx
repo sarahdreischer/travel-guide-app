@@ -77,7 +77,7 @@ export default function ProfileContent({ user }: ProfileContentProps) {
         <h1 className="page-title">Profile</h1>
         <div className="page-brand">
           <Image src="/app-icon.png" alt="" width={22} height={22} className="page-brand-icon" aria-hidden="true" />
-          <span className="page-brand-label">Travel Guide</span>
+          <span className="page-brand-label">Trip Guide</span>
         </div>
         <div style={{ width: 36 }} />
       </header>

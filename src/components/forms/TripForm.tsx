@@ -636,7 +636,7 @@ export default function TripForm({ destinationImages = {}, destinationAttributio
         ) : <div style={{ width: 36 }} />}
         <div className="wizard-brand">
           <Image src="/app-icon.png" alt="" width={22} height={22} className="page-brand-icon" aria-hidden="true" />
-          <span className="page-brand-label">Travel Guide</span>
+          <span className="page-brand-label">Trip Guide</span>
         </div>
         <div className="step-counter" aria-label={`Step ${step} of ${STEPS.length}`}>
           <span className="step-counter-current">{step}</span>
@@ -677,7 +677,7 @@ export default function TripForm({ destinationImages = {}, destinationAttributio
             ? (isEditMode ? 'Saving…' : 'Creating trip…')
             : step < STEPS.length
             ? 'Continue'
-            : (isEditMode ? 'Save changes' : 'Build my travel guide')}
+            : (isEditMode ? 'Save changes' : 'Build my trip guide')}
         </button>
         {step === STEPS.length && !isEditMode && (
           <p className="wizard-footer-note">Personalised for your trip · Ready in seconds</p>

@@ -92,6 +92,7 @@ async function runReconciliation() {
         tripDurationDays: Math.max(1, Math.round((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / 86400000)),
         partySize: trip.travelMode.toLowerCase(),
         activities: trip.activityPreferences,
+        travelStyle: trip.travelStyle || undefined,
       }
 
       const result = await reconcileMissingAdviceAction(cacheKey)

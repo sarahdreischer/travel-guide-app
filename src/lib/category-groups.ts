@@ -103,9 +103,9 @@ const GROUP_DEFS: Array<{
     match: (c) => ['Clothing & Accessories'].includes(c.category),
   },
   {
-    id: 'maintenance',
-    name: 'Maintenance',
-    question: 'Which services are widely availalbe for maintenance (e.g. laundry)?',
+    id: 'practicality',
+    name: 'Practicality',
+    question: 'Which services are widely availalbe for practical activities (e.g. laundry)?',
     match: (c) => ['Laundry'].includes(c.category),
   },
 ]

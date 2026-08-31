@@ -42,7 +42,7 @@ export default function ForgotPasswordForm() {
       <div className="auth-shell">
         <p className="auth-wordmark">
           <Image src="/app-icon.png" alt="" width={22} height={22} className="auth-wordmark-icon" aria-hidden="true" />
-          Travel Guide
+          Trip Guide
         </p>
 
         {!sent ? (
@@ -100,7 +100,7 @@ export default function ForgotPasswordForm() {
 
             <div className="reset-sent-steps">
               {[
-                'Open the email from Travel Guide',
+                'Open the email from Trip Guide',
                 'Click the secure reset link',
                 'Choose a new password',
               ].map((step, i) => (

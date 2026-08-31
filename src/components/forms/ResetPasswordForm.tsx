@@ -148,7 +148,7 @@ export default function ResetPasswordForm() {
         <div className="auth-shell">
           <p className="auth-wordmark">
             <Image src="/app-icon.png" alt="" width={22} height={22} className="auth-wordmark-icon" aria-hidden="true" />
-            Travel Guide
+            Trip Guide
           </p>
           <p className="auth-subtitle">Validating your reset link…</p>
         </div>
@@ -163,7 +163,7 @@ export default function ResetPasswordForm() {
         <div className="auth-shell">
           <p className="auth-wordmark">
             <Image src="/app-icon.png" alt="" width={22} height={22} className="auth-wordmark-icon" aria-hidden="true" />
-            Travel Guide
+            Trip Guide
           </p>
           <div className="auth-heading-block">
             <h1 className="auth-heading">Link expired</h1>
@@ -185,7 +185,7 @@ export default function ResetPasswordForm() {
       <div className="auth-shell">
         <p className="auth-wordmark">
           <Image src="/app-icon.png" alt="" width={22} height={22} className="auth-wordmark-icon" aria-hidden="true" />
-          Travel Guide
+          Trip Guide
         </p>
 
         {!done ? (
