@@ -37,7 +37,7 @@ export type CategoryQuestions = {
  * Maximum characters per answer. The LLM is instructed to keep each answer
  * within this limit. Change this single value to adjust answer length globally.
  */
-const MAX_ANSWER_CHARS = parseInt(process.env.AI_MAX_ANSWER_CHARS ?? '250', 10)
+const MAX_ANSWER_CHARS = parseInt(process.env.AI_MAX_ANSWER_CHARS ?? '320', 10)
 
 /**
  * Maximum characters per group tip answer. Separate from category answers
@@ -127,8 +127,9 @@ function buildBatchPrompt(
 
 CRITICAL RULES:
 1. **Tailor to the traveller**: Genuinely understand and address this specific trip. A ${cacheKey.travellerType} traveller ${travellerContext} has different needs than others — reflect that in every relevant answer (safety framing, room/table sizing, pacing, social vs. quiet spots, splitting costs, etc.). Match the advice to their travel style${cacheKey.travelStyle ? ` (${cacheKey.travelStyle})` : ''}, budget, month of travel, and planned activities.
-2. **Be concrete and specific**: Where applicable, name real places, neighbourhoods, providers, dishes, apps, or price figures (e.g. actual district names, named restaurants/markets, transit cards, SIM/eSIM providers, typical costs in USD). Avoid vague, generic advice that could apply to any destination.
-3. **Be concise — no filler**: Every answer must carry useful, actionable information. No preambles ("It depends…", "There are many options…"), no restating the question, no hedging padding. Prefer specifics over generalities. If a direct yes/no applies, lead with it.
+2. **Always name concrete examples**: Whenever a question asks what/where/which to book, eat, stay, use, or visit, you MUST name specific real-world examples — actual business/operator names, neighbourhoods, dish names, apps, booking platforms, transit passes, or SIM/eSIM providers — plus typical prices in USD where relevant. Give 1–3 named examples, not a category. Do NOT answer with generic phrasing like "book in advance for the best spots" or "eat where the locals eat"; instead name the operators, dive shops, restaurants, districts, or platforms a traveller would actually use. If you are not certain of an exact current name, give the most likely well-known option and a reliable way to find it (e.g. a named booking site).
+   Example — BAD: "Book freediving and scuba diving trips in advance for the best spots." GOOD: "Book ahead with reputable dive shops — e.g. Rich Coast Diving or Sirenas Diving in Playas del Coco (~$90–120 for 2 tanks). Book via PADI Travel or the shop's own site 1–2 weeks out."
+3. **Be concise — no filler**: Every answer must carry useful, actionable information. No preambles ("It depends…", "There are many options…"), no restating the question, no hedging padding. Use the character budget for specifics (names, places, prices), not padding. If a direct yes/no applies, lead with it.
 4. **Coherence**: Answers MUST be consistent across all categories — never contradict yourself (e.g. don't advise against renting a car in one place and recommend it in another). Review the full set for consistency before finalising.
 5. **Budget-aware**: Factor the total budget into ALL cost-related recommendations. Estimate a realistic daily budget and align accommodation, food, activity, and transport suggestions to it.
 
