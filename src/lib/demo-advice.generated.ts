@@ -92,8 +92,7 @@ export const DEMO_ADVICE_GENERATED: Record<string, DemoAdviceEntry> = {
         "What type of clothes should I pack?": "Lightweight, breathable clothing; quick-dry fabrics for hiking and surfing; a mix of shorts and long pants.",
         "What type of clothes should I pack for my activity preferences?": "Pack swimwear, hiking shoes, rash guard for surfing, and comfortable clothes for wildlife tours.",
         "Do I need insect repellent?": "Yes, especially for hiking and wildlife areas to avoid mosquito bites.",
-        "Do I need sunscreen?": "Absolutely, to protect against strong sun exposure during outdoor activities.",
-        "What SPF is recommended?": "Use at least SPF 30 for effective protection against UV rays.",
+        "Do I need sunscreen? If yes, what SPF is recommended?": "Absolutely, to protect against strong sun exposure during outdoor activities.",
         "Do I need a rain coat?": "Yes, September is rainy; a lightweight, waterproof jacket is essential.",
         "Do I need an umbrella?": "A compact travel umbrella can be useful, but a rain coat is more practical for activities.",
         "Do I need a dry bag?": "Yes, a dry bag is recommended for keeping valuables safe during water activities."
@@ -143,14 +142,6 @@ export const DEMO_ADVICE_GENERATED: Record<string, DemoAdviceEntry> = {
         "Is drizzle rain common?": "Drizzle can occur, especially in the mornings and late afternoons.",
         "What are the average humidity levels?": "Average humidity levels are high, around 80-90%.",
         "Are there specific times to avoid going outside?": "Avoid outdoor activities during heavy rain, typically in the afternoons."
-      },
-      "Safety": {
-        "Is it safe for solo travellers?": "Generally safe, but stay vigilant. Stick to well-populated areas and avoid isolated spots.",
-        "Are there scams to watch out for?": "Watch for taxi overcharging and fake tour operators. Use reputable services.",
-        "Which areas should I avoid?": "Avoid parts of San Jose at night, especially around the bus station. Research local advice.",
-        "Is phone theft common?": "Yes, phone theft can occur. Keep devices secure and avoid displaying them in crowded areas.",
-        "Is it safe at night?": "Exercise caution at night. Stick to well-lit areas and avoid walking alone in less populated places.",
-        "Is it safe for women to walk around alone?": "It's generally safe, but women should remain cautious and avoid isolated areas."
       }
     },
     "groupTips": {}
