@@ -206,12 +206,88 @@ Answer ALL questions below grouped by category. Return a JSON object where:
 - Each category value is an object mapping the EXACT question text to a concise answer (max ${MAX_ANSWER_CHARS} chars each)
 
 IMPORTANT: Use the category names EXACTLY as they appear in the headings below. Do NOT shorten, rename, or paraphrase them.
+IMPORTANT: Every question MUST be nested INSIDE its category object. Do NOT place a question at the top level. The shape is strictly: { "Category Name": { "Question?": "answer", "Another question?": "answer" } }. Never { "Category Name": {...}, "Question?": "answer" }.
 IMPORTANT: Ensure all answers are mutually consistent — no contradictions between categories.
 
 ${categoryBlocks}`
 }
 
 // ─── Core Functions ───────────────────────────────────────────────────────────
+
+/** Normalize a category/question key for tolerant matching. */
+function normalizeAnswerKey(s: string): string {
+  return s.toLowerCase().replace(/[\u2013\u2014-]/g, '-').replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * Reshape a raw (and possibly malformed) batch response into the expected
+ * `category → { question: answer }` structure.
+ *
+ * The model occasionally "leaks" a sub-question to the top level as a plain
+ * string — e.g. it returns `"What are average hotel prices?": "..."` as a
+ * sibling of `"Hotels"` instead of nesting it inside it. When that happens the
+ * strict schema would reject the entire response and the chunk would be lost.
+ *
+ * This function keeps every well-formed category object and re-attaches each
+ * leaked top-level string key to the category whose sub-questions include that
+ * exact question. Unmatched leaked keys are dropped (they'll be picked up on a
+ * later reconciliation pass).
+ */
+function reshapeBatchAnswers(
+  raw: Record<string, Record<string, string> | string>,
+  categories: CategoryQuestions[]
+): Record<string, Record<string, string>> {
+  const shaped: Record<string, Record<string, string>> = {}
+  const leaked: Record<string, string> = {}
+
+  // Pass 1: keep proper nested objects; collect leaked string values.
+  for (const [key, value] of Object.entries(raw)) {
+    if (value && typeof value === 'object') {
+      shaped[key] = value as Record<string, string>
+    } else if (typeof value === 'string') {
+      leaked[key] = value
+    }
+  }
+
+  if (Object.keys(leaked).length === 0) return shaped
+
+  // Build a lookup from normalized sub-question → category name, so a leaked
+  // question can be routed back to the category it belongs to.
+  const questionToCategory = new Map<string, string>()
+  for (const cat of categories) {
+    for (const q of cat.subQuestions) {
+      questionToCategory.set(normalizeAnswerKey(q), cat.category)
+    }
+  }
+
+  // Also match leaked keys against categories we already have a shaped object
+  // for, keyed by normalized category name (in case a shaped object exists).
+  const shapedByNormalized = new Map<string, string>()
+  for (const key of Object.keys(shaped)) {
+    shapedByNormalized.set(normalizeAnswerKey(key), key)
+  }
+
+  for (const [leakedKey, answer] of Object.entries(leaked)) {
+    const targetCategory = questionToCategory.get(normalizeAnswerKey(leakedKey))
+    if (!targetCategory) {
+      console.warn(`[LLM_Adapter] Dropping leaked top-level key that matches no known sub-question: "${leakedKey}"`)
+      continue
+    }
+    // Find (or create) the shaped object for the target category.
+    const existingKey = shapedByNormalized.get(normalizeAnswerKey(targetCategory)) ?? targetCategory
+    if (!shaped[existingKey]) {
+      shaped[existingKey] = {}
+      shapedByNormalized.set(normalizeAnswerKey(existingKey), existingKey)
+    }
+    // Don't clobber an answer the model already nested correctly.
+    if (shaped[existingKey][leakedKey] === undefined) {
+      shaped[existingKey][leakedKey] = answer
+    }
+    console.log(`[LLM_Adapter] Recovered leaked key "${leakedKey}" → category "${existingKey}"`)
+  }
+
+  return shaped
+}
 
 /**
  * Execute a single AI call that answers all categories at once.
@@ -253,13 +329,28 @@ async function executeBatchAICall(
     }, null, 2))
 
     const timeoutMs = parseInt(process.env.AI_BATCH_TIMEOUT_MS ?? '90000', 10)
-    const { object: batchAnswers } = await generateObject({
+    // Permissive schema: each top-level value is normally a nested object
+    // (category → { question: answer }), but the model sometimes "leaks" a
+    // sub-question up to the top level as a plain string (e.g. it emits
+    // "What are average hotel prices?": "..." as a sibling of "Hotels" instead
+    // of nesting it). Accepting a string here prevents the whole chunk from
+    // being discarded by validation; we re-attach leaked keys below.
+    const { object: rawBatchAnswers } = await generateObject({
       model: getModel(),
       prompt,
-      schema: z.record(z.string(), z.record(z.string(), z.string())),
+      schema: z.record(
+        z.string(),
+        z.union([z.record(z.string(), z.string()), z.string()])
+      ),
       maxTokens: MAX_OUTPUT_TOKENS,
       abortSignal: AbortSignal.timeout(timeoutMs),
     })
+
+    // Reshape the (possibly malformed) response into the expected
+    // category → { question: answer } structure, recovering any leaked
+    // top-level string keys by matching them back to the category whose
+    // sub-questions they belong to.
+    const batchAnswers = reshapeBatchAnswers(rawBatchAnswers, categories)
 
     console.log('[LLM_Adapter] ◀ AI RESPONSE:', JSON.stringify(batchAnswers, null, 2))
 
@@ -278,7 +369,7 @@ async function executeBatchAICall(
     // hyphen instead of en-dash), so we do a normalized lookup.
     // Additionally, when only one category is requested, just take whatever the AI returned.
     const records: AdviceRecord[] = []
-    const normalizeKey = (s: string) => s.toLowerCase().replace(/[\u2013\u2014-]/g, '-').replace(/\s+/g, ' ').trim()
+    const normalizeKey = normalizeAnswerKey
     const responseKeyMap = new Map<string, Record<string, string>>()
     for (const [key, value] of Object.entries(batchAnswers)) {
       responseKeyMap.set(normalizeKey(key), value as Record<string, string>)
