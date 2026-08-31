@@ -64,10 +64,10 @@ export async function forgotPasswordAction(
   try {
     await sendEmail({
       to: email,
-      subject: 'Reset your Travel Guide password',
+      subject: 'Reset your Trip Guide password',
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px;">
-          <p style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #1A5568; margin-bottom: 24px;">Travel Guide</p>
+          <p style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #1A5568; margin-bottom: 24px;">Trip Guide</p>
           <h1 style="font-size: 22px; font-weight: 700; color: #111318; margin-bottom: 8px;">Reset your password</h1>
           <p style="font-size: 14px; color: #6B7280; line-height: 1.6; margin-bottom: 24px;">
             Hi ${user.firstName}, we received a request to reset your password. Click the button below to choose a new one. This link expires in 24 hours.
@@ -80,7 +80,7 @@ export async function forgotPasswordAction(
           </p>
         </div>
       `,
-      text: `Reset your Travel Guide password\n\nHi ${user.firstName}, visit this link to reset your password (expires in 24 hours):\n\n${resetUrl}\n\nIf you didn't request this, ignore this email.`,
+      text: `Reset your Trip Guide password\n\nHi ${user.firstName}, visit this link to reset your password (expires in 24 hours):\n\n${resetUrl}\n\nIf you didn't request this, ignore this email.`,
     })
   } catch (err) {
     console.error('[forgotPasswordAction] Failed to send email:', err)

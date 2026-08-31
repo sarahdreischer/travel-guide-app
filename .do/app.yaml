@@ -62,7 +62,7 @@ services:
         value: "${RESEND_API_KEY}"
       - key: SMTP_FROM
         scope: RUN_TIME
-        value: "Travel Guide <noreply@travelguide.com>"
+        value: "Trip Guide <noreply@tripguide.com>"
       - key: AI_MAX_CALLS_PER_MINUTE
         scope: RUN_TIME
         value: "20"

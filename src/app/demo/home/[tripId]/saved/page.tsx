@@ -4,7 +4,7 @@ import { DEMO_TRIPS, getDemoTrip } from '@/lib/demo-data'
 import AppFooter from '@/components/AppFooter'
 
 export const metadata = {
-  title: 'Demo · Saved tips – Travel Guide',
+  title: 'Demo · Saved tips – Trip Guide',
 }
 
 export function generateStaticParams() {

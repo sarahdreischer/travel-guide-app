@@ -64,11 +64,11 @@ export default function SideNav({ basePath = '' }: { basePath?: string }) {
         {!collapsed && (
           <div className="side-nav-brand">
             <Image src="/app-icon.png" alt="" width={20} height={20} className="side-nav-brand-icon" aria-hidden="true" />
-            Travel Guide
+            Trip Guide
           </div>
         )}
         {collapsed && (
-          <Image src="/app-icon.png" alt="Travel Guide" width={20} height={20} className="side-nav-brand-icon" />
+          <Image src="/app-icon.png" alt="Trip Guide" width={20} height={20} className="side-nav-brand-icon" />
         )}
         <button
           className="side-nav-toggle"

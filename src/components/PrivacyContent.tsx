@@ -32,9 +32,9 @@ const PARAGRAPHS = [
   'We use OpenAI to generate travel advice based on your trip parameters. Only trip details (destination, dates, travel style) are sent to the AI provider — never your personal identity information. We may use third-party services for email delivery and infrastructure hosting, each bound by data processing agreements.',
   'Your account data is retained for as long as your account is active. Trip data and generated advice are kept for the lifetime of your account. If you delete your account, all personal data is permanently removed within 30 days. Anonymised, aggregated data may be retained for analytical purposes.',
   'You have the right to access, correct, or delete your personal data at any time. You can export your trip data, update your profile information, or delete your account entirely from the Profile page. If you are in the EU/EEA, you have additional rights under GDPR including data portability and the right to object to processing.',
-  'Travel Guide is not directed at children under 16. We do not knowingly collect personal information from children. If we become aware that a child has provided us with personal data, we will take steps to delete that information promptly.',
+  'Trip Guide is not directed at children under 16. We do not knowingly collect personal information from children. If we become aware that a child has provided us with personal data, we will take steps to delete that information promptly.',
   'We may update this Privacy Policy from time to time to reflect changes in our practices or for legal, operational, or regulatory reasons. We will notify you of any material changes by posting the updated policy with a new "Last updated" date. Your continued use of the service after changes constitutes acceptance.',
-  'If you have questions about this Privacy Policy or how we handle your data, please contact us at privacy@travelguide.app. For data protection enquiries within the EU, you may also contact our Data Protection Officer at the same address. We aim to respond to all enquiries within 30 days.',
+  'If you have questions about this Privacy Policy or how we handle your data, please contact us at privacy@tripguide.app. For data protection enquiries within the EU, you may also contact our Data Protection Officer at the same address. We aim to respond to all enquiries within 30 days.',
 ]
 
 export default function PrivacyContent() {
@@ -46,7 +46,7 @@ export default function PrivacyContent() {
         </a>
         <div className="page-brand">
           <Image src="/app-icon.png" alt="" width={22} height={22} className="page-brand-icon" aria-hidden="true" />
-          <span className="page-brand-label">Travel Guide</span>
+          <span className="page-brand-label">Trip Guide</span>
         </div>
         <div style={{ width: 36 }} />
       </header>

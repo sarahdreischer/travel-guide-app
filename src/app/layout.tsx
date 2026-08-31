@@ -3,7 +3,7 @@ import "./globals.css";
 import CookieBanner from '@/components/CookieBanner'
 
 export const metadata: Metadata = {
-  title: "Travel Guide",
+  title: "Trip Guide",
   description:
     "Real-world, practical travel advice for curated destinations — powered by AI.",
   icons: {

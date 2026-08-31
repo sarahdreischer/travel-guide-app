@@ -68,7 +68,7 @@ export default function AppFooter() {
       <div className="app-footer-inner">
         <div className="app-footer-cols">
           <div className="app-footer-col app-footer-col-brand">
-            <p className="app-footer-brand">Travel Guide</p>
+            <p className="app-footer-brand">Trip Guide</p>
             <p className="app-footer-tagline">Personalised advice for every journey.</p>
           </div>
           {/* <div className="app-footer-col">
@@ -85,13 +85,13 @@ export default function AppFooter() {
           </div>
           <div className="app-footer-col">
             <p className="app-footer-col-heading">Contact us</p>
-            <a className="app-footer-link" href="mailto:hello@travelguide.app">hello@travelguide.app</a>
+            <a className="app-footer-link" href="mailto:hello@tripguide.app">hello@tripguide.app</a>
             <a className="app-footer-link" href="#">Support centre</a>
             <a className="app-footer-link" href="#">Report an issue</a>
           </div>
         </div>
         <div className="app-footer-bottom">
-          <p className="app-footer-copy">&copy; 2026 Travel Guide Ltd. All rights reserved.</p>
+          <p className="app-footer-copy">&copy; 2026 Trip Guide. All rights reserved.</p>
           {/* <p className="app-footer-copy">Registered in England &amp; Wales &middot; Company No. 14872931</p> */}
         </div>
       </div>

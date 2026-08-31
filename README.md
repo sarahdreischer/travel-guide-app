@@ -1,4 +1,4 @@
-# Travel Guide
+# Trip Guide
 
 AI-powered travel advice app. Create trips, get structured advice across categories like transportation, food, safety, and more.
 

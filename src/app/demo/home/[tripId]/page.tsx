@@ -7,7 +7,7 @@ import AdviceAccordion from '@/components/AdviceAccordion'
 import AppFooter from '@/components/AppFooter'
 
 export const metadata = {
-  title: 'Demo · Travel advice – Travel Guide',
+  title: 'Demo · Travel advice – Trip Guide',
 }
 
 export function generateStaticParams() {
