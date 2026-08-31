@@ -5,7 +5,7 @@ import CookieBanner from '@/components/CookieBanner'
 export const metadata: Metadata = {
   title: "Trip Guide",
   description:
-    "Real-world, practical travel briefing for curated destinations — powered by AI.",
+    "Real-world, practical travel briefing for curated destinations",
   icons: {
     icon: "/app-icon.png",
     apple: "/app-icon.png",

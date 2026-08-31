@@ -57,6 +57,13 @@
       "when": 1787900000000,
       "tag": "0007_rename_bali_destination",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787950000000,
+      "tag": "0008_city_destination_images",
+      "breakpoints": true
     }
   ]
 }

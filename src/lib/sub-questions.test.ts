@@ -116,8 +116,6 @@ describe('getSubQuestions', () => {
     expect(getSubQuestions('Clothing & Accessories')).toEqual([
       'What type of clothes should I pack?',
       'What type of clothes should I pack for my activity preferences?',
-      'Do I need insect repellent?',
-      'Do I need sunscreen? If yes, what SPF is recommended?',
       'Do I need a rain coat?',
       'Do I need an umbrella?',
       'Do I need a dry bag?',
@@ -126,10 +124,8 @@ describe('getSubQuestions', () => {
 
   it('returns the correct sub-questions for Health', () => {
     expect(getSubQuestions('Health')).toEqual([
-      'Are mosquitos and other insects prevalent?',
-      'Do I need insect repellent?',
-      'What is the expected UV strength?',
-      'Do I need sunscreen and, if yes, what SPF is recommended?',
+      'Are mosquitos and other insects prevalent? If yes, do I need insect repellent?',
+      'What is the expected UV strength? Is sunscreen recommended?',
       'Which vaccinations do I need to have?',
       'Do I need to proof my vaccination status on arrival?',
       'What vaccinations are recommended for me considering my starting location?',
@@ -151,11 +147,9 @@ describe('getSubQuestions', () => {
 
   it('returns the correct sub-questions for Laundry', () => {
     expect(getSubQuestions('Laundry')).toEqual([
-      'Are there self-service laundrettes?',
-      'How expensive are self-service laundrettes?',
-      'Are there service wash laundrettes?',
-      'How expensive are service wash laundrettes?',
-      'Do laundrettes take cash and/ or card?',
+      'Are there self-service laundrettes? If yes, how expensive are those on average?',
+      'Are there service wash laundrettes? If yes, how expensive are those on average?',
+      'Do laundrettes (self-service or service wash) take cash and/ or card?',
     ])
   })
 

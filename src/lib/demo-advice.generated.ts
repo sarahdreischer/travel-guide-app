@@ -91,17 +91,13 @@ export const DEMO_ADVICE_GENERATED: Record<string, DemoAdviceEntry> = {
       "Clothing & Accessories": {
         "What type of clothes should I pack?": "Lightweight, breathable clothing; quick-dry fabrics for hiking and surfing; a mix of shorts and long pants.",
         "What type of clothes should I pack for my activity preferences?": "Pack swimwear, hiking shoes, rash guard for surfing, and comfortable clothes for wildlife tours.",
-        "Do I need insect repellent?": "Yes, especially for hiking and wildlife areas to avoid mosquito bites.",
-        "Do I need sunscreen? If yes, what SPF is recommended?": "Absolutely, to protect against strong sun exposure during outdoor activities.",
         "Do I need a rain coat?": "Yes, September is rainy; a lightweight, waterproof jacket is essential.",
         "Do I need an umbrella?": "A compact travel umbrella can be useful, but a rain coat is more practical for activities.",
         "Do I need a dry bag?": "Yes, a dry bag is recommended for keeping valuables safe during water activities."
       },
       "Health": {
-        "Are mosquitos and other insects prevalent?": "Yes, mosquitos are common in September, especially in humid areas.",
-        "Do I need insect repellent?": "Yes, use insect repellent to avoid bites.",
-        "What is the expected UV strength?": "UV strength is high; expect levels of 8-10.",
-        "Do I need sunscreen and, if yes, what SPF is recommended?": "Yes, use SPF 30 or higher.",
+        "Are mosquitos and other insects prevalent? If yes, do I need insect repellent?": "Yes, use insect repellent to avoid bites.",
+        "What is the expected UV strength? Is sunscreen recommended?": "UV strength is high; expect levels of 8-10.",
         "Which vaccinations do I need to have?": "Routine vaccines plus Hepatitis A and Typhoid.",
         "Do I need to proof my vaccination status on arrival?": "No proof required for routine vaccinations.",
         "What vaccinations are recommended for me considering my starting location?": "Hepatitis A, Typhoid, and Tetanus.",
@@ -117,11 +113,8 @@ export const DEMO_ADVICE_GENERATED: Record<string, DemoAdviceEntry> = {
         "What are average meal prices?": "Expect to pay $5-$15 for local meals and $15-$30 for dining at nicer restaurants."
       },
       "Laundry": {
-        "Are there self-service laundrettes?": "Yes, self-service laundrettes are available in major towns and tourist areas.",
-        "How expensive are self-service laundrettes?": "Expect to pay around $5-$10 per load.",
-        "Are there service wash laundrettes?": "Yes, service wash options are available in many locations.",
-        "How expensive are service wash laundrettes?": "Service wash costs range from $10-$20 per load.",
-        "Do laundrettes take cash and/ or card?": "Most laundrettes accept cash; some may accept cards."
+        "Are there self-service laundrettes? If yes, how expensive are those on average?": "Yes, self-service laundrettes are available in major towns and tourist areas.",
+        "Are there service wash laundrettes? If yes, how expensive are those on average?": "Yes, service wash options are available in many locations."
       },
       "Groceries & Drinking Water": {
         "What supermarkets are recommended?": "Look for Auto Mercado and Mas x Menos for groceries. They offer a good selection and reasonable prices.",

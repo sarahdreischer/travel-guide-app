@@ -53,7 +53,7 @@ const MAX_GROUP_TIP_CHARS = parseInt(process.env.AI_MAX_GROUP_TIP_CHARS ?? '200'
  * coherence: categories are chunked in group order, and each chunk is told
  * about the decisions made in earlier chunks.
  */
-const CATEGORIES_PER_CHUNK = Math.max(1, parseInt(process.env.AI_CATEGORIES_PER_CHUNK ?? '4', 10))
+const CATEGORIES_PER_CHUNK = Math.max(1, parseInt(process.env.AI_CATEGORIES_PER_CHUNK ?? '3', 10))
 
 /**
  * Upper bound on output tokens per AI call. Sized so a chunk of category
@@ -166,7 +166,7 @@ function buildBatchPrompt(
     }
     priorContext = `
 
-DECISIONS ALREADY MADE FOR THIS TRIP (from earlier categories — you MUST stay consistent with these; do not contradict them, and reuse the same named recommendations, prices, and yes/no calls where relevant):
+DECISIONS ALREADY MADE FOR THIS TRIP (from earlier categories — you MUST stay consistent with these; do not contradict them, and reuse the same named recommendations, prices, and yes/no calls where relevant). Do NOT restate these facts, prices, or recommendations in your new answers — they've already been told to the traveller. Only add genuinely new information, or refer back briefly (e.g. "as noted above") instead of repeating:
 ${lines.join('\n')}`
   }
 
@@ -178,7 +178,7 @@ CRITICAL RULES — read carefully, they define what a good answer looks like:
 
 1. **The "generic article" test (most important)**: Before finalising each answer, ask: "Could this exact sentence appear, unchanged, in a generic article about ${cacheKey.destination}?" If YES, rewrite it. Every answer must be recognisably about THIS traveller's trip, not the destination in general.
 
-2. **Reason from the traveller's own facts**: Explicitly tie recommendations to their details using natural phrasing such as "Because you're travelling as a ${cacheKey.travellerType}…", "For your ${nights ?? ''}-night trip…", "Since you've chosen ${cacheKey.travelStyle || 'this style'}…", "Given your budget…". Use the party type, travel style, budget, trip length, travel month/season, starting location and planned activities as the *reasons* behind your advice — not just as background.
+2. **Reason from the traveller's own facts — but state each fact once**: Tie advice to their details (party type, travel style, budget, trip length, month/season, starting location, activities) where it genuinely changes the recommendation. Bring a fact in only for the ONE answer where it matters most; do NOT open every answer with the same trip recap. Once you've said "you're travelling as a ${cacheKey.travellerType}" or "for your ${nights ?? ''}-night trip", assume the traveller remembers it — don't repeat it in later answers. Vary your phrasing rather than reusing the same opener.
 
 3. **Take a clear position — be opinionated**: Don't list every option neutrally. Make the decision for them and say why. Use phrasing like "I'd recommend…", "I'd prioritise…", "I wouldn't bother with…", "I'd avoid…", "It's worth it for you because…". When a question implies a yes/no (e.g. "Should I get an eSIM?"), answer it directly and justify it from their trip, rather than defaulting to a generic "yes, get one".
 
@@ -190,11 +190,15 @@ CRITICAL RULES — read carefully, they define what a good answer looks like:
 
 7. **Coherence & budget**: Answers MUST be consistent across all categories (never contradict yourself). Factor the total budget into ALL cost-related recommendations and align them to a realistic daily spend.
 
+8. **No repetition — say each thing exactly once**: Treat the whole set of answers as ONE briefing. Each fact, price, place name, operator, or recommendation should appear in exactly ONE answer — the most relevant one. Do NOT restate the same trip facts, the same weather/season note, the same "carry cash", the same eSIM pick, or the same neighbourhood across multiple answers. If something was already covered by another question (or in DECISIONS ALREADY MADE), don't repeat it — either answer the new angle only, or briefly refer to it ("as noted for accommodation…") instead of restating it. Repetition wastes the traveller's time; every sentence should add something new.
+
 Example — for a 7-night couple's Adventure trip to Costa Rica on a $3,500 budget:
 - BAD (generic): "Cards are widely accepted in Costa Rica, but carry some cash for markets and taxis."
 - GOOD (trip-specific): "Cards cover most of your accommodation and larger purchases. For your 7 nights I'd carry ₡20,000–30,000 cash for sodas, parking, roadside stops and taxis — enough without over-carrying on a $3,500 budget."
 - BAD (neutral): "Staying connected is easy — grab an eSIM and use café/hotel Wi-Fi."
 - GOOD (opinionated + reasoned): "I'd get mobile data for this trip. Since you're driving between regions as a couple, you'll want reliable maps and messaging beyond hotel Wi-Fi. An eSIM (e.g. Airalo ~$15–25) is simplest if your phone supports it; download offline maps before remote stretches."
+- BAD (repetitive across answers): every answer starting "You're travelling as a couple on a $3,500 budget…" and each accommodation answer re-listing the same hotel and its price.
+- GOOD (each fact once): name the hotel and price in the hotels answer only; in later answers refer back ("near your Kata Beach base") rather than repeating the name, price, and trip recap.
 
 Trip context:
 - Destination: ${cacheKey.destination}
