@@ -269,7 +269,7 @@ function fallbackGroupTip(destination: string, groupId: string, groupName: strin
     case 'connectivity': return `Staying connected in ${d} is easy — grab an eSIM before you fly and rely on café/hotel Wi-Fi.`
     case 'culture': return `A little local etiquette goes a long way in ${d}: greet warmly, dress respectfully, and ask before photos.`
     case 'packing-and-preparation': return `Pack light for ${d} with versatile layers, comfortable shoes and the essentials for your planned activities.`
-    case 'practicality': return `Self-service laundrettes are available in ${d}'s larger towns and are inexpensive for longer trips.`
+    case 'practicalities': return `Self-service laundrettes are available in ${d}'s larger towns and are inexpensive for longer trips.`
     default: return `${groupName} in ${d}: demo highlights tailored to this trip. Tap to read the full advice.`
   }
 }
