@@ -185,6 +185,7 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
     tripDurationDays: Math.max(1, Math.round((new Date(endDateStr!).getTime() - new Date(startDateStr!).getTime()) / 86400000)),
     partySize: travelMode!.toLowerCase(),
     activities: activityPreferences,
+    travelStyle: travelStyle || undefined,
   }
 
   // 7. Trigger advice generation (fire and don't block redirect)

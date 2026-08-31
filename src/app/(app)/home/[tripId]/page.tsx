@@ -98,6 +98,7 @@ export default async function HomePage({
       tripDurationDays: Math.max(1, Math.round((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / 86400000)),
       partySize: trip.travelMode.toLowerCase(),
       activities: trip.activityPreferences,
+      travelStyle: trip.travelStyle || undefined,
     })
     adviceRecords = await AdviceStore.getForTrip(tripId)
   }
@@ -121,6 +122,7 @@ export default async function HomePage({
     tripDurationDays: Math.max(1, Math.round((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / 86400000)),
     partySize: trip.travelMode.toLowerCase(),
     activities: trip.activityPreferences,
+    travelStyle: trip.travelStyle || undefined,
   }
 
   // Ensure group headline tips exist (generates + caches if missing/stale).

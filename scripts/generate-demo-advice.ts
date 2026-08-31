@@ -68,6 +68,7 @@ async function main() {
       ),
       partySize: seed.travelMode.toLowerCase(),
       activities: seed.activityPreferences,
+      travelStyle: seed.travelStyle || undefined,
     }
 
     const entry: Entry = { categories: {}, groupTips: {} }
