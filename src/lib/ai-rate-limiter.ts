@@ -5,15 +5,36 @@
  *
  * Also implements a cooldown after failures to avoid hammering a failing provider.
  *
+ * Priority: callers can pass a priority. High-priority work (foreground
+ * new-trip advice generation) may use the full per-minute budget. Low-priority
+ * work (background reconciliation) is refused once the per-minute count reaches
+ * a reserve threshold, leaving headroom so a freshly-created trip is never
+ * starved by background jobs.
+ *
  * Configurable via environment variables:
  * - AI_MAX_CALLS_PER_MINUTE: Maximum AI calls per minute (default: 3)
  * - AI_MAX_CALLS_PER_DAY: Maximum AI calls per 24h rolling window (default: 50)
  * - AI_FAILURE_COOLDOWN_MINUTES: Pause all calls for this many minutes after a failure (default: 5)
+ * - AI_LOW_PRIORITY_MINUTE_RESERVE: Per-minute slots reserved for high-priority
+ *   work; low-priority calls are refused once the minute count reaches
+ *   (MAX_PER_MINUTE - this). Default: 1.
  */
+
+export type AICallPriority = 'high' | 'low'
 
 const MAX_PER_MINUTE = parseInt(process.env.AI_MAX_CALLS_PER_MINUTE ?? '3', 10)
 const MAX_PER_DAY = parseInt(process.env.AI_MAX_CALLS_PER_DAY ?? '50', 10)
 const FAILURE_COOLDOWN_MINUTES = parseInt(process.env.AI_FAILURE_COOLDOWN_MINUTES ?? '5', 10)
+
+// Per-minute slots kept in reserve for high-priority (foreground) work.
+// Low-priority (background) calls stop once the minute count reaches
+// MAX_PER_MINUTE - LOW_PRIORITY_MINUTE_RESERVE. Clamped so at least 1 slot
+// stays available to low priority when the reserve would consume the whole
+// budget.
+const LOW_PRIORITY_MINUTE_RESERVE = Math.min(
+  Math.max(0, parseInt(process.env.AI_LOW_PRIORITY_MINUTE_RESERVE ?? '1', 10)),
+  Math.max(0, MAX_PER_MINUTE - 1)
+)
 
 const ONE_MINUTE_MS = 60 * 1000
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
@@ -56,7 +77,7 @@ function prune(): void {
  * - Per-day limit reached, OR
  * - In failure cooldown period
  */
-export function canCallAI(): boolean {
+export function canCallAI(priority: AICallPriority = 'high'): boolean {
   // Check failure cooldown first
   if (lastFailureAt !== null) {
     if (Date.now() - lastFailureAt < FAILURE_COOLDOWN_MS) {
@@ -67,7 +88,12 @@ export function canCallAI(): boolean {
 
   prune()
   const minuteCount = countInWindow(ONE_MINUTE_MS)
-  if (minuteCount >= MAX_PER_MINUTE) return false
+
+  // Low-priority (background) work must leave headroom for high-priority
+  // (foreground new-trip) work, so it stops earlier in the per-minute window.
+  const minuteLimit =
+    priority === 'low' ? MAX_PER_MINUTE - LOW_PRIORITY_MINUTE_RESERVE : MAX_PER_MINUTE
+  if (minuteCount >= minuteLimit) return false
 
   const dayCount = countInWindow(ONE_DAY_MS)
   if (dayCount >= MAX_PER_DAY) return false

@@ -50,6 +50,13 @@
       "when": 1787834749086,
       "tag": "0006_wild_lake",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787900000000,
+      "tag": "0007_rename_bali_destination",
+      "breakpoints": true
     }
   ]
 }

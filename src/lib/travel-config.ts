@@ -13,7 +13,7 @@
 export const DESTINATIONS = [
   'Argentina',
   'Australia',
-  'Bali',
+  'Bali, Indonesia',
   'Indonesia',
   'Barcelona, Spain',
   'Cambodia',
@@ -117,12 +117,12 @@ export const CATEGORY_CONFIG = {
     'Are holiday rentals likely to sell out?',
   ],
   'Money': [
+    'Is my current budget realistic?',
     'Should I bring cash in advance of the trip?',
     'Are ATMs widely available?',
     'What is the average fee charge for withdrawals from ATMs?',
     'Do most places accept card payment?',
     'Which cards are widely accepted?',
-    'Is my current budget realistic?',
     'What is a realistic daily budget?',
   ],
   'WiFi & Mobile Data': [

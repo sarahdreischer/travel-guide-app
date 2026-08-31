@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { AdviceStore } from '@/lib/advice-store'
 import type { CacheKey, AdviceRecord } from '@/lib/advice-store'
 import { canCallAI, recordAICall, recordAIFailure, getRateLimitStatus } from '@/lib/ai-rate-limiter'
+import type { AICallPriority } from '@/lib/ai-rate-limiter'
 
 // ─── Custom Errors ────────────────────────────────────────────────────────────
 
@@ -44,6 +45,21 @@ const MAX_ANSWER_CHARS = parseInt(process.env.AI_MAX_ANSWER_CHARS ?? '320', 10)
  * because group tips are displayed as one-liners in the collapsed accordion row.
  */
 const MAX_GROUP_TIP_CHARS = parseInt(process.env.AI_MAX_GROUP_TIP_CHARS ?? '200', 10)
+
+/**
+ * How many categories to request per AI call. Requesting all ~20 categories in
+ * one call can overflow the model's output token budget and yield an empty
+ * response. Chunking keeps each response small and reliable while preserving
+ * coherence: categories are chunked in group order, and each chunk is told
+ * about the decisions made in earlier chunks.
+ */
+const CATEGORIES_PER_CHUNK = Math.max(1, parseInt(process.env.AI_CATEGORIES_PER_CHUNK ?? '4', 10))
+
+/**
+ * Upper bound on output tokens per AI call. Sized so a chunk of category
+ * answers comfortably fits without truncation.
+ */
+const MAX_OUTPUT_TOKENS = parseInt(process.env.AI_MAX_OUTPUT_TOKENS ?? '4096', 10)
 
 // ─── In-flight request deduplication ──────────────────────────────────────────
 
@@ -85,7 +101,8 @@ function describeTravellerContext(travellerType: string): string {
 
 function buildBatchPrompt(
   cacheKey: CacheKey,
-  categories: CategoryQuestions[]
+  categories: CategoryQuestions[],
+  priorAdvice?: Record<string, Record<string, string>>
 ): string {
   const categoryBlocks = categories
     .map((cat) => {
@@ -123,21 +140,67 @@ function buildBatchPrompt(
 
   const travellerContext = describeTravellerContext(cacheKey.travellerType)
 
-  return `You are an expert local travel advisor. Answer as if you know this destination first-hand and are briefing THIS specific traveller. Keep each answer to ${MAX_ANSWER_CHARS} characters maximum.
+  const nights = cacheKey.tripDurationDays ?? null
+  const durationLine = nights ? `\n- Trip Length: ${nights} night${nights !== 1 ? 's' : ''}` : ''
 
-CRITICAL RULES:
-1. **Tailor to the traveller**: Genuinely understand and address this specific trip. A ${cacheKey.travellerType} traveller ${travellerContext} has different needs than others — reflect that in every relevant answer (safety framing, room/table sizing, pacing, social vs. quiet spots, splitting costs, etc.). Match the advice to their travel style${cacheKey.travelStyle ? ` (${cacheKey.travelStyle})` : ''}, budget, month of travel, and planned activities.
-2. **Always name concrete examples**: Whenever a question asks what/where/which to book, eat, stay, use, or visit, you MUST name specific real-world examples — actual business/operator names, neighbourhoods, dish names, apps, booking platforms, transit passes, or SIM/eSIM providers — plus typical prices in USD where relevant. Give 1–3 named examples, not a category. Do NOT answer with generic phrasing like "book in advance for the best spots" or "eat where the locals eat"; instead name the operators, dive shops, restaurants, districts, or platforms a traveller would actually use. If you are not certain of an exact current name, give the most likely well-known option and a reliable way to find it (e.g. a named booking site).
-   Example — BAD: "Book freediving and scuba diving trips in advance for the best spots." GOOD: "Book ahead with reputable dive shops — e.g. Rich Coast Diving or Sirenas Diving in Playas del Coco (~$90–120 for 2 tanks). Book via PADI Travel or the shop's own site 1–2 weeks out."
-3. **Be concise — no filler**: Every answer must carry useful, actionable information. No preambles ("It depends…", "There are many options…"), no restating the question, no hedging padding. Use the character budget for specifics (names, places, prices), not padding. If a direct yes/no applies, lead with it.
-4. **Coherence**: Answers MUST be consistent across all categories — never contradict yourself (e.g. don't advise against renting a car in one place and recommend it in another). Review the full set for consistency before finalising.
-5. **Budget-aware**: Factor the total budget into ALL cost-related recommendations. Estimate a realistic daily budget and align accommodation, food, activity, and transport suggestions to it.
+  // A one-line human summary the model can reference directly in its answers.
+  const tripSummary = [
+    nights ? `${nights}-night` : null,
+    cacheKey.travellerType,
+    'trip to',
+    cacheKey.destination,
+    cacheKey.travelStyle ? `(style: ${cacheKey.travelStyle})` : null,
+    cacheKey.totalBudgetUsd ? `on a $${cacheKey.totalBudgetUsd.toLocaleString()} budget` : null,
+  ].filter(Boolean).join(' ')
+
+  // When earlier chunks have already been answered, show them so this chunk
+  // stays consistent (same recommendations, no contradictions across chunks).
+  let priorContext = ''
+  if (priorAdvice && Object.keys(priorAdvice).length > 0) {
+    const lines: string[] = []
+    for (const [category, answers] of Object.entries(priorAdvice)) {
+      const items = Object.entries(answers)
+        .map(([q, a]) => `    • ${q} → ${a}`)
+        .join('\n')
+      lines.push(`  [${category}]\n${items}`)
+    }
+    priorContext = `
+
+DECISIONS ALREADY MADE FOR THIS TRIP (from earlier categories — you MUST stay consistent with these; do not contradict them, and reuse the same named recommendations, prices, and yes/no calls where relevant):
+${lines.join('\n')}`
+  }
+
+  return `You are a seasoned personal travel advisor writing directly to ONE traveller about THEIR specific trip. You are not writing a guidebook or an encyclopedia entry — you are giving them your opinion and recommendations for their exact situation. Keep each answer to ${MAX_ANSWER_CHARS} characters maximum.
+
+THE TRIP: ${tripSummary}.
+
+CRITICAL RULES — read carefully, they define what a good answer looks like:
+
+1. **The "generic article" test (most important)**: Before finalising each answer, ask: "Could this exact sentence appear, unchanged, in a generic article about ${cacheKey.destination}?" If YES, rewrite it. Every answer must be recognisably about THIS traveller's trip, not the destination in general.
+
+2. **Reason from the traveller's own facts**: Explicitly tie recommendations to their details using natural phrasing such as "Because you're travelling as a ${cacheKey.travellerType}…", "For your ${nights ?? ''}-night trip…", "Since you've chosen ${cacheKey.travelStyle || 'this style'}…", "Given your budget…". Use the party type, travel style, budget, trip length, travel month/season, starting location and planned activities as the *reasons* behind your advice — not just as background.
+
+3. **Take a clear position — be opinionated**: Don't list every option neutrally. Make the decision for them and say why. Use phrasing like "I'd recommend…", "I'd prioritise…", "I wouldn't bother with…", "I'd avoid…", "It's worth it for you because…". When a question implies a yes/no (e.g. "Should I get an eSIM?"), answer it directly and justify it from their trip, rather than defaulting to a generic "yes, get one".
+
+4. **Fewer, stronger recommendations**: The goal is not more information — it's fewer, sharper, actionable calls the traveller can act on. For a ${nights ?? 'short'}-night trip, favour prioritisation ("focus on 1–2 things") over exhaustive lists. Consider pacing, travel/transfer time, and whether an itinerary is realistic for their trip length.
+
+5. **Name concrete specifics**: When recommending what to book, eat, stay in, or use, name real examples — operators, neighbourhoods, dishes, apps, booking platforms, transit passes, SIM/eSIM providers — with typical prices in USD where relevant (1–3 named examples, not a category). If unsure of an exact current name, give the most likely well-known option plus a reliable way to find it.
+
+6. **No filler**: No preambles ("It depends…", "There are many options…"), no restating the question, no hedging padding. Spend the character budget on the recommendation, the reason it applies to them, and specifics.
+
+7. **Coherence & budget**: Answers MUST be consistent across all categories (never contradict yourself). Factor the total budget into ALL cost-related recommendations and align them to a realistic daily spend.
+
+Example — for a 7-night couple's Adventure trip to Costa Rica on a $3,500 budget:
+- BAD (generic): "Cards are widely accepted in Costa Rica, but carry some cash for markets and taxis."
+- GOOD (trip-specific): "Cards cover most of your accommodation and larger purchases. For your 7 nights I'd carry ₡20,000–30,000 cash for sodas, parking, roadside stops and taxis — enough without over-carrying on a $3,500 budget."
+- BAD (neutral): "Staying connected is easy — grab an eSIM and use café/hotel Wi-Fi."
+- GOOD (opinionated + reasoned): "I'd get mobile data for this trip. Since you're driving between regions as a couple, you'll want reliable maps and messaging beyond hotel Wi-Fi. An eSIM (e.g. Airalo ~$15–25) is simplest if your phone supports it; download offline maps before remote stretches."
 
 Trip context:
 - Destination: ${cacheKey.destination}
-- Travel Month(s): ${cacheKey.startMonth === cacheKey.endMonth ? cacheKey.startMonth : `${cacheKey.startMonth} to ${cacheKey.endMonth}`}
+- Travel Month(s): ${cacheKey.startMonth === cacheKey.endMonth ? cacheKey.startMonth : `${cacheKey.startMonth} to ${cacheKey.endMonth}`}${durationLine}
 - Traveller Type: ${cacheKey.travellerType}${travellerContext ? ` — ${travellerContext}` : ''}${travelStyleLine}${budgetLine}${transportLine}${startingLine}${activitiesLine}
-
+${priorContext}
 Answer ALL questions below grouped by category. Return a JSON object where:
 - Top-level keys MUST be the EXACT category names as written below (copy them verbatim, including dashes and special characters)
 - Each category value is an object mapping the EXACT question text to a concise answer (max ${MAX_ANSWER_CHARS} chars each)
@@ -156,10 +219,12 @@ ${categoryBlocks}`
  */
 async function executeBatchAICall(
   cacheKey: CacheKey,
-  categories: CategoryQuestions[]
+  categories: CategoryQuestions[],
+  priorAdvice?: Record<string, Record<string, string>>,
+  priority: AICallPriority = 'high'
 ): Promise<AdviceRecord[]> {
   // Enforce rate limit
-  if (!canCallAI()) {
+  if (!canCallAI(priority)) {
     const status = getRateLimitStatus()
     if (status.inCooldown) {
       console.log(
@@ -173,7 +238,7 @@ async function executeBatchAICall(
     throw new AIRateLimitedError()
   }
 
-  const prompt = buildBatchPrompt(cacheKey, categories)
+  const prompt = buildBatchPrompt(cacheKey, categories, priorAdvice)
 
   try {
     // Record the call (one API request for all categories)
@@ -192,10 +257,21 @@ async function executeBatchAICall(
       model: getModel(),
       prompt,
       schema: z.record(z.string(), z.record(z.string(), z.string())),
+      maxTokens: MAX_OUTPUT_TOKENS,
       abortSignal: AbortSignal.timeout(timeoutMs),
     })
 
     console.log('[LLM_Adapter] ◀ AI RESPONSE:', JSON.stringify(batchAnswers, null, 2))
+
+    // An empty (or non-object) response means the model produced nothing usable
+    // — typically an output-token overflow. Treat it as a failure so the
+    // rate-limiter records it and callers can retry, rather than silently
+    // saving nothing.
+    if (!batchAnswers || typeof batchAnswers !== 'object' || Object.keys(batchAnswers).length === 0) {
+      throw new AdviceTimeoutError(
+        `AI returned an empty response for ${categories.length} categor${categories.length === 1 ? 'y' : 'ies'}`
+      )
+    }
 
     // Persist each category's answers as separate rows (upsert)
     // AI may return category names with slightly different punctuation (e.g. regular
@@ -272,7 +348,8 @@ async function executeBatchAICall(
  */
 async function generateAdviceBatch(
   cacheKey: CacheKey,
-  categories: CategoryQuestions[]
+  categories: CategoryQuestions[],
+  priority: AICallPriority = 'high'
 ): Promise<AdviceRecord[]> {
   if (categories.length === 0) return []
 
@@ -283,13 +360,78 @@ async function generateAdviceBatch(
     return inFlight
   }
 
-  const promise = executeBatchAICall(cacheKey, categories).finally(() => {
+  const promise = executeChunkedBatch(cacheKey, categories, priority).finally(() => {
     inFlightBatchRequests.delete(batchKey)
   })
 
   inFlightBatchRequests.set(batchKey, promise)
 
   return promise
+}
+
+/**
+ * Run the batch as a sequence of smaller chunks to avoid overflowing the model's
+ * output token budget (which yields an empty response for large requests).
+ *
+ * Coherence is preserved two ways:
+ * 1. Categories arrive already ordered by group, so related categories land in
+ *    the same chunk.
+ * 2. Each chunk is given the answers from all earlier chunks as "decisions
+ *    already made", so later chunks stay consistent (same named picks, prices,
+ *    and yes/no calls) instead of contradicting earlier ones.
+ *
+ * Chunks run sequentially (not in parallel) precisely so this prior-answer
+ * context can be threaded forward.
+ */
+async function executeChunkedBatch(
+  cacheKey: CacheKey,
+  categories: CategoryQuestions[],
+  priority: AICallPriority = 'high'
+): Promise<AdviceRecord[]> {
+  // Small enough to fit in one call — no need to chunk.
+  if (categories.length <= CATEGORIES_PER_CHUNK) {
+    return executeBatchAICall(cacheKey, categories, undefined, priority)
+  }
+
+  const chunks: CategoryQuestions[][] = []
+  for (let i = 0; i < categories.length; i += CATEGORIES_PER_CHUNK) {
+    chunks.push(categories.slice(i, i + CATEGORIES_PER_CHUNK))
+  }
+
+  console.log(
+    `[LLM_Adapter] Chunking ${categories.length} categories into ${chunks.length} calls of up to ${CATEGORIES_PER_CHUNK} (sequential, coherence-threaded).`
+  )
+
+  const allRecords: AdviceRecord[] = []
+  const priorAdvice: Record<string, Record<string, string>> = {}
+  const errors: unknown[] = []
+
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i]
+    try {
+      const records = await executeBatchAICall(cacheKey, chunk, priorAdvice, priority)
+      for (const record of records) {
+        allRecords.push(record)
+        // Thread this chunk's answers forward so later chunks stay consistent.
+        priorAdvice[record.category] = record.answers as Record<string, string>
+      }
+    } catch (error: unknown) {
+      // One chunk failing shouldn't discard the chunks that already succeeded.
+      // Collect the error and keep going; surface it only if nothing succeeded.
+      console.error(
+        `[LLM_Adapter] Chunk ${i + 1}/${chunks.length} failed (categories: ${chunk.map((c) => c.category).join(', ')}):`,
+        error
+      )
+      errors.push(error)
+    }
+  }
+
+  // If every chunk failed, propagate so callers can retry / show an error.
+  if (allRecords.length === 0 && errors.length > 0) {
+    throw errors[0]
+  }
+
+  return allRecords
 }
 
 /**
@@ -368,13 +510,14 @@ export type GroupQuestion = {
 async function generateGroupTips(
   cacheKey: CacheKey,
   groups: GroupQuestion[],
-  existingAdvice?: Record<string, Record<string, string>>
+  existingAdvice?: Record<string, Record<string, string>>,
+  priority: AICallPriority = 'high'
 ): Promise<Record<string, string>> {
   if (groups.length === 0) return {}
 
-  if (!canCallAI()) {
+  if (!canCallAI(priority)) {
     const status = getRateLimitStatus()
-    console.log(`[LLM_Adapter] Rate limited — skipping group tips. cooldown: ${status.inCooldown}`)
+    console.log(`[LLM_Adapter] Rate limited (priority=${priority}) — skipping group tips. cooldown: ${status.inCooldown}`)
     return {}
   }
 
@@ -421,17 +564,22 @@ async function generateGroupTips(
     adviceContext = `\n\n--- EXISTING DETAILED ADVICE (your tips MUST be consistent with these answers) ---\n${summaryLines.join('\n\n')}\n--- END OF EXISTING ADVICE ---\n`
   }
 
-  const prompt = `You are an expert local travel advisor. For each group below, write a single headline tip summarising the key insight for THIS traveller from the detailed advice already generated. Each tip must be max ${MAX_GROUP_TIP_CHARS} characters.
+  const nights = cacheKey.tripDurationDays ?? null
+  const durationLine = nights ? `\n- Trip Length: ${nights} night${nights !== 1 ? 's' : ''}` : ''
+
+  const prompt = `You are a seasoned personal travel advisor writing a single headline recommendation per group, directly to ONE traveller about THEIR trip. Each tip must be max ${MAX_GROUP_TIP_CHARS} characters.
 
 RULES:
+- **Trip-specific, not generic**: Ask "could this sentence appear in a generic article about ${cacheKey.destination}?" — if so, rewrite it. Tie the tip to their trip (party type, ${cacheKey.travelStyle || 'style'}, ${nights ?? ''}-night length, budget, season).
+- **Opinionated**: Take a position ("I'd prioritise…", "I'd skip…", "Worth it for you because…"), don't neutrally summarise.
 - **Consistency**: Tips MUST reflect and never contradict the detailed advice below.
-- **Concrete & specific**: Where it fits, name a real place, provider, dish, or figure rather than generic phrasing.
+- **Concrete**: Where it fits, name a real place, provider, dish, or figure rather than generic phrasing.
 - **No filler**: Lead with the actionable takeaway; no preambles or padding.
-- **Tailored**: Reflect that this is a ${cacheKey.travellerType} traveller${travellerContext ? ` (${travellerContext})` : ''}${cacheKey.travelStyle ? ` with a ${cacheKey.travelStyle} style` : ''}.
+- **Tailored**: This is a ${cacheKey.travellerType} traveller${travellerContext ? ` (${travellerContext})` : ''}${cacheKey.travelStyle ? ` with a ${cacheKey.travelStyle} style` : ''}.
 
 Trip context:
 - Destination: ${cacheKey.destination}
-- Travel Month(s): ${cacheKey.startMonth === cacheKey.endMonth ? cacheKey.startMonth : `${cacheKey.startMonth} to ${cacheKey.endMonth}`}
+- Travel Month(s): ${cacheKey.startMonth === cacheKey.endMonth ? cacheKey.startMonth : `${cacheKey.startMonth} to ${cacheKey.endMonth}`}${durationLine}
 - Traveller Type: ${cacheKey.travellerType}${travelStyleLine}${budgetLine}${transportLine}${startingLine}${activitiesLine}${adviceContext}
 
 Answer these questions. Return a JSON object with exactly these keys: ${groups.map((g) => `"${g.id}"`).join(', ')}. Each value is your headline tip as a string (max ${MAX_GROUP_TIP_CHARS} chars).

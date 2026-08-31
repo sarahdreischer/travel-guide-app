@@ -27,8 +27,10 @@ const INTERVAL_MS = INTERVAL_MINUTES * 60 * 1000
 async function runReconciliation() {
   console.log(`[Scheduled Reconciliation] Starting — ${new Date().toISOString()}`)
 
-  if (!canCallAI()) {
-    console.log('[Scheduled Reconciliation] Skipped — rate limited')
+  // Background job: low priority. Backs off earlier than foreground work so
+  // per-minute budget stays available for new-trip advice generation.
+  if (!canCallAI('low')) {
+    console.log('[Scheduled Reconciliation] Skipped — rate limited (low priority backs off to leave headroom for new trips)')
     return
   }
 
@@ -72,9 +74,9 @@ async function runReconciliation() {
         continue
       }
 
-      // Rate limit check before each trip
-      if (!canCallAI()) {
-        console.log('[Scheduled Reconciliation] Stopping — rate limited mid-run')
+      // Rate limit check before each trip (low priority — leaves headroom)
+      if (!canCallAI('low')) {
+        console.log('[Scheduled Reconciliation] Stopping — rate limited mid-run (leaving headroom for new trips)')
         break
       }
 
@@ -95,7 +97,7 @@ async function runReconciliation() {
         travelStyle: trip.travelStyle || undefined,
       }
 
-      const result = await reconcileMissingAdviceAction(cacheKey)
+      const result = await reconcileMissingAdviceAction(cacheKey, 'low')
 
       if (result.generated > 0) {
         reconciled++

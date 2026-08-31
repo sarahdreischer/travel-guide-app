@@ -7,6 +7,7 @@ import { LLMAdapter, AdviceTimeoutError } from '@/lib/llm-adapter'
 import { getSubQuestions } from '@/lib/sub-questions'
 import { CATEGORIES } from '@/lib/destinations'
 import { canCallAI, getRateLimitStatus } from '@/lib/ai-rate-limiter'
+import type { AICallPriority } from '@/lib/ai-rate-limiter'
 import { findAnswer } from '@/lib/answer-lookup'
 import { getGroupQuestions } from '@/lib/category-groups'
 
@@ -83,7 +84,9 @@ export async function getOrGenerateAdviceAction(
   // Helper: batch-generate and collect results
   const generateBatch = async (cats: { category: string; subQuestions: string[] }[]) => {
     if (cats.length === 0) return
-    if (!canCallAI()) {
+    // Foreground new-trip generation is high priority — it may use the full
+    // per-minute budget and takes precedence over background reconciliation.
+    if (!canCallAI('high')) {
       for (const cat of cats) {
         results.push({ status: 'error', category: cat.category, message: 'Rate limited — try again later' })
         errors.push(cat.category)
@@ -91,7 +94,7 @@ export async function getOrGenerateAdviceAction(
       return
     }
     try {
-      const records = await LLMAdapter.generateAdviceBatch(cacheKey, cats)
+      const records = await LLMAdapter.generateAdviceBatch(cacheKey, cats, 'high')
       const generatedCategories = new Set(records.map((r) => r.category))
       for (const record of records) {
         results.push({ status: 'success', record })
@@ -133,18 +136,21 @@ export async function getOrGenerateAdviceAction(
  * Rate limiting is enforced by the LLM adapter (single enforcement point).
  */
 export async function reconcileMissingAdviceAction(
-  cacheKey: CacheKey
+  cacheKey: CacheKey,
+  priority: AICallPriority = 'low'
 ): Promise<ReconcileResult> {
   let generated = 0
   let skipped = 0
   let errors = 0
   let rateLimited = false
 
-  // Early exit: if already rate limited, don't even iterate
-  if (!canCallAI()) {
+  // Early exit: if already rate limited (for this priority), don't even iterate.
+  // Background reconciliation ('low') backs off earlier to leave per-minute
+  // headroom for foreground new-trip generation ('high').
+  if (!canCallAI(priority)) {
     const status = getRateLimitStatus()
     console.log(
-      `[reconcileMissingAdvice] Rate limited before starting — minute: ${status.minuteCount}/${status.maxPerMinute}, day: ${status.dayCount}/${status.maxPerDay}, cooldown: ${status.inCooldown}. Skipping reconciliation.`
+      `[reconcileMissingAdvice] Rate limited before starting (priority=${priority}) — minute: ${status.minuteCount}/${status.maxPerMinute}, day: ${status.dayCount}/${status.maxPerDay}, cooldown: ${status.inCooldown}. Skipping reconciliation.`
     )
     return { generated: 0, skipped: 0, errors: 0, rateLimited: true }
   }
@@ -183,7 +189,7 @@ export async function reconcileMissingAdviceAction(
 
   if (missingCategories.length === 0) {
     // Categories are all complete — still make sure group tips are reconciled.
-    const groupResult = await reconcileGroupTipsAction(cacheKey)
+    const groupResult = await reconcileGroupTipsAction(cacheKey, priority)
     return { generated: 0, skipped, errors: 0, rateLimited: groupResult.rateLimited }
   }
 
@@ -191,7 +197,7 @@ export async function reconcileMissingAdviceAction(
   // (if one times out, the rest still succeed)
   const results = await Promise.allSettled(
     missingCategories.map((cat) =>
-      LLMAdapter.generateAdviceBatch(cacheKey, [cat])
+      LLMAdapter.generateAdviceBatch(cacheKey, [cat], priority)
     )
   )
 
@@ -212,7 +218,7 @@ export async function reconcileMissingAdviceAction(
   // After category advice is reconciled, ensure the group headline tips exist too.
   // (Group tips summarise the sub-question answers, so this runs last.)
   if (!rateLimited) {
-    await reconcileGroupTipsAction(cacheKey)
+    await reconcileGroupTipsAction(cacheKey, priority)
   }
 
   return { generated, skipped, errors, rateLimited }
@@ -229,7 +235,8 @@ export async function reconcileMissingAdviceAction(
  * reconcile script, and the scheduled reconciler.
  */
 export async function reconcileGroupTipsAction(
-  cacheKey: CacheKey
+  cacheKey: CacheKey,
+  priority: AICallPriority = 'high'
 ): Promise<{ generated: boolean; skipped: boolean; rateLimited: boolean }> {
   const groups = getGroupQuestions()
   const groupIds = groups.map((g) => g.id)
@@ -247,7 +254,7 @@ export async function reconcileGroupTipsAction(
     await AdviceStore.deleteByCacheKey(cacheKey, GROUP_TIPS_CATEGORY)
   }
 
-  if (!canCallAI()) {
+  if (!canCallAI(priority)) {
     return { generated: false, skipped: false, rateLimited: true }
   }
 
@@ -263,7 +270,7 @@ export async function reconcileGroupTipsAction(
   }
 
   try {
-    const aiTips = await LLMAdapter.generateGroupTips(cacheKey, groups, existingAdvice)
+    const aiTips = await LLMAdapter.generateGroupTips(cacheKey, groups, existingAdvice, priority)
     if (Object.keys(aiTips).length > 0) {
       await AdviceStore.save({
         destination: cacheKey.destination,

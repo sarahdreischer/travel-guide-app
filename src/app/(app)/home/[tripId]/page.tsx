@@ -85,6 +85,9 @@ export default async function HomePage({
 
   if (adviceRecords.length < categoriesWithQuestions.length) {
     const { startMonth, endMonth } = deriveMonthRange(trip.startDate, trip.endDate)
+    // The user is actively viewing this trip page and waiting for advice, so
+    // this reconciliation is high priority — it may use the full per-minute
+    // budget ahead of background reconciliation.
     await reconcileMissingAdviceAction({
       destination: trip.destination.toLowerCase(),
       startMonth,
@@ -99,7 +102,7 @@ export default async function HomePage({
       partySize: trip.travelMode.toLowerCase(),
       activities: trip.activityPreferences,
       travelStyle: trip.travelStyle || undefined,
-    })
+    }, 'high')
     adviceRecords = await AdviceStore.getForTrip(tripId)
   }
 

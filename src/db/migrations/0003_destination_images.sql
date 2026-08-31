@@ -9,7 +9,7 @@ CREATE TABLE "destination_images" (
 INSERT INTO "destination_images" ("destination", "image_url", "attribution") VALUES
   ('Argentina',         'https://images.unsplash.com/photo-1589909202802-8f4aadce1849?w=1080&q=80&fit=crop', 'Agustin Lautaro'),
   ('Australia',         'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=1080&q=80&fit=crop', 'Dan Freeman'),
-  ('Bali',              'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1080&q=80&fit=crop', 'Artem Beliaikin'),
+  ('Bali, Indonesia',   'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1080&q=80&fit=crop', 'Artem Beliaikin'),
   ('Indonesia',         'https://images.unsplash.com/photo-1555400038-63f5ba517a47?w=1080&q=80&fit=crop', 'Raychan'),
   ('Barcelona, Spain',  'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=1080&q=80&fit=crop', 'Toa Heftiba'),
   ('Cambodia',          'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=1080&q=80&fit=crop', 'Ioana Cristiana'),
