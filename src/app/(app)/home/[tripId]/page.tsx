@@ -166,7 +166,7 @@ export default async function HomePage({
         <Link href="/destinations" className="page-header-btn" aria-label="Back to trips">
           <IconArrowLeft />
         </Link>
-        <span className="page-title" style={{ fontSize: 15 }}>Travel advice</span>
+        <span className="page-title" style={{ fontSize: 15 }}>Travel briefing</span>
         <div className="page-header-actions">
           {isUpcoming && <EditTripButton tripId={tripId} />}
           <DeleteTripButton tripId={tripId} destination={trip.destination} />

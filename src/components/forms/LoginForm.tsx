@@ -52,7 +52,7 @@ export default function LoginForm() {
 
       <div className="auth-heading-block">
         <h1 className="auth-heading">Welcome back</h1>
-        <p className="auth-subtitle">Log in to access your trips and travel advice.</p>
+        <p className="auth-subtitle">Log in to access your trips and travel briefing.</p>
       </div>
 
       <form

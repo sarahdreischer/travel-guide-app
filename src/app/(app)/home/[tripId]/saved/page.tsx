@@ -50,7 +50,7 @@ export default async function SavedTipsPage({
   return (
     <>
       <header className="page-header">
-        <Link href={`/home/${tripId}`} className="page-header-btn" aria-label="Back to travel advice">
+        <Link href={`/home/${tripId}`} className="page-header-btn" aria-label="Back to travel briefing">
           <IconArrowLeft />
         </Link>
         <span className="page-title" style={{ fontSize: 15 }}>Saved tips</span>

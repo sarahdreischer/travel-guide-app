@@ -7,7 +7,7 @@ import AdviceAccordion from '@/components/AdviceAccordion'
 import AppFooter from '@/components/AppFooter'
 
 export const metadata = {
-  title: 'Demo · Travel advice – Trip Guide',
+  title: 'Demo · Travel briefing – Trip Guide',
 }
 
 export function generateStaticParams() {
@@ -58,7 +58,7 @@ export default async function DemoHomePage({
         <Link href="/demo/destinations" className="page-header-btn" aria-label="Back to trips">
           <IconArrowLeft />
         </Link>
-        <span className="page-title" style={{ fontSize: 15 }}>Travel advice</span>
+        <span className="page-title" style={{ fontSize: 15 }}>Travel briefing</span>
         <span className="demo-badge" aria-label="Demo mode">Demo</span>
       </header>
 

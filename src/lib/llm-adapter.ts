@@ -326,7 +326,7 @@ async function generateAdvice(params: {
  */
 async function summarise(fullAdvice: string): Promise<string> {
   try {
-    const summarisePrompt = `Summarise the following travel advice into a single concise sentence (max 15 words):\n\n${fullAdvice}`
+    const summarisePrompt = `Summarise the following travel briefing into a single concise sentence (max 15 words):\n\n${fullAdvice}`
 
     console.log('[LLM_Adapter] ▶ AI SUMMARISE REQUEST:', JSON.stringify({
       model: process.env.AI_MODEL ?? 'gpt-4o-mini',

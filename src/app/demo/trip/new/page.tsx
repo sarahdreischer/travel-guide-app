@@ -22,7 +22,7 @@ export default function DemoNewTripPage() {
         <div className="empty-state" style={{ borderTop: 'none' }}>
           <p className="empty-state-text">
             Creating trips is available in the full app. This demo shows a set of example
-            trips so you can explore how personalised travel advice looks.
+            trips so you can explore how personalised travel briefing looks.
           </p>
           <Link href="/login" className="empty-state-btn">
             Sign in to plan a trip

@@ -104,7 +104,7 @@ export default function GeneratingClient({
     return (
       <div className="generating-shell">
         <div className="generating-body">
-          <p className="generating-heading">Couldn&apos;t generate travel advice</p>
+          <p className="generating-heading">Couldn&apos;t generate travel briefing</p>
           <p className="generating-sub">
             Your trip to {destination} was saved, but we couldn&apos;t fetch AI advice right now.
             It will be generated on your next visit.

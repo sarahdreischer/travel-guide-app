@@ -1,6 +1,6 @@
 # Trip Guide
 
-AI-powered travel advice app. Create trips, get structured advice across categories like transportation, food, safety, and more.
+AI-powered travel briefing app. Create trips, get structured advice across categories like transportation, food, safety, and more.
 
 Built with Next.js 15 (App Router), TypeScript, Drizzle ORM, PostgreSQL, Tailwind CSS, and Vercel AI SDK.
 

@@ -63,7 +63,7 @@ export default async function DestinationsPage() {
         {upcomingTrips.length === 0 ? (
           <div className="empty-state">
             <p className="empty-state-text">
-              No trips planned yet. Add your first destination to get personalised travel advice.
+              No trips planned yet. Add your first destination to get personalised travel briefing.
             </p>
             <Link href="/trip/new" className="empty-state-btn">
               <IconPlus />
