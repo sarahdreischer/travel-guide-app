@@ -32,8 +32,9 @@ jest.mock('@/lib/trip-guide-generator', () => {
   const actual = jest.requireActual('@/lib/trip-guide-generator')
   return {
     generateTripGuide: jest.fn(),
-    // Use the real relevantTopicIds so reconciliation computes the true set.
+    // Use the real selectors so reconciliation computes the true relevant sets.
     relevantTopicIds: actual.relevantTopicIds,
+    relevantQuestionIds: actual.relevantQuestionIds,
   }
 })
 
@@ -80,6 +81,7 @@ function meta(overrides: Partial<GuideGenerationMeta> = {}): GuideGenerationMeta
     emptyTopicIds: [],
     failedTopicIds: [],
     resolvedTopicIds: ['transport'],
+    coveredQuestionIds: ['transport.ride_hailing.availability'],
     providerShortCircuited: false,
     complete: true,
     ...overrides,
@@ -97,6 +99,16 @@ const phuketRequest: TripGuideRequest = {
   transportCostIncluded: true,
   activities: [],
   travelStyle: 'Adventure, Relaxed',
+}
+
+// The true relevant topic/question sets for the Phuket fixture, via the real
+// generator selectors — so "fully covered" fixtures don't falsely look stale.
+const generatorActual = jest.requireActual('@/lib/trip-guide-generator')
+function allRelevantTopics(): string[] {
+  return generatorActual.relevantTopicIds(facts, { transportMode: 'fly' })
+}
+function allRelevantQuestions(): string[] {
+  return generatorActual.relevantQuestionIds(facts, { transportMode: 'fly' })
 }
 
 describe('getOrGenerateTripGuideAction (Phuket flow)', () => {
@@ -123,16 +135,27 @@ describe('getOrGenerateTripGuideAction (Phuket flow)', () => {
     expect(genArg.trip.travellerType).toBe('couple')
     expect(genArg.trip.totalBudgetUsd).toBe(3500)
 
-    // Persisted with completeness metadata.
+    // Persisted with completeness + coverage metadata.
     const saveArgs = (TripGuideStore.save as jest.Mock).mock.calls[0]
     expect(saveArgs[1]).toBe(guide)
     expect(saveArgs[2]).toEqual(
-      expect.objectContaining({ destinationFactsId: 'facts-row-1', complete: true, attemptedTopics: ['transport'] })
+      expect.objectContaining({
+        destinationFactsId: 'facts-row-1',
+        complete: true,
+        attemptedTopics: ['transport'],
+        coveredQuestions: ['transport.ride_hailing.availability'],
+      })
     )
   })
 
-  it('reuses a COMPLETE cached guide without researching or regenerating', async () => {
-    ;(TripGuideStore.getRecord as jest.Mock).mockResolvedValue({ guide, complete: true, attemptedTopics: null })
+  it('reuses a COMPLETE, fully-covered cached guide without researching or regenerating', async () => {
+    // Covers every relevant question → no topic- or question-level staleness.
+    ;(TripGuideStore.getRecord as jest.Mock).mockResolvedValue({
+      guide,
+      complete: true,
+      attemptedTopics: allRelevantTopics(),
+      coveredQuestions: allRelevantQuestions(),
+    })
     ;(DestinationFactsStore.get as jest.Mock).mockResolvedValue(facts)
 
     const result = await getOrGenerateTripGuideAction(phuketRequest)
@@ -145,11 +168,13 @@ describe('getOrGenerateTripGuideAction (Phuket flow)', () => {
   })
 
   it('reconciles an INCOMPLETE cached guide by regenerating ONLY the missing topics and merging', async () => {
-    // Cached guide has transport, but "health" is relevant and unresolved.
+    // Fully covers questions (so no question-level staleness), but "health" is a
+    // relevant topic that's unresolved → only the topic-level gap drives it.
     ;(TripGuideStore.getRecord as jest.Mock).mockResolvedValue({
       guide,
       complete: false,
-      attemptedTopics: ['transport'], // resolved so far
+      attemptedTopics: ['transport'],
+      coveredQuestions: allRelevantQuestions(),
     })
     ;(DestinationFactsStore.get as jest.Mock).mockResolvedValue(facts)
     ;(DestinationFactsStore.findRow as jest.Mock).mockResolvedValue({ id: 'facts-row-1' })
@@ -161,6 +186,7 @@ describe('getOrGenerateTripGuideAction (Phuket flow)', () => {
         attemptedTopicIds: ['health'],
         producedTopicIds: ['health'],
         resolvedTopicIds: ['health'],
+        coveredQuestionIds: ['health.vaccinations'],
       }),
     })
     ;(TripGuideStore.save as jest.Mock).mockImplementation(async (_k, g) => g)
@@ -171,26 +197,66 @@ describe('getOrGenerateTripGuideAction (Phuket flow)', () => {
     if (result.status !== 'success') return
     expect(result.cached).toBe(true)
 
-    // Only the missing topics were requested for regeneration (never transport,
-    // which was already resolved).
     const genArg = (generateTripGuide as jest.Mock).mock.calls[0][0]
     expect(genArg.topicIds).toContain('health')
     expect(genArg.topicIds).not.toContain('transport')
 
-    // Merged guide contains both the original and the reconciled topic.
     const savedGuide = (TripGuideStore.save as jest.Mock).mock.calls[0][1] as TripGuide
     expect(savedGuide.topics.map((t) => t.topicId)).toEqual(expect.arrayContaining(['transport', 'health']))
   })
 
-  it('does not regenerate when an incomplete guide actually has all relevant topics resolved (marks complete)', async () => {
-    // attemptedTopics already covers every relevant topic id → nothing missing.
-    const relevant = jest.requireActual('@/lib/trip-guide-generator').relevantTopicIds(facts, {
-      transportMode: 'fly',
-    }) as string[]
+  it('refreshes a COMPLETE guide on open when a NEW question was added to the library — regenerating only that question\u2019s topic', async () => {
+    // Complete + all topics resolved, but coveredQuestions is MISSING one
+    // currently-relevant question (as if it was added to the library after the
+    // guide was generated). Its topic must be regenerated.
+    const newQuestionId = 'activities.beaches.waterTemperature'
+    const relevantQs = allRelevantQuestions()
+    // Guard: the scenario only makes sense if that question is currently relevant.
+    expect(relevantQs).toContain(newQuestionId)
+    const coveredWithout = relevantQs.filter((id) => id !== newQuestionId)
+
+    ;(TripGuideStore.getRecord as jest.Mock).mockResolvedValue({
+      guide,
+      complete: true,
+      attemptedTopics: allRelevantTopics(),
+      coveredQuestions: coveredWithout,
+    })
+    ;(DestinationFactsStore.get as jest.Mock).mockResolvedValue(facts)
+    ;(DestinationFactsStore.findRow as jest.Mock).mockResolvedValue({ id: 'facts-row-1' })
+
+    const activitiesTopic = topic('activities', 'activities.recommendations')
+    ;(generateTripGuide as jest.Mock).mockResolvedValue({
+      guide: { tripSummary: guide.tripSummary, topics: [activitiesTopic] },
+      meta: meta({
+        attemptedTopicIds: ['activities'],
+        producedTopicIds: ['activities'],
+        resolvedTopicIds: ['activities'],
+        coveredQuestionIds: ['activities.recommendations', 'activities.beaches.waterTemperature'],
+      }),
+    })
+    ;(TripGuideStore.save as jest.Mock).mockImplementation(async (_k, g) => g)
+
+    const result = await getOrGenerateTripGuideAction(phuketRequest)
+
+    expect(result.status).toBe('success')
+    if (result.status !== 'success') return
+    expect(result.cached).toBe(true)
+
+    // Only the new question's topic ("activities") was regenerated.
+    const genArg = (generateTripGuide as jest.Mock).mock.calls[0][0]
+    expect(genArg.topicIds).toEqual(['activities'])
+
+    // The new question is now covered and the guide re-persisted.
+    const saveArgs = (TripGuideStore.save as jest.Mock).mock.calls[0]
+    expect(saveArgs[2].coveredQuestions).toContain('activities.beaches.waterTemperature')
+  })
+
+  it('does not regenerate when an incomplete guide is actually fully resolved + covered (marks complete)', async () => {
     ;(TripGuideStore.getRecord as jest.Mock).mockResolvedValue({
       guide,
       complete: false,
-      attemptedTopics: relevant,
+      attemptedTopics: allRelevantTopics(),
+      coveredQuestions: allRelevantQuestions(),
     })
     ;(DestinationFactsStore.get as jest.Mock).mockResolvedValue(facts)
     ;(DestinationFactsStore.findRow as jest.Mock).mockResolvedValue({ id: 'facts-row-1' })
@@ -199,7 +265,6 @@ describe('getOrGenerateTripGuideAction (Phuket flow)', () => {
     const result = await getOrGenerateTripGuideAction(phuketRequest)
 
     expect(result.status).toBe('success')
-    // No AI call — it just flips the row to complete.
     expect(generateTripGuide).not.toHaveBeenCalled()
     const saveArgs = (TripGuideStore.save as jest.Mock).mock.calls[0]
     expect(saveArgs[2]).toEqual(expect.objectContaining({ complete: true }))

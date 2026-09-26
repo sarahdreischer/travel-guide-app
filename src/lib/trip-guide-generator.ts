@@ -133,6 +133,19 @@ export function relevantTopicIds(
   return ids
 }
 
+/**
+ * The relevant question ids for this trip (stable ids). This is the "expected"
+ * question set. Used to detect when the question library has grown since a
+ * cached guide was generated (question-level staleness), so existing trips can
+ * be topped up on open when a new question is added.
+ */
+export function relevantQuestionIds(
+  facts: DestinationFacts,
+  trip: Pick<TripGuideInput, 'transportMode'>
+): string[] {
+  return selectRelevantQuestions(facts, trip).map((q) => q.id)
+}
+
 /** Group questions by topicId, preserving first-seen topic order. */
 function groupByTopic(questions: QuestionDef[]): { topicId: string; questions: QuestionDef[] }[] {
   const order: string[] = []
@@ -383,6 +396,15 @@ export interface GuideGenerationMeta {
    */
   resolvedTopicIds: string[]
   /**
+   * The relevant question ids that were OFFERED to the model across every
+   * terminal (produced ∪ empty) topic in this run — i.e. the questions this
+   * guide "covers". A question that isn't covered (e.g. added to the library
+   * after generation) is detected as missing on open and its topic is
+   * regenerated. Failed/short-circuited topics do not contribute (they'll be
+   * retried anyway).
+   */
+  coveredQuestionIds: string[]
+  /**
    * True when a provider failure short-circuited the run before every planned
    * topic was attempted (those un-attempted topics are effectively "failed"
    * for reconciliation purposes).
@@ -449,6 +471,7 @@ export async function generateTripGuide(params: GenerateTripGuideParams): Promis
   const emptyTopicIds: string[] = []
   const failedTopicIds: string[] = []
   const attemptedTopicIds: string[] = []
+  const coveredQuestionIds: string[] = []
   let providerError: unknown = null
   let providerShortCircuited = false
 
@@ -459,8 +482,11 @@ export async function generateTripGuide(params: GenerateTripGuideParams): Promis
       if (outcome.status === 'produced') {
         topics.push(outcome.topic)
         producedTopicIds.push(group.topicId)
+        // Every question offered for this topic is now "covered".
+        coveredQuestionIds.push(...group.questions.map((q) => q.id))
       } else if (outcome.status === 'empty') {
         emptyTopicIds.push(group.topicId)
+        coveredQuestionIds.push(...group.questions.map((q) => q.id))
       } else {
         failedTopicIds.push(group.topicId)
       }
@@ -513,6 +539,7 @@ export async function generateTripGuide(params: GenerateTripGuideParams): Promis
     emptyTopicIds,
     failedTopicIds,
     resolvedTopicIds: [...producedTopicIds, ...emptyTopicIds],
+    coveredQuestionIds,
     providerShortCircuited,
     complete: failedTopicIds.length === 0 && !providerShortCircuited,
   }

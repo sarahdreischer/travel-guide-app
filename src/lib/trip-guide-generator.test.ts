@@ -172,6 +172,11 @@ describe('generateTripGuide (per-topic)', () => {
     expect(meta.complete).toBe(true)
     expect(meta.failedTopicIds).toEqual([])
     expect(meta.resolvedTopicIds.length).toBe(topicCount)
+    // Every relevant question was offered across the generated topics, so the
+    // guide "covers" the full relevant question set.
+    expect(meta.coveredQuestionIds).toEqual(
+      expect.arrayContaining(selectRelevantQuestions(phuketFacts(), phuketTrip).map((q) => q.id))
+    )
 
     // The health claim was normalised to high risk + verification required.
     const healthTopic = guide.topics.find((t) => t.topicId === 'health')!

@@ -167,6 +167,7 @@ describe('getSubQuestions', () => {
       'Which additional activities are popular?',
       'What are hidden gems?',
       'Is it advised to swim in nearby beaches?',
+      'Which water temperatures can I expect at nearby beaches?',
     ])
   })
 

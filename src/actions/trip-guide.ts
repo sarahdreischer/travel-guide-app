@@ -15,7 +15,8 @@
 
 import { DestinationFactsStore } from '@/lib/destination-facts-store'
 import { TripGuideStore, type TripGuideKey } from '@/lib/trip-guide-store'
-import { generateTripGuide, relevantTopicIds, type TripGuideInput } from '@/lib/trip-guide-generator'
+import { generateTripGuide, relevantTopicIds, relevantQuestionIds, type TripGuideInput } from '@/lib/trip-guide-generator'
+import { getQuestionById } from '@/lib/question-library'
 import { splitDestination } from '@/lib/destination-parse'
 import { deriveMonthRange } from '@/lib/trip-cache-key'
 import { derivebudgetRange } from '@/lib/validators'
@@ -142,11 +143,14 @@ async function runGetOrGenerateTripGuide(
         (await DestinationFactsStore.get(destination, country)) ??
         (await DestinationFactsStore.getOrResearch(destination, country, { priority }))
 
-      // 1a. On-view reconciliation: if the cached guide is incomplete, retry
-      // ONLY the relevant topics that never reached a terminal state (missing
-      // or previously failed) — never the ones the model intentionally left
-      // empty. Merge the results and re-persist.
-      if (!cached.complete) {
+      // 1a. On-view reconciliation. The cached guide is reconciled when EITHER:
+      //   - it's incomplete (a topic previously failed / was short-circuited), OR
+      //   - the question library has grown since it was generated (a relevant
+      //     question id it doesn't cover — e.g. a newly added question).
+      // Reconciliation regenerates only the affected topics, so existing trips
+      // pick up new questions on open without a full regeneration.
+      const missingQuestions = missingCoveredQuestions(cached, facts, tripInput)
+      if (!cached.complete || missingQuestions.length > 0) {
         const guide = await reconcileGuide({
           key,
           cached,
@@ -155,6 +159,7 @@ async function runGetOrGenerateTripGuide(
           destination,
           country,
           priority,
+          missingQuestions,
         })
         return { status: 'success', guide, facts, cached: true }
       }
@@ -169,11 +174,13 @@ async function runGetOrGenerateTripGuide(
     // 2b. Stage 2 — structured trip guide generation.
     const { guide, meta } = await generateTripGuide({ trip: tripInput, facts, priority })
 
-    // 2c. Persist for reuse, recording completeness for on-view reconciliation.
+    // 2c. Persist for reuse, recording completeness + question coverage for
+    // on-view reconciliation.
     const persisted = await TripGuideStore.save(key, guide, {
       destinationFactsId: factsRow?.id ?? null,
       complete: meta.complete,
       attemptedTopics: meta.resolvedTopicIds,
+      coveredQuestions: meta.coveredQuestionIds,
     })
 
     return { status: 'success', guide: persisted, facts, cached: false }
@@ -184,80 +191,143 @@ async function runGetOrGenerateTripGuide(
   }
 }
 
+type CachedTripGuide = import('@/lib/trip-guide-store').CachedTripGuide
+
 /**
- * On-view reconciliation of an incomplete cached guide.
+ * The question ids a cached guide effectively covers.
  *
- * Retries only the relevant topics that never reached a terminal state — i.e.
- * (relevant topics) minus (topics already produced or intentionally left empty,
- * recorded in `attemptedTopics`). Topics the model deliberately omitted are
- * never retried. Regenerated topics are merged into the cached guide and the
- * row's completeness is recomputed and re-persisted.
+ *  - If `coveredQuestions` was persisted (guides generated after that feature
+ *    landed), use it directly.
+ *  - For legacy rows (null), derive coverage from the question ids already
+ *    present in the guide's items. This is deliberately conservative: it treats
+ *    only genuinely NEW library questions as missing, so we never mass-retry a
+ *    legacy guide's intentionally-omitted questions.
+ */
+function effectiveCoveredQuestions(cached: CachedTripGuide): Set<string> {
+  if (cached.coveredQuestions) return new Set(cached.coveredQuestions)
+  const ids = new Set<string>()
+  for (const t of cached.guide.topics) {
+    for (const item of t.items) ids.add(item.questionId)
+  }
+  return ids
+}
+
+/**
+ * Relevant question ids the cached guide does NOT cover — i.e. questions added
+ * to the library since it was generated. These drive question-level top-ups.
+ */
+function missingCoveredQuestions(
+  cached: CachedTripGuide,
+  facts: DestinationFacts,
+  trip: TripGuideInput
+): string[] {
+  const covered = effectiveCoveredQuestions(cached)
+  return relevantQuestionIds(facts, trip).filter((id) => !covered.has(id))
+}
+
+/** Map question ids to their (distinct) topic ids via the question library. */
+function topicsForQuestions(questionIds: string[]): string[] {
+  const topics = new Set<string>()
+  for (const id of questionIds) {
+    const topicId = getQuestionById(id)?.topicId
+    if (topicId) topics.add(topicId)
+  }
+  return [...topics]
+}
+
+/**
+ * On-view reconciliation of a stale cached guide.
  *
- * Falls back gracefully: if reconciliation can't run (rate limited) or produces
- * nothing, the existing cached guide is returned unchanged.
+ * Regenerates only the AFFECTED topics — the union of:
+ *   - relevant topics that never reached a terminal state (topic-level
+ *     incompleteness: a topic that previously failed / was short-circuited), and
+ *   - the topics of any relevant questions the guide doesn't cover yet
+ *     (question-level staleness: a question added to the library after the
+ *     guide was generated).
+ * Topics the model intentionally omitted are never retried. Regenerated topics
+ * are merged in; completeness and question coverage are recomputed and saved.
+ *
+ * Best-effort: if reconciliation can't run (rate limited) or fails, the
+ * existing cached guide is returned unchanged and retried on a later view.
  */
 async function reconcileGuide(args: {
   key: TripGuideKey
-  cached: import('@/lib/trip-guide-store').CachedTripGuide
+  cached: CachedTripGuide
   tripInput: TripGuideInput
   facts: DestinationFacts
   destination: string
   country: string
   priority: AICallPriority
+  missingQuestions: string[]
 }): Promise<TripGuide> {
-  const { key, cached, tripInput, facts, destination, country, priority } = args
+  const { key, cached, tripInput, facts, destination, country, priority, missingQuestions } = args
 
-  const relevant = relevantTopicIds(facts, tripInput)
-  // Resolved = produced (present in the guide) ∪ intentionally-empty
-  // (recorded in attemptedTopics). Anything relevant but unresolved is retried.
-  const resolved = new Set<string>([
+  const relevantTopics = relevantTopicIds(facts, tripInput)
+  const relevantQuestions = relevantQuestionIds(facts, tripInput)
+  const covered = effectiveCoveredQuestions(cached)
+
+  // Topic-level unresolved: relevant topics neither present nor intentionally
+  // empty (recorded in attemptedTopics).
+  const resolvedTopics = new Set<string>([
     ...cached.guide.topics.map((t) => t.topicId),
     ...(cached.attemptedTopics ?? []),
   ])
-  const missing = relevant.filter((id) => !resolved.has(id))
+  const missingTopics = relevantTopics.filter((id) => !resolvedTopics.has(id))
 
-  if (missing.length === 0) {
-    // Nothing left to retry — the guide is actually complete. Persist that so
-    // we stop reconciling on every view.
+  // Affected = topic-level gaps ∪ topics of newly-added questions.
+  const affected = [...new Set([...missingTopics, ...topicsForQuestions(missingQuestions)])]
+
+  if (affected.length === 0) {
+    // Nothing to regenerate — the guide is actually up to date. Persist that so
+    // we stop reconciling on every view (covers the whole relevant question set).
     await TripGuideStore.save(key, cached.guide, {
       destinationFactsId: (await DestinationFactsStore.findRow(destination, country))?.id ?? null,
       complete: true,
-      attemptedTopics: relevant,
+      attemptedTopics: relevantTopics,
+      coveredQuestions: [...new Set([...covered, ...relevantQuestions])].filter((id) =>
+        relevantQuestions.includes(id)
+      ),
     })
     return cached.guide
   }
 
-  console.log('[getOrGenerateTripGuide] Reconciling incomplete guide — retrying topics:', missing)
+  console.log('[getOrGenerateTripGuide] Reconciling stale guide — regenerating topics:', affected, {
+    missingTopics,
+    missingQuestions,
+  })
 
   try {
     const { guide: partial, meta } = await generateTripGuide({
       trip: tripInput,
       facts,
       priority,
-      topicIds: missing,
+      topicIds: affected,
     })
 
     const merged = TripGuideStore.mergeTopics(cached.guide, partial.topics)
 
-    // Recompute completeness across the whole guide: complete when no relevant
-    // topic is still unresolved after this pass.
-    const nowResolved = new Set<string>([
+    // Recompute topic resolution and question coverage after this pass.
+    const nowResolvedTopics = new Set<string>([
       ...merged.topics.map((t) => t.topicId),
       ...(cached.attemptedTopics ?? []),
       ...meta.resolvedTopicIds,
     ])
-    const stillMissing = relevant.filter((id) => !nowResolved.has(id))
+    const nowCovered = new Set<string>([...covered, ...meta.coveredQuestionIds])
+
+    const topicsStillMissing = relevantTopics.some((id) => !nowResolvedTopics.has(id))
+    const questionsStillMissing = relevantQuestions.some((id) => !nowCovered.has(id))
     const factsRow = await DestinationFactsStore.findRow(destination, country)
 
     const persisted = await TripGuideStore.save(key, merged, {
       destinationFactsId: factsRow?.id ?? null,
-      complete: stillMissing.length === 0,
-      attemptedTopics: [...nowResolved].filter((id) => relevant.includes(id)),
+      complete: !topicsStillMissing && !questionsStillMissing,
+      attemptedTopics: [...nowResolvedTopics].filter((id) => relevantTopics.includes(id)),
+      coveredQuestions: [...nowCovered].filter((id) => relevantQuestions.includes(id)),
     })
     return persisted
   } catch (error: unknown) {
     // Reconciliation is best-effort — never fail the page over it. Keep serving
-    // the existing (incomplete) cached guide; it'll be retried on a later view.
+    // the existing (stale) cached guide; it'll be retried on a later view.
     console.error('[getOrGenerateTripGuide] Reconciliation failed — serving cached guide:', error)
     return cached.guide
   }
