@@ -152,12 +152,18 @@ export function getRateLimitStatus(): {
 
 // ─── Periodic rate limit logger (every 5 minutes) ─────────────────────────────
 
-if (typeof globalThis !== 'undefined' && !(globalThis as Record<string, unknown>).__rateLimitLoggerStarted) {
+if (
+  process.env.NODE_ENV !== 'test' &&
+  typeof globalThis !== 'undefined' &&
+  !(globalThis as Record<string, unknown>).__rateLimitLoggerStarted
+) {
   (globalThis as Record<string, unknown>).__rateLimitLoggerStarted = true
-  setInterval(() => {
+  const timer = setInterval(() => {
     const status = getRateLimitStatus()
     console.log(
       `[AI Rate Limit] ${new Date().toISOString()} — minute: ${status.minuteCount}/${status.maxPerMinute}, day: ${status.dayCount}/${status.maxPerDay}, cooldown: ${status.inCooldown}`
     )
   }, 5 * 60 * 1000)
+  // Don't keep the process alive just for the logger (e.g. scripts, tests).
+  if (typeof timer.unref === 'function') timer.unref()
 }

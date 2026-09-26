@@ -27,7 +27,8 @@
     "postgres": "3.4.5",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "uuid": "11.0.3"
+    "uuid": "11.0.3",
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@jest/globals": "29.7.0",

@@ -19,12 +19,18 @@ const LOADING_MESSAGES = [
   'Almost there…',
 ]
 
-const DEFAULT_TIMEOUT_SECONDS = 15
+const DEFAULT_TIMEOUT_SECONDS = 30
 
 interface GeneratingClientProps {
   tripId: string
   destination: string
   timeoutSeconds?: number
+}
+
+type StatusData = {
+  complete?: boolean
+  source?: 'structured' | null
+  structuredGuide?: { status?: 'ready' | 'pending' }
 }
 
 export default function GeneratingClient({
@@ -68,24 +74,30 @@ export default function GeneratingClient({
   useEffect(() => {
     let cancelled = false
 
+    const goToTrip = () => {
+      if (redirected.current) return
+      redirected.current = true
+      setComplete(true)
+      router.replace(`/home/${tripId}`)
+    }
+
     const poll = async () => {
       if (cancelled || redirected.current) return
 
       try {
         const res = await fetch(`/api/advice-status/${tripId}`)
         if (!res.ok) throw new Error('status check failed')
-        const data = await res.json()
+        const data: StatusData = await res.json()
 
-        if (data.complete) {
-          setComplete(true)
-          if (!redirected.current) {
-            redirected.current = true
-            router.replace(`/home/${tripId}`)
-          }
+        // The structured guide is the only advice source — redirect once it's
+        // ready. If it never lands, the hard timeout below handles the redirect
+        // and the home page shows a "still generating" state.
+        if (data.structuredGuide?.status === 'ready' || data.complete) {
+          goToTrip()
           return
         }
       } catch {
-        // Don't fail — timeout will handle the redirect
+        // Don't fail — the hard timeout below will handle the redirect.
       }
 
       if (!cancelled && !redirected.current) {
