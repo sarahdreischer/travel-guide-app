@@ -12,7 +12,7 @@ import { tripGuides } from '@/db/schema'
 import type { TripGuideRow, Trip } from '@/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { TripGuideSchema, safeParseTripGuide, type TripGuide } from '@/lib/schemas/trip-guide'
-import { deriveMonthRange } from '@/lib/advice-store'
+import { deriveMonthRange } from '@/lib/trip-cache-key'
 import { derivebudgetRange } from '@/lib/validators'
 
 export interface TripGuideKey {
@@ -58,8 +58,24 @@ async function findRow(key: TripGuideKey): Promise<TripGuideRow | null> {
   return rows[0] ?? null
 }
 
+/** A cached guide plus its completeness metadata. */
+export interface CachedTripGuide {
+  guide: TripGuide
+  complete: boolean
+  attemptedTopics: string[] | null
+}
+
 /** Fetch the validated TripGuide for a key, or null. */
 async function get(key: TripGuideKey): Promise<TripGuide | null> {
+  const record = await getRecord(key)
+  return record?.guide ?? null
+}
+
+/**
+ * Fetch the validated guide plus completeness metadata for a key, or null.
+ * Used by on-view reconciliation to decide whether to top up missing topics.
+ */
+async function getRecord(key: TripGuideKey): Promise<CachedTripGuide | null> {
   const row = await findRow(key)
   if (!row) return null
   const parsed = safeParseTripGuide(row.guide)
@@ -67,16 +83,26 @@ async function get(key: TripGuideKey): Promise<TripGuide | null> {
     console.warn(`[trip-guide-store] Cached guide for "${key.destination}" failed validation — treating as absent`)
     return null
   }
-  return parsed.data
+  const attempted = Array.isArray(row.attemptedTopics)
+    ? (row.attemptedTopics as unknown[]).filter((t): t is string => typeof t === 'string')
+    : null
+  return { guide: parsed.data, complete: row.complete, attemptedTopics: attempted }
 }
 
-/** Upsert a validated TripGuide for a key. */
+export interface SaveOptions {
+  destinationFactsId?: string | null
+  complete?: boolean
+  attemptedTopics?: string[] | null
+}
+
+/** Upsert a validated TripGuide (plus completeness metadata) for a key. */
 async function save(
   key: TripGuideKey,
   guide: TripGuide,
-  destinationFactsId?: string | null
+  options: SaveOptions = {}
 ): Promise<TripGuide> {
   const validated = TripGuideSchema.parse(guide)
+  const { destinationFactsId = null, complete = true, attemptedTopics = null } = options
 
   await db
     .insert(tripGuides)
@@ -87,7 +113,9 @@ async function save(
       travellerType: key.travellerType,
       budgetRange: key.budgetRange,
       guide: validated,
-      destinationFactsId: destinationFactsId ?? null,
+      destinationFactsId,
+      complete,
+      attemptedTopics,
     })
     .onConflictDoUpdate({
       target: [
@@ -97,10 +125,32 @@ async function save(
         tripGuides.travellerType,
         tripGuides.budgetRange,
       ],
-      set: { guide: validated, destinationFactsId: destinationFactsId ?? null, generatedAt: new Date() },
+      set: {
+        guide: validated,
+        destinationFactsId,
+        complete,
+        attemptedTopics,
+        generatedAt: new Date(),
+      },
     })
 
   return validated
+}
+
+/**
+ * Merge freshly generated topics into an existing guide. Topics with the same
+ * topicId are replaced; new topics are appended. The tripSummary and topic
+ * order of the base guide are preserved (new topics appended at the end).
+ * Pure — does not touch the DB.
+ */
+function mergeTopics(base: TripGuide, freshTopics: TripGuide['topics']): TripGuide {
+  const freshById = new Map(freshTopics.map((t) => [t.topicId, t]))
+  const merged = base.topics.map((t) => freshById.get(t.topicId) ?? t)
+  const existingIds = new Set(base.topics.map((t) => t.topicId))
+  for (const t of freshTopics) {
+    if (!existingIds.has(t.topicId)) merged.push(t)
+  }
+  return { tripSummary: base.tripSummary, topics: merged }
 }
 
 /**
@@ -119,4 +169,4 @@ async function deleteByKey(key: TripGuideKey): Promise<void> {
   await db.delete(tripGuides).where(whereKey(key))
 }
 
-export const TripGuideStore = { get, findRow, save, deleteByKey, isReady }
+export const TripGuideStore = { get, getRecord, findRow, save, deleteByKey, isReady, mergeTopics }

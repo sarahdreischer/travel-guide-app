@@ -11,8 +11,8 @@
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 /**
- * A single advice category with its answers. Produced by the home page's
- * buildSections() (from AdviceStore records) and by the demo data builder.
+ * A single advice category with its answers. Produced by the structured
+ * trip-guide adapter and by the demo data builder.
  */
 export interface CategorySection {
   category: string

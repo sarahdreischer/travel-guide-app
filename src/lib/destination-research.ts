@@ -31,7 +31,7 @@ import {
 import { gatherDestinationSources, type WebSource } from '@/lib/web-research'
 import { canCallAI, recordAICall, recordAIFailure, getRateLimitStatus } from '@/lib/ai-rate-limiter'
 import type { AICallPriority } from '@/lib/ai-rate-limiter'
-import { AIRateLimitedError, AdviceTimeoutError } from '@/lib/llm-adapter'
+import { AIRateLimitedError, AdviceTimeoutError, isProviderFailure } from '@/lib/ai-errors'
 
 // ─── Config ─────────────────────────────────────────────────────────────────
 
@@ -141,6 +141,7 @@ export async function researchDestination(
       model: getModel(),
       prompt,
       schema: ResearchedFactsSchema,
+      mode: 'json',
       abortSignal: AbortSignal.timeout(RESEARCH_TIMEOUT_MS),
     })
 
@@ -167,8 +168,11 @@ export async function researchDestination(
 
     return validated
   } catch (error: unknown) {
-    recordAIFailure()
     if (error instanceof AIRateLimitedError) throw error
+    // Only a genuine provider/transport failure should trip the shared cooldown.
+    // A schema mismatch is the model's content, not a provider outage, and must
+    // not block unrelated AI calls for minutes.
+    if (isProviderFailure(error)) recordAIFailure()
     console.error('[destination-research] Research failed:', error)
     if (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')) {
       throw new AdviceTimeoutError('Destination research timed out')
