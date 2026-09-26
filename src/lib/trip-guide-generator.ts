@@ -113,6 +113,26 @@ export function selectRelevantQuestions(
   })
 }
 
+/**
+ * The distinct topic ids relevant to this trip (first-seen order). This is the
+ * "expected" topic set used to compute completeness and to decide which topics
+ * on-view reconciliation should retry.
+ */
+export function relevantTopicIds(
+  facts: DestinationFacts,
+  trip: Pick<TripGuideInput, 'transportMode'>
+): string[] {
+  const seen = new Set<string>()
+  const ids: string[] = []
+  for (const q of selectRelevantQuestions(facts, trip)) {
+    if (!seen.has(q.topicId)) {
+      seen.add(q.topicId)
+      ids.push(q.topicId)
+    }
+  }
+  return ids
+}
+
 /** Group questions by topicId, preserving first-seen topic order. */
 function groupByTopic(questions: QuestionDef[]): { topicId: string; questions: QuestionDef[] }[] {
   const order: string[] = []
@@ -256,23 +276,44 @@ export interface GenerateTripGuideParams {
   trip: TripGuideInput
   facts: DestinationFacts
   priority?: AICallPriority
+  /**
+   * Restrict generation to this subset of relevant topic ids. Used by on-view
+   * reconciliation to retry only the topics that previously failed. When
+   * omitted, all relevant topics are generated.
+   */
+  topicIds?: string[]
 }
 
 /**
- * Generate one topic. Returns the validated Topic, or null when the model
- * legitimately produced no relevant items for this topic.
+ * The outcome of attempting to generate a single topic:
+ *  - 'produced'  — a valid topic WITH at least one item.
+ *  - 'empty'     — the model validly returned zero items (intentional omission
+ *                  — this topic is not relevant to the trip). NOT a failure.
+ *  - 'failed'    — a content failure (schema mismatch / unparseable JSON). The
+ *                  topic could not be produced and SHOULD be retried later.
+ *
+ * A PROVIDER failure is not represented here — it throws (so the caller stops
+ * and the cooldown protects the provider).
+ */
+type TopicOutcome =
+  | { status: 'produced'; topic: Topic }
+  | { status: 'empty' }
+  | { status: 'failed' }
+
+/**
+ * Generate one topic.
  *
  * Throws only on a PROVIDER failure (so the caller can stop and let the
- * cooldown protect the provider). Content failures (schema mismatch / bad
- * JSON) are swallowed here — they return null and are logged — because they are
- * not the provider's fault and must not trip the global cooldown.
+ * cooldown protect the provider). Content failures (schema mismatch / bad JSON)
+ * return { status: 'failed' } and are logged — they are not the provider's
+ * fault and must not trip the global cooldown, but they ARE retryable.
  */
 async function generateTopic(
   trip: TripGuideInput,
   facts: DestinationFacts,
   topicId: string,
   questions: QuestionDef[]
-): Promise<Topic | null> {
+): Promise<TopicOutcome> {
   const prompt = buildTopicPrompt(trip, facts, topicId, questions)
 
   recordAICall()
@@ -289,7 +330,11 @@ async function generateTopic(
       abortSignal: AbortSignal.timeout(GUIDE_TIMEOUT_MS),
     })
 
-    return normaliseTopic(topicId, object)
+    const topic = normaliseTopic(topicId, object)
+    // Zero items = the model deliberately found nothing relevant for this trip.
+    // That's a valid, complete outcome — not something to retry.
+    if (topic.items.length === 0) return { status: 'empty' }
+    return { status: 'produced', topic }
   } catch (error: unknown) {
     if (isProviderFailure(error)) {
       // Real provider/transport problem — record it (triggers cooldown) and
@@ -298,13 +343,51 @@ async function generateTopic(
       throw error
     }
     // Content failure (schema mismatch / unparseable JSON): NOT a provider
-    // problem, so do NOT record a failure / trip the cooldown. Skip this topic.
+    // problem, so do NOT record a failure / trip the cooldown. Retryable later.
     console.warn(
-      `[trip-guide-generator] Topic "${topicId}" produced no valid object (content failure) — skipping:`,
+      `[trip-guide-generator] Topic "${topicId}" produced no valid object (content failure) — will retry later:`,
       error instanceof Error ? error.message : error
     )
-    return null
+    return { status: 'failed' }
   }
+}
+
+/**
+ * Metadata describing which topics were attempted and how each fared. Used by
+ * the caller to compute completeness and to reconcile (retry) only the topics
+ * that actually failed — never the ones the model intentionally left empty.
+ */
+export interface GuideGenerationMeta {
+  /** Every topic id that was attempted in this run. */
+  attemptedTopicIds: string[]
+  /** Topics that produced items. */
+  producedTopicIds: string[]
+  /** Topics the model validly returned empty (intentional omission). */
+  emptyTopicIds: string[]
+  /** Topics that content-failed and should be retried. */
+  failedTopicIds: string[]
+  /**
+   * Terminal, non-retryable topics: produced ∪ empty. Reconciliation retries
+   * (relevant − resolved), so a topic the model intentionally left empty is
+   * never retried.
+   */
+  resolvedTopicIds: string[]
+  /**
+   * True when a provider failure short-circuited the run before every planned
+   * topic was attempted (those un-attempted topics are effectively "failed"
+   * for reconciliation purposes).
+   */
+  providerShortCircuited: boolean
+  /**
+   * True when every planned topic reached a terminal, non-retryable state
+   * (produced or intentionally empty) with no failures and no short-circuit.
+   */
+  complete: boolean
+}
+
+export interface GenerateTripGuideResult {
+  guide: TripGuide
+  meta: GuideGenerationMeta
 }
 
 /**
@@ -312,15 +395,27 @@ async function generateTopic(
  * topic separately and assembling them.
  *
  * Partial success: as long as at least one topic is produced, a valid guide is
- * returned with the topics that succeeded. Throws AIRateLimitedError when the
+ * returned (with generation metadata). Throws AIRateLimitedError when the
  * limiter refuses the call, and AdviceTimeoutError only when NO topic could be
  * produced at all.
+ *
+ * `params.topicIds` restricts generation to a subset of the relevant topics —
+ * used by on-view reconciliation to retry only the topics that previously
+ * failed, rather than regenerating the whole guide.
  */
-export async function generateTripGuide(params: GenerateTripGuideParams): Promise<TripGuide> {
-  const { trip, facts, priority = 'high' } = params
+export async function generateTripGuide(params: GenerateTripGuideParams): Promise<GenerateTripGuideResult> {
+  const { trip, facts, priority = 'high', topicIds } = params
 
   const questions = selectRelevantQuestions(facts, trip)
-  const topicGroups = groupByTopic(questions)
+  let topicGroups = groupByTopic(questions)
+
+  // Optional subset filter (reconciliation): only (re)generate these topics.
+  if (topicIds && topicIds.length > 0) {
+    const wanted = new Set(topicIds)
+    topicGroups = topicGroups.filter((g) => wanted.has(g.topicId))
+  }
+
+  const plannedTopicIds = topicGroups.map((g) => g.topicId)
 
   if (!canCallAI(priority)) {
     const status = getRateLimitStatus()
@@ -334,24 +429,48 @@ export async function generateTripGuide(params: GenerateTripGuideParams): Promis
     model: process.env.AI_MODEL ?? 'gpt-4o-mini',
     destination: trip.destination,
     country: trip.country,
-    topics: topicGroups.map((t) => t.topicId),
+    topics: plannedTopicIds,
     questionCount: questions.length,
+    subset: Boolean(topicIds && topicIds.length > 0),
   }, null, 2))
 
   const topics: Topic[] = []
+  const producedTopicIds: string[] = []
+  const emptyTopicIds: string[] = []
+  const failedTopicIds: string[] = []
+  const attemptedTopicIds: string[] = []
   let providerError: unknown = null
+  let providerShortCircuited = false
 
   for (const group of topicGroups) {
+    attemptedTopicIds.push(group.topicId)
     try {
-      const topic = await generateTopic(trip, facts, group.topicId, group.questions)
-      // Only keep topics that actually produced items.
-      if (topic && topic.items.length > 0) topics.push(topic)
+      const outcome = await generateTopic(trip, facts, group.topicId, group.questions)
+      if (outcome.status === 'produced') {
+        topics.push(outcome.topic)
+        producedTopicIds.push(group.topicId)
+      } else if (outcome.status === 'empty') {
+        emptyTopicIds.push(group.topicId)
+      } else {
+        failedTopicIds.push(group.topicId)
+      }
     } catch (error: unknown) {
       // Provider failure: stop early — the cooldown is now active and further
-      // calls would just be refused. Keep whatever topics already succeeded.
+      // calls would just be refused. Keep whatever topics already succeeded;
+      // this attempt and any un-attempted planned topics count as failed.
       providerError = error
+      providerShortCircuited = true
+      failedTopicIds.push(group.topicId)
       console.error('[trip-guide-generator] Provider failure — stopping topic generation:', error)
       break
+    }
+  }
+
+  // Planned topics never reached (because we broke early) are treated as failed
+  // so reconciliation retries them.
+  if (providerShortCircuited) {
+    for (const g of topicGroups) {
+      if (!attemptedTopicIds.includes(g.topicId)) failedTopicIds.push(g.topicId)
     }
   }
 
@@ -378,13 +497,26 @@ export async function generateTripGuide(params: GenerateTripGuideParams): Promis
 
   const validated = TripGuideSchema.parse(guide)
 
+  const meta: GuideGenerationMeta = {
+    attemptedTopicIds,
+    producedTopicIds,
+    emptyTopicIds,
+    failedTopicIds,
+    resolvedTopicIds: [...producedTopicIds, ...emptyTopicIds],
+    providerShortCircuited,
+    complete: failedTopicIds.length === 0 && !providerShortCircuited,
+  }
+
   console.log('[trip-guide-generator] ◀ GUIDE RESULT:', JSON.stringify({
     topics: validated.topics.length,
     items: validated.topics.reduce((n, t) => n + t.items.length, 0),
-    partial: topics.length < topicGroups.length,
+    produced: meta.producedTopicIds.length,
+    empty: meta.emptyTopicIds.length,
+    failed: meta.failedTopicIds.length,
+    complete: meta.complete,
   }, null, 2))
 
-  return validated
+  return { guide: validated, meta }
 }
 
 export const TripGuideGenerator = { generateTripGuide, selectRelevantQuestions }

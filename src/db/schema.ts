@@ -145,6 +145,13 @@ export const tripGuides = pgTable(
     destinationFactsId: uuid('destination_facts_id').references(() => destinationFacts.id, {
       onDelete: 'set null',
     }),
+    // Topic-level completeness for on-view reconciliation. `complete` is false
+    // when at least one relevant topic failed to generate (content failure) or
+    // a provider failure short-circuited the run; such guides are topped up on
+    // the next view. `attemptedTopics` records the topic ids attempted in the
+    // most recent run (nullable for legacy rows / unknown).
+    complete: boolean('complete').notNull().default(false),
+    attemptedTopics: jsonb('attempted_topics'), // string[] | null
     generatedAt: timestamp('generated_at').notNull().defaultNow(),
   },
   (t) => ({

@@ -155,7 +155,7 @@ describe('generateTripGuide (per-topic)', () => {
       return topicResponse(topicId, `${topicId}.x`)
     })
 
-    const guide = await generateTripGuide({ trip: phuketTrip, facts: phuketFacts() })
+    const { guide, meta } = await generateTripGuide({ trip: phuketTrip, facts: phuketFacts() })
 
     // One generateObject call per relevant topic.
     const topicCount = new Set(
@@ -167,6 +167,11 @@ describe('generateTripGuide (per-topic)', () => {
     expect(guide.tripSummary.nights).toBe(14)
     expect(guide.tripSummary.travellerType).toBe('couple')
     expect(guide.tripSummary.travelStyles).toEqual(['adventure', 'relaxed'])
+
+    // All topics produced → complete, no failures.
+    expect(meta.complete).toBe(true)
+    expect(meta.failedTopicIds).toEqual([])
+    expect(meta.resolvedTopicIds.length).toBe(topicCount)
 
     // The health claim was normalised to high risk + verification required.
     const healthTopic = guide.topics.find((t) => t.topicId === 'health')!
@@ -204,12 +209,59 @@ describe('generateTripGuide (per-topic)', () => {
       return topicResponse(topicId, `${topicId}.x`)
     })
 
-    const guide = await generateTripGuide({ trip: phuketTrip, facts: phuketFacts() })
+    const { guide, meta } = await generateTripGuide({ trip: phuketTrip, facts: phuketFacts() })
 
     // Guide still produced (minus the failed topic).
     expect(guide.topics.length).toBeGreaterThan(0)
+    // The failed topic is recorded and the guide is marked incomplete so it can
+    // be reconciled on a later view.
+    expect(meta.failedTopicIds.length).toBe(1)
+    expect(meta.complete).toBe(false)
+    // The failed topic is NOT in the resolved (terminal) set.
+    expect(meta.resolvedTopicIds).not.toContain(meta.failedTopicIds[0])
     // Content failure must NOT trip the provider cooldown.
     expect(mockRecordAIFailure).not.toHaveBeenCalled()
+  })
+
+  it('records an intentionally-empty topic as resolved (not failed) and stays complete', async () => {
+    // The first topic returns zero items on purpose; the rest produce items.
+    let call = 0
+    mockGenerateObject.mockImplementation(async (args: { prompt: string }) => {
+      call++
+      const topicId = args.prompt.match(/SINGLE topic: "([^"]+)"/)?.[1] ?? 'transport'
+      if (call === 1) {
+        return { object: { summary: { headline: 'h', recommendation: 'r' }, items: [] } }
+      }
+      return topicResponse(topicId, `${topicId}.x`)
+    })
+
+    const { meta } = await generateTripGuide({ trip: phuketTrip, facts: phuketFacts() })
+
+    expect(meta.emptyTopicIds.length).toBe(1)
+    expect(meta.failedTopicIds).toEqual([])
+    expect(meta.complete).toBe(true)
+    // The empty topic counts as resolved, so it is never retried later.
+    expect(meta.resolvedTopicIds).toContain(meta.emptyTopicIds[0])
+  })
+
+  it('regenerates ONLY the requested subset of topics when topicIds is provided', async () => {
+    mockGenerateObject.mockImplementation(async (args: { prompt: string }) => {
+      const topicId = args.prompt.match(/SINGLE topic: "([^"]+)"/)?.[1] ?? 'transport'
+      return topicResponse(topicId, `${topicId}.x`)
+    })
+
+    const { guide, meta } = await generateTripGuide({
+      trip: phuketTrip,
+      facts: phuketFacts(),
+      topicIds: ['health'],
+    })
+
+    // Exactly one call, for the health topic only.
+    expect(mockGenerateObject).toHaveBeenCalledTimes(1)
+    const prompt = mockGenerateObject.mock.calls[0][0].prompt as string
+    expect(prompt).toContain('SINGLE topic: "health"')
+    expect(meta.attemptedTopicIds).toEqual(['health'])
+    expect(guide.topics.map((t) => t.topicId)).toEqual(['health'])
   })
 
   it('does NOT record a provider failure (no cooldown) when ALL topics content-fail; throws AdviceTimeoutError', async () => {
