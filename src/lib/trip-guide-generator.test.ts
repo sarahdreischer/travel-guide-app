@@ -199,6 +199,22 @@ describe('generateTripGuide (per-topic)', () => {
     expect(transportPrompt).toContain('3,500')
   })
 
+  it('instructs the model to give concrete content (not meta-advice) in the answer', async () => {
+    mockGenerateObject.mockImplementation(async (args: { prompt: string }) => {
+      const topicId = args.prompt.match(/SINGLE topic: "([^"]+)"/)?.[1] ?? 'culture'
+      return topicResponse(topicId, `${topicId}.x`)
+    })
+
+    await generateTripGuide({ trip: phuketTrip, facts: phuketFacts() })
+
+    const prompt = mockGenerateObject.mock.calls[0][0].prompt as string
+    // The anti-generic guardrail is present: demands actual content and bans
+    // the "learn basic greetings" meta-advice failure mode.
+    expect(prompt).toContain('BE CONCRETE')
+    expect(prompt).toContain('learn basic')
+    expect(prompt).toMatch(/pronunciation/i)
+  })
+
   it('returns a PARTIAL guide when one topic content-fails but others succeed', async () => {
     let call = 0
     mockGenerateObject.mockImplementation(async (args: { prompt: string }) => {
