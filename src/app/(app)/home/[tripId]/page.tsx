@@ -136,7 +136,25 @@ export default async function HomePage({
     ? (groupTipRecord.answers as Record<string, string>)
     : {}
 
-  const groups = groupSections(sections, groupTips)
+  const legacyGroups = groupSections(sections, groupTips)
+
+  // Prefer the structured two-stage TripGuide when one has already been
+  // generated and cached for this trip. It is adapted back onto the same
+  // GroupSection[] shape the accordion consumes, so the UI is unchanged. When
+  // no structured guide exists yet (or it fails validation), we fall back to
+  // the legacy per-category advice rendering above — preserving existing
+  // behaviour, the generating/polling flow, saved tips, and feedback.
+  const { TripGuideStore } = await import('@/lib/trip-guide-store')
+  const { tripGuideToGroups } = await import('@/lib/trip-guide-adapter')
+  const structuredGuide = await TripGuideStore.get({
+    destination: trip.destination.toLowerCase(),
+    startMonth: sm,
+    endMonth: em,
+    travellerType: trip.travelMode.toLowerCase(),
+    budgetRange: derivebudgetRange(trip.budgetUsd),
+  })
+  const structuredGroups = structuredGuide ? tripGuideToGroups(structuredGuide) : []
+  const groups = structuredGroups.length > 0 ? structuredGroups : legacyGroups
 
   const nights = nightCount(trip.startDate, trip.endDate)
   const detail = [

@@ -194,6 +194,31 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
     // do not block the user's redirect.
   })
 
+  // 7b. Two-stage pipeline (destination research → structured TripGuide).
+  // Fire-and-forget alongside the legacy path: it caches DestinationFacts
+  // (reused across trips) and a structured TripGuide the home page prefers when
+  // available. Failures fall back to the legacy advice rendering, so this never
+  // blocks the redirect or breaks the existing flow.
+  import('@/actions/trip-guide')
+    .then(({ getOrGenerateTripGuideAction }) =>
+      getOrGenerateTripGuideAction({
+        destination: destination!,
+        startDate: startDateStr!,
+        endDate: endDateStr!,
+        travellerType: travelMode!,
+        budgetUsd: budget!,
+        transportMode: transportMode ?? undefined,
+        startingLocation: startingLocation || undefined,
+        transportCostIncluded: transportCostIncludedStr === 'true',
+        activities: activityPreferences,
+        travelStyle: travelStyle || undefined,
+      })
+    )
+    .catch(() => {
+      // Two-stage generation failures are logged server-side; the legacy advice
+      // path still populates the page.
+    })
+
   // 8. Redirect to the "generating advice" page which shows a loading animation
   redirect(`/home/${trip.id}/generating`)
 }

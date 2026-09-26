@@ -100,6 +100,64 @@ export const adviceCache = pgTable(
   }),
 )
 
+// ─── destination_facts ─────────────────────────────────────────────────────────
+//
+// Stage-1 destination research output: the STABLE baseline facts for a
+// destination, established from external web sources. Cached and reusable
+// across trips (100 trips to Phuket reuse one row) and independently
+// refreshable via `lastResearchedAt`.
+
+export const destinationFacts = pgTable(
+  'destination_facts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    // Case-insensitive natural key so lookups match regardless of casing.
+    destination: citext('destination').notNull(),
+    country: citext('country').notNull(),
+    // The validated DestinationFacts object (schema: DestinationFactsSchema).
+    facts: jsonb('facts').notNull(),
+    lastResearchedAt: timestamp('last_researched_at').notNull().defaultNow(),
+  },
+  (t) => ({
+    destinationKeyIdx: uniqueIndex('destination_facts_key_idx').on(t.destination, t.country),
+  }),
+)
+
+// ─── trip_guides ─────────────────────────────────────────────────────────────
+//
+// Stage-2 structured Trip Guide output. Keyed by the same cache dimensions as
+// advice_cache so it is reusable across identical trips, plus a reference to
+// the destination_facts row it was generated from.
+
+export const tripGuides = pgTable(
+  'trip_guides',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    destination: citext('destination').notNull(),
+    startMonth: citext('start_month').notNull(),
+    endMonth: citext('end_month').notNull(),
+    travellerType: citext('traveller_type').notNull(),
+    budgetRange: text('budget_range').notNull(),
+    // The validated TripGuide object (schema: TripGuideSchema).
+    guide: jsonb('guide').notNull(),
+    // The destination_facts row this guide was generated from (nullable so a
+    // guide is never blocked if facts are later pruned).
+    destinationFactsId: uuid('destination_facts_id').references(() => destinationFacts.id, {
+      onDelete: 'set null',
+    }),
+    generatedAt: timestamp('generated_at').notNull().defaultNow(),
+  },
+  (t) => ({
+    tripGuideKeyIdx: uniqueIndex('trip_guides_key_idx').on(
+      t.destination,
+      t.startMonth,
+      t.endMonth,
+      t.travellerType,
+      t.budgetRange,
+    ),
+  }),
+)
+
 // ─── destination_images ───────────────────────────────────────────────────────
 
 export const destinationImages = pgTable('destination_images', {
@@ -192,6 +250,12 @@ export type NewVote = typeof votes.$inferInsert
 
 export type DestinationImage = typeof destinationImages.$inferSelect
 export type NewDestinationImage = typeof destinationImages.$inferInsert
+
+export type DestinationFactsRow = typeof destinationFacts.$inferSelect
+export type NewDestinationFactsRow = typeof destinationFacts.$inferInsert
+
+export type TripGuideRow = typeof tripGuides.$inferSelect
+export type NewTripGuideRow = typeof tripGuides.$inferInsert
 
 export type SavedTip = typeof savedTips.$inferSelect
 export type NewSavedTip = typeof savedTips.$inferInsert
