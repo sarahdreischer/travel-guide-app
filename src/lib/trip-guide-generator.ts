@@ -133,6 +133,19 @@ export function relevantTopicIds(
   return ids
 }
 
+/**
+ * The relevant question ids for this trip (stable ids). This is the "expected"
+ * question set. Used to detect when the question library has grown since a
+ * cached guide was generated (question-level staleness), so existing trips can
+ * be topped up on open when a new question is added.
+ */
+export function relevantQuestionIds(
+  facts: DestinationFacts,
+  trip: Pick<TripGuideInput, 'transportMode'>
+): string[] {
+  return selectRelevantQuestions(facts, trip).map((q) => q.id)
+}
+
 /** Group questions by topicId, preserving first-seen topic order. */
 function groupByTopic(questions: QuestionDef[]): { topicId: string; questions: QuestionDef[] }[] {
   const order: string[] = []
@@ -229,10 +242,20 @@ QUESTION SELECTION & PRIORITY
 - Omit irrelevant questions entirely. Do not emit empty/superficial items to increase coverage.
 - Use destinationFacts for applicability (e.g. if a transport mode is false, don't produce guidance assuming it; if rideHailing is empty, don't recommend ride-hailing as available).
 
+BE CONCRETE — GIVE THE ACTUAL CONTENT, NOT META-ADVICE (most important quality rule)
+- The "answer" field must contain the actual, usable content — real examples, phrases, names, numbers — NOT advice telling the traveller to go find or learn that content.
+- NEVER write "learn basic greetings", "try the local cuisine", "be aware of customs", "familiarise yourself with…", "research…". Instead, PROVIDE the greetings, name the dishes, state the custom.
+- When the destination language is not English, give phrases in the local language WITH a pronunciation hint and the English meaning.
+- Worked example — topic "culture", question about greetings, destination in a Greek-speaking area:
+  - BAD (generic, rejected): "Learn basic Greek greetings and be aware of cultural taboos to foster positive interactions."
+  - GOOD (concrete): answer = "Greetings you'll use daily: 'Καλημέρα' (kah-lee-MEH-rah) = good morning; 'Γεια σας' (YAH-sas) = hello (polite/plural); 'Γεια σου' (YAH-soo) = hi (informal); 'Ευχαριστώ' (ef-kha-ri-STOH) = thank you; 'Παρακαλώ' (pa-ra-ka-LOH) = please/you're welcome. A taboo worth knowing: [state the actual custom]."
+- Give at least 2–4 concrete examples wherever the question invites examples (greetings, dishes, phrases, neighbourhoods, apps). One vague sentence is not enough.
+
 RECOMMENDATIONS vs CLAIMS
-- Put judgement/decisions in "recommendation" and trip-specific reasoning in "why".
+- Put judgement/decisions in "recommendation" and trip-specific reasoning in "why". Put the concrete factual content (phrases, names, examples, figures) in "answer".
 - Every externally verifiable factual statement goes in "claims[]" as an ATOMIC claim. Do not hide factual assertions inside recommendations.
-- Do NOT fabricate. If you can't establish something confidently: omit it, give a cautious recommendation without asserting an unsupported fact, or include the claim marked as requiring verification. Never turn uncertainty into certainty.
+- The "do not fabricate" rule targets VOLATILE or HIGH-RISK specifics (current prices, opening hours, availability, visa/health/legal/safety details) — mark those needs_verification or omit them. It does NOT mean avoiding well-known STABLE facts: standard greeting phrases, common local dish names, the language(s) spoken, major neighbourhoods and broad customs are stable and SHOULD be stated directly (as low-risk stable_fact claims). Providing a common greeting is not fabrication; refusing to and saying "learn some greetings" is the failure mode to avoid.
+- If you genuinely cannot establish something: omit it, or give a cautious recommendation without asserting an unsupported fact, or include the claim marked as requiring verification. Never turn uncertainty into certainty.
 
 CLAIMS — each claim has: claim, type, risk, volatility, verificationRequired, requiresAuthoritativeSource, verificationStatus.
 - type ∈ stable_fact, current_fact, price, named_entity, transport, opening_hours, weather, health, visa, legal, safety, connectivity, geography, other.
@@ -245,7 +268,7 @@ ENTITIES — any named hotel/hostel/holiday_rental/restaurant/bar/attraction/tou
 
 PRICES & BUDGET — don't invent precise prices; if a range is useful, mark it volatile + needs_verification. Use the traveller's ACTUAL budget and reason about trade-offs (accommodation/food/transport/activities/buffer); do not just divide total by nights and repeat it.
 
-STYLE — concise, specific, practical, decision-oriented. Avoid generic travel-blog prose, marketing language, filler, repeated destination descriptions, and statements that could apply to any destination. Do not repeat the same information across items.
+STYLE — concise, specific, practical, decision-oriented. Every answer must be recognisably about THIS destination: if a sentence could appear unchanged in a guide to any other place, rewrite it with concrete local specifics. Ban meta-advice verbs ("learn", "research", "familiarise yourself with", "be aware of", "explore") in favour of stating the thing itself. Avoid marketing language, filler, and repeated destination descriptions. Do not repeat the same information across items.
 
 EMPTY VALUES — use null for recommendation/why/answer when they genuinely don't apply; use [] for empty entities/claims/actions. Don't manufacture content to fill fields.
 
@@ -373,6 +396,15 @@ export interface GuideGenerationMeta {
    */
   resolvedTopicIds: string[]
   /**
+   * The relevant question ids that were OFFERED to the model across every
+   * terminal (produced ∪ empty) topic in this run — i.e. the questions this
+   * guide "covers". A question that isn't covered (e.g. added to the library
+   * after generation) is detected as missing on open and its topic is
+   * regenerated. Failed/short-circuited topics do not contribute (they'll be
+   * retried anyway).
+   */
+  coveredQuestionIds: string[]
+  /**
    * True when a provider failure short-circuited the run before every planned
    * topic was attempted (those un-attempted topics are effectively "failed"
    * for reconciliation purposes).
@@ -439,6 +471,7 @@ export async function generateTripGuide(params: GenerateTripGuideParams): Promis
   const emptyTopicIds: string[] = []
   const failedTopicIds: string[] = []
   const attemptedTopicIds: string[] = []
+  const coveredQuestionIds: string[] = []
   let providerError: unknown = null
   let providerShortCircuited = false
 
@@ -449,8 +482,11 @@ export async function generateTripGuide(params: GenerateTripGuideParams): Promis
       if (outcome.status === 'produced') {
         topics.push(outcome.topic)
         producedTopicIds.push(group.topicId)
+        // Every question offered for this topic is now "covered".
+        coveredQuestionIds.push(...group.questions.map((q) => q.id))
       } else if (outcome.status === 'empty') {
         emptyTopicIds.push(group.topicId)
+        coveredQuestionIds.push(...group.questions.map((q) => q.id))
       } else {
         failedTopicIds.push(group.topicId)
       }
@@ -503,6 +539,7 @@ export async function generateTripGuide(params: GenerateTripGuideParams): Promis
     emptyTopicIds,
     failedTopicIds,
     resolvedTopicIds: [...producedTopicIds, ...emptyTopicIds],
+    coveredQuestionIds,
     providerShortCircuited,
     complete: failedTopicIds.length === 0 && !providerShortCircuited,
   }

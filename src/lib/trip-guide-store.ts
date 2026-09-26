@@ -63,6 +63,8 @@ export interface CachedTripGuide {
   guide: TripGuide
   complete: boolean
   attemptedTopics: string[] | null
+  /** Question-library ids this guide covers, or null for legacy rows. */
+  coveredQuestions: string[] | null
 }
 
 /** Fetch the validated TripGuide for a key, or null. */
@@ -83,16 +85,21 @@ async function getRecord(key: TripGuideKey): Promise<CachedTripGuide | null> {
     console.warn(`[trip-guide-store] Cached guide for "${key.destination}" failed validation — treating as absent`)
     return null
   }
-  const attempted = Array.isArray(row.attemptedTopics)
-    ? (row.attemptedTopics as unknown[]).filter((t): t is string => typeof t === 'string')
-    : null
-  return { guide: parsed.data, complete: row.complete, attemptedTopics: attempted }
+  const toStringArray = (v: unknown): string[] | null =>
+    Array.isArray(v) ? (v as unknown[]).filter((t): t is string => typeof t === 'string') : null
+  return {
+    guide: parsed.data,
+    complete: row.complete,
+    attemptedTopics: toStringArray(row.attemptedTopics),
+    coveredQuestions: toStringArray(row.coveredQuestions),
+  }
 }
 
 export interface SaveOptions {
   destinationFactsId?: string | null
   complete?: boolean
   attemptedTopics?: string[] | null
+  coveredQuestions?: string[] | null
 }
 
 /** Upsert a validated TripGuide (plus completeness metadata) for a key. */
@@ -102,7 +109,12 @@ async function save(
   options: SaveOptions = {}
 ): Promise<TripGuide> {
   const validated = TripGuideSchema.parse(guide)
-  const { destinationFactsId = null, complete = true, attemptedTopics = null } = options
+  const {
+    destinationFactsId = null,
+    complete = true,
+    attemptedTopics = null,
+    coveredQuestions = null,
+  } = options
 
   await db
     .insert(tripGuides)
@@ -116,6 +128,7 @@ async function save(
       destinationFactsId,
       complete,
       attemptedTopics,
+      coveredQuestions,
     })
     .onConflictDoUpdate({
       target: [
@@ -130,6 +143,7 @@ async function save(
         destinationFactsId,
         complete,
         attemptedTopics,
+        coveredQuestions,
         generatedAt: new Date(),
       },
     })

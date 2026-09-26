@@ -360,6 +360,16 @@ export const QUESTION_LIBRARY: QuestionDef[] = [
     volatility: 'seasonal',
     requiresWebVerification: false,
   },
+  {
+    id: 'activities.beaches.waterTemperature',
+    topicId: 'activities',
+    sectionId: 'beaches',
+    question: 'Which water temperatures can I expect at nearby beaches?',
+    answerType: 'weather',
+    risk: 'medium',
+    volatility: 'seasonal',
+    requiresWebVerification: false,
+  },
 
   // ── weather ──────────────────────────────────────────────────────────────
   {

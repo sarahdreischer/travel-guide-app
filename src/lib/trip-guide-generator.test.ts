@@ -172,6 +172,11 @@ describe('generateTripGuide (per-topic)', () => {
     expect(meta.complete).toBe(true)
     expect(meta.failedTopicIds).toEqual([])
     expect(meta.resolvedTopicIds.length).toBe(topicCount)
+    // Every relevant question was offered across the generated topics, so the
+    // guide "covers" the full relevant question set.
+    expect(meta.coveredQuestionIds).toEqual(
+      expect.arrayContaining(selectRelevantQuestions(phuketFacts(), phuketTrip).map((q) => q.id))
+    )
 
     // The health claim was normalised to high risk + verification required.
     const healthTopic = guide.topics.find((t) => t.topicId === 'health')!
@@ -197,6 +202,22 @@ describe('generateTripGuide (per-topic)', () => {
     const transportPrompt = prompts.find((p) => p.includes('SINGLE topic: "transport"'))!
     expect(transportPrompt).toContain('transport.ride_hailing.availability')
     expect(transportPrompt).toContain('3,500')
+  })
+
+  it('instructs the model to give concrete content (not meta-advice) in the answer', async () => {
+    mockGenerateObject.mockImplementation(async (args: { prompt: string }) => {
+      const topicId = args.prompt.match(/SINGLE topic: "([^"]+)"/)?.[1] ?? 'culture'
+      return topicResponse(topicId, `${topicId}.x`)
+    })
+
+    await generateTripGuide({ trip: phuketTrip, facts: phuketFacts() })
+
+    const prompt = mockGenerateObject.mock.calls[0][0].prompt as string
+    // The anti-generic guardrail is present: demands actual content and bans
+    // the "learn basic greetings" meta-advice failure mode.
+    expect(prompt).toContain('BE CONCRETE')
+    expect(prompt).toContain('learn basic')
+    expect(prompt).toMatch(/pronunciation/i)
   })
 
   it('returns a PARTIAL guide when one topic content-fails but others succeed', async () => {

@@ -189,6 +189,7 @@ export const CATEGORY_CONFIG = {
     'Which additional activities are popular?',
     'What are hidden gems?',
     'Is it advised to swim in nearby beaches?',
+    'Which water temperatures can I expect at nearby beaches?',
   ],
   'Weather': [
     'What is the weather likely going to look like?',

@@ -152,6 +152,12 @@ export const tripGuides = pgTable(
     // most recent run (nullable for legacy rows / unknown).
     complete: boolean('complete').notNull().default(false),
     attemptedTopics: jsonb('attempted_topics'), // string[] | null
+    // The question-library ids this guide "covers" (offered to the model across
+    // its generated topics). Enables question-level staleness: when a new
+    // question is added to the library, existing guides missing that id are
+    // detected as stale on open and the affected topic is regenerated.
+    // Nullable for legacy rows (unknown coverage).
+    coveredQuestions: jsonb('covered_questions'), // string[] | null
     generatedAt: timestamp('generated_at').notNull().defaultNow(),
   },
   (t) => ({
