@@ -257,7 +257,10 @@ function Step2({ form, setForm }: {
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1&accept-language=en`,
+          // Request a larger candidate pool (limit=15) than we display so the
+          // client-side prefix-preference below has enough results to promote a
+          // starting-letter match that Nominatim ranked lower.
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=15&addressdetails=1&accept-language=en`,
           { headers: { 'User-Agent': 'TravelGuideApp/1.0' } }
         )
         if (!res.ok) {
@@ -265,7 +268,7 @@ function Step2({ form, setForm }: {
           return
         }
         const data = await res.json()
-        const results: string[] = []
+        const candidates: string[] = []
         const seen = new Set<string>()
         for (const item of data) {
           const addr = item.address || {}
@@ -275,9 +278,27 @@ function Step2({ form, setForm }: {
           const label = `${city}, ${country}`
           if (seen.has(label.toLowerCase())) continue
           seen.add(label.toLowerCase())
-          results.push(label)
-          if (results.length >= 6) break
+          candidates.push(label)
         }
+
+        // Nominatim orders by its own relevance, which often surfaces places
+        // that merely *contain* the typed letters ahead of ones that *start*
+        // with them. Prefer prefix matches: show only starting-letter matches
+        // when any exist, and fall back to "contains" matches otherwise. A
+        // label matches by prefix if the whole label OR its city part (before
+        // the comma) starts with the query.
+        const q = query.trim().toLowerCase()
+        const startsWith = (label: string) => {
+          const l = label.toLowerCase()
+          const cityPart = l.split(',')[0].trim()
+          return l.startsWith(q) || cityPart.startsWith(q)
+        }
+        const prefixMatches = candidates.filter(startsWith)
+        const ranked = prefixMatches.length > 0
+          ? prefixMatches
+          : candidates.filter((label) => label.toLowerCase().includes(q))
+        const results = ranked.slice(0, 6)
+
         setLocationSuggestions(results)
         setLocationOpen(results.length > 0)
         if (results.length === 0 && query.length >= 2) {
