@@ -168,30 +168,9 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
     })
     .returning({ id: trips.id })
 
-  // 6. Trigger the two-stage pipeline (destination research → structured
-  // TripGuide) — the sole advice source. Fire-and-forget so the redirect isn't
-  // blocked; the generating page then waits for the structured guide, and the
-  // home page also generates inline on first view if this was lost (e.g. a
-  // server restart). Failures are logged server-side.
-  import('@/actions/trip-guide')
-    .then(({ getOrGenerateTripGuideAction }) =>
-      getOrGenerateTripGuideAction({
-        destination: destination!,
-        startDate: startDateStr!,
-        endDate: endDateStr!,
-        travellerType: travelMode!,
-        budgetUsd: budget!,
-        transportMode: transportMode ?? undefined,
-        startingLocation: startingLocation || undefined,
-        transportCostIncluded: transportCostIncludedStr === 'true',
-        activities: activityPreferences,
-        travelStyle: travelStyle || undefined,
-      })
-    )
-    .catch(() => {
-      // Two-stage generation failures are logged server-side by the action.
-    })
-
-  // 7. Redirect to the "generating" page which shows a loading animation.
+  // 6. Redirect to the "generating" loading screen. That page kicks off the
+  // two-stage pipeline (destination research → structured TripGuide) itself and
+  // polls for completion, so generation is triggered in exactly one place —
+  // here we just hand off without blocking the redirect.
   redirect(`/home/${trip.id}/generating`)
 }

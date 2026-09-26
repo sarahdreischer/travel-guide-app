@@ -97,11 +97,39 @@ function buildTripInput(
  * 2. Otherwise: get-or-research the DestinationFacts (cached across ALL trips
  *    to that destination), generate the guide, persist, and return it.
  */
+// In-flight de-duplication: concurrent calls for the same trip cache key share
+// one promise. This matters now that BOTH the /generating loading screen and
+// (previously) other entry points can trigger generation — e.g. refreshing the
+// loading screen mid-generation. Persistence is idempotent regardless, but this
+// avoids redundant duplicate LLM work on a single server instance.
+const inFlight = new Map<string, Promise<TripGuideResult>>()
+
+function inFlightKey(key: TripGuideKey): string {
+  return `${key.destination}|${key.startMonth}|${key.endMonth}|${key.travellerType}|${key.budgetRange}`
+}
+
 export async function getOrGenerateTripGuideAction(
   req: TripGuideRequest,
   priority: AICallPriority = 'high'
 ): Promise<TripGuideResult> {
   const key = deriveKey(req)
+  const dedupeKey = inFlightKey(key)
+
+  const existing = inFlight.get(dedupeKey)
+  if (existing) return existing
+
+  const promise = runGetOrGenerateTripGuide(req, key, priority).finally(() => {
+    inFlight.delete(dedupeKey)
+  })
+  inFlight.set(dedupeKey, promise)
+  return promise
+}
+
+async function runGetOrGenerateTripGuide(
+  req: TripGuideRequest,
+  key: TripGuideKey,
+  priority: AICallPriority
+): Promise<TripGuideResult> {
   const { destination, country } = splitDestination(req.destination)
 
   const tripInput = buildTripInput(req, destination, country)

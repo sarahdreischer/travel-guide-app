@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { db } from '@/db'
 import { trips, savedTips } from '@/db/schema'
@@ -9,8 +9,6 @@ import { fmtDateShort, fmtDate, nightCount } from '@/lib/format-date'
 import type { CategorySection } from '@/lib/category-groups'
 import { TripGuideStore, tripGuideKeyForTrip } from '@/lib/trip-guide-store'
 import { tripGuideToGroups } from '@/lib/trip-guide-adapter'
-import { tripToGuideRequest } from '@/lib/trip-guide-request'
-import { getOrGenerateTripGuideAction } from '@/actions/trip-guide'
 import AdviceAccordion from '@/components/AdviceAccordion'
 import DeleteTripButton from '@/components/DeleteTripButton'
 import EditTripButton from '@/components/EditTripButton'
@@ -33,10 +31,13 @@ function IconArrowLeft() {
 
 export default async function HomePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ tripId: string }>
+  searchParams: Promise<{ generated?: string }>
 }) {
   const { tripId } = await params
+  const { generated } = await searchParams
 
   const cookieStore = await cookies()
   const token = cookieStore.get('session_token')?.value
@@ -45,24 +46,26 @@ export default async function HomePage({
   const [trip] = await db.select().from(trips).where(eq(trips.id, tripId)).limit(1)
   if (!trip) notFound()
 
+  // ─── Structured Trip Guide (the only advice source) ─────────────────────────
+  // The trip guide is produced by the two-stage pipeline (destination research →
+  // structured generation). We only READ the cache here — never generate inline,
+  // because that would block this server render (and the navigation into it,
+  // making the Trips page appear to hang until the LLM finishes).
+  //
+  // If there's no guide yet, hand off to the /generating loading screen, which
+  // kicks off generation and polls for completion. The `generated=timeout`
+  // marker means we already came back from that screen without a result, so we
+  // render a "still updating" banner instead of bouncing back (loop break).
+  const guideKey = tripGuideKeyForTrip(trip)
+  const guide = await TripGuideStore.get(guideKey)
+
+  if (!guide && generated !== 'timeout') {
+    redirect(`/home/${tripId}/generating`)
+  }
+
   // Fetch hero image (auto-fetches from Unsplash if missing, persists to DB)
   const { getDestinationImageWithAttribution } = await import('@/lib/destination-image')
   const { imageUrl: heroUrl, attribution: heroAttribution } = await getDestinationImageWithAttribution(trip.destination)
-
-  // ─── Structured Trip Guide (the only advice source) ─────────────────────────
-  // The trip guide is produced by the two-stage pipeline (destination research →
-  // structured generation). Try the cache first; if it isn't there yet, generate
-  // it inline (the user is on this page waiting for it, and this also recovers
-  // if the fire-and-forget trigger at trip creation was lost, e.g. a restart).
-  const guideKey = tripGuideKeyForTrip(trip)
-  let guide = await TripGuideStore.get(guideKey)
-
-  if (!guide) {
-    const result = await getOrGenerateTripGuideAction(tripToGuideRequest(trip), 'high')
-    if (result.status === 'success') {
-      guide = result.guide
-    }
-  }
 
   const groups = guide ? tripGuideToGroups(guide) : []
   const isGenerating = groups.length === 0
@@ -134,7 +137,8 @@ export default async function HomePage({
 
       {isGenerating ? (
         <div className="advice-partial-banner">
-          Your travel briefing is still being generated — refresh to check for updates.
+          Your travel guidance is still being prepared and is taking longer than usual.{' '}
+          <Link href={`/home/${tripId}/generating`}>Keep waiting</Link> or check back shortly.
         </div>
       ) : (
         /* Grouped rows + saved tips banner (managed by accordion) */

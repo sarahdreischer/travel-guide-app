@@ -24,6 +24,8 @@ const DEFAULT_TIMEOUT_SECONDS = 30
 interface GeneratingClientProps {
   tripId: string
   destination: string
+  /** 'new' for a first-time guide, 'update' when refreshing an existing one. */
+  mode?: 'new' | 'update'
   timeoutSeconds?: number
 }
 
@@ -36,6 +38,7 @@ type StatusData = {
 export default function GeneratingClient({
   tripId,
   destination,
+  mode = 'new',
   timeoutSeconds = DEFAULT_TIMEOUT_SECONDS,
 }: GeneratingClientProps) {
   const router = useRouter()
@@ -62,7 +65,10 @@ export default function GeneratingClient({
         const next = e + 1
         if (next >= timeoutSeconds && !redirected.current) {
           redirected.current = true
-          router.replace(`/home/${tripId}`)
+          // Carry a marker so the home page shows a "still updating" banner
+          // instead of bouncing straight back here (avoids a redirect loop
+          // when generation is slow or failing).
+          router.replace(`/home/${tripId}?generated=timeout`)
         }
         return next
       })
@@ -116,10 +122,13 @@ export default function GeneratingClient({
     return (
       <div className="generating-shell">
         <div className="generating-body">
-          <p className="generating-heading">Couldn&apos;t generate travel briefing</p>
+          <p className="generating-heading">
+            {mode === 'update' ? 'Couldn\u2019t update travel guidance' : 'Couldn\u2019t generate travel briefing'}
+          </p>
           <p className="generating-sub">
-            Your trip to {destination} was saved, but we couldn&apos;t fetch AI advice right now.
-            It will be generated on your next visit.
+            {mode === 'update'
+              ? `We couldn\u2019t refresh the guidance for ${destination} right now. Your existing guidance is still available.`
+              : `Your trip to ${destination} was saved, but we couldn\u2019t fetch AI advice right now. It will be generated on your next visit.`}
           </p>
           <Link href={`/home/${tripId}`} className="generating-link">
             Go to trip anyway
@@ -129,11 +138,16 @@ export default function GeneratingClient({
     )
   }
 
+  const activeHeading =
+    mode === 'update'
+      ? `Updating your travel guidance for ${destination}…`
+      : `Generating advice for ${destination}…`
+
   return (
     <div className="generating-shell">
       <div className="generating-body">
         <p className="generating-heading">
-          {complete ? 'Done!' : `Generating advice for ${destination}…`}
+          {complete ? 'Done!' : activeHeading}
         </p>
         <p className="generating-sub">
           {complete ? 'Redirecting you now.' : LOADING_MESSAGES[messageIndex]}
