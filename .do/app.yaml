@@ -79,3 +79,22 @@ services:
         scope: RUN_TIME
         type: SECRET
         value: "${UNSPLASH_ACCESS_KEY}"
+      - key: WEB_SEARCH_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+        value: "${WEB_SEARCH_API_KEY}"
+      - key: WEB_SEARCH_API_URL
+        scope: RUN_TIME
+        value: "https://api.tavily.com/search"
+      - key: DESTINATION_FACTS_TTL_DAYS
+        scope: RUN_TIME
+        value: "90"
+      - key: AI_RESEARCH_TIMEOUT_MS
+        scope: RUN_TIME
+        value: "60000"
+      - key: AI_GUIDE_TIMEOUT_MS
+        scope: RUN_TIME
+        value: "90000"
+      - key: AI_GUIDE_MAX_OUTPUT_TOKENS
+        scope: RUN_TIME
+        value: "8192"

@@ -9,9 +9,11 @@
 
 import { db } from '@/db'
 import { tripGuides } from '@/db/schema'
-import type { TripGuideRow } from '@/db/schema'
+import type { TripGuideRow, Trip } from '@/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { TripGuideSchema, safeParseTripGuide, type TripGuide } from '@/lib/schemas/trip-guide'
+import { deriveMonthRange } from '@/lib/advice-store'
+import { derivebudgetRange } from '@/lib/validators'
 
 export interface TripGuideKey {
   destination: string
@@ -19,6 +21,25 @@ export interface TripGuideKey {
   endMonth: string
   travellerType: string
   budgetRange: string
+}
+
+/**
+ * Derive the TripGuide cache key from a trip row. This is the single source of
+ * truth for how a trip maps to its structured-guide key, shared by the home
+ * page render and the advice-status endpoint so they always agree on whether a
+ * guide exists for a given trip.
+ */
+export function tripGuideKeyForTrip(
+  trip: Pick<Trip, 'destination' | 'startDate' | 'endDate' | 'travelMode' | 'budgetUsd'>
+): TripGuideKey {
+  const { startMonth, endMonth } = deriveMonthRange(trip.startDate, trip.endDate)
+  return {
+    destination: trip.destination.toLowerCase(),
+    startMonth,
+    endMonth,
+    travellerType: trip.travelMode.toLowerCase(),
+    budgetRange: derivebudgetRange(trip.budgetUsd),
+  }
 }
 
 function whereKey(key: TripGuideKey) {
@@ -82,9 +103,20 @@ async function save(
   return validated
 }
 
+/**
+ * Lightweight readiness check: is a VALID structured guide cached for this key?
+ * Used by the advice-status endpoint to report structured-guide progress
+ * without shipping the whole guide payload.
+ */
+async function isReady(key: TripGuideKey): Promise<boolean> {
+  const row = await findRow(key)
+  if (!row) return false
+  return safeParseTripGuide(row.guide).success
+}
+
 /** Delete the guide for a key (used to force regeneration). */
 async function deleteByKey(key: TripGuideKey): Promise<void> {
   await db.delete(tripGuides).where(whereKey(key))
 }
 
-export const TripGuideStore = { get, findRow, save, deleteByKey }
+export const TripGuideStore = { get, findRow, save, deleteByKey, isReady }

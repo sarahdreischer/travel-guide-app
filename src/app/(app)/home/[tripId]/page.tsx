@@ -144,15 +144,9 @@ export default async function HomePage({
   // no structured guide exists yet (or it fails validation), we fall back to
   // the legacy per-category advice rendering above — preserving existing
   // behaviour, the generating/polling flow, saved tips, and feedback.
-  const { TripGuideStore } = await import('@/lib/trip-guide-store')
+  const { TripGuideStore, tripGuideKeyForTrip } = await import('@/lib/trip-guide-store')
   const { tripGuideToGroups } = await import('@/lib/trip-guide-adapter')
-  const structuredGuide = await TripGuideStore.get({
-    destination: trip.destination.toLowerCase(),
-    startMonth: sm,
-    endMonth: em,
-    travellerType: trip.travelMode.toLowerCase(),
-    budgetRange: derivebudgetRange(trip.budgetUsd),
-  })
+  const structuredGuide = await TripGuideStore.get(tripGuideKeyForTrip(trip))
   const structuredGroups = structuredGuide ? tripGuideToGroups(structuredGuide) : []
   const groups = structuredGroups.length > 0 ? structuredGroups : legacyGroups
 

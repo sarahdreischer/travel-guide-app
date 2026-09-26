@@ -23,7 +23,11 @@ export default async function GeneratingPage({
     <GeneratingClient
       tripId={tripId}
       destination={trip.destination}
-      timeoutSeconds={parseInt(process.env.GENERATING_TRIP_ADVICE_TIMEOUT_SECONDS ?? '15', 10)}
+      // Hard cap on how long the loading screen waits before redirecting on
+      // whatever is available. Raised from 15s so the preferred two-stage
+      // structured guide (web research + model call) has a realistic chance to
+      // land; the page still redirects on the legacy fallback if it doesn't.
+      timeoutSeconds={parseInt(process.env.GENERATING_TRIP_ADVICE_TIMEOUT_SECONDS ?? '30', 10)}
     />
   )
 }
