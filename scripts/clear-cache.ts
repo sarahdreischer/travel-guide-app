@@ -1,12 +1,14 @@
 /**
- * Delete all cached AI advice for a given trip.
+ * Delete the cached structured Trip Guide for a given trip.
  *
  * Usage:
  *   npx tsx scripts/clear-cache.ts <tripId>
  *
- * This removes all advice_cache rows matching the trip's cache key
- * (destination, months, traveller type, budget range). The next time
- * the trip page is loaded, advice will be regenerated from scratch.
+ * This removes the trip_guides row matching the trip's cache key
+ * (destination, months, traveller type, budget range). The next time the trip
+ * page is loaded, the two-stage pipeline regenerates the guide from scratch.
+ * (Destination facts remain cached and are reused; pass a trip to a different
+ * destination, or refresh facts separately, to re-research those.)
  *
  * Requires DATABASE_URL in .env.local
  */
@@ -16,10 +18,9 @@ loadEnvConfig(process.cwd())
 
 async function main() {
   const { db } = await import('../src/db')
-  const { trips, adviceCache } = await import('../src/db/schema')
-  const { eq, and } = await import('drizzle-orm')
-  const { deriveMonthRange } = await import('../src/lib/advice-store')
-  const { derivebudgetRange } = await import('../src/lib/validators')
+  const { trips } = await import('../src/db/schema')
+  const { eq } = await import('drizzle-orm')
+  const { TripGuideStore, tripGuideKeyForTrip } = await import('../src/lib/trip-guide-store')
 
   const tripId = process.argv[2]
   if (!tripId) {
@@ -33,29 +34,16 @@ async function main() {
     process.exit(1)
   }
 
-  const { startMonth, endMonth } = deriveMonthRange(trip.startDate, trip.endDate)
-  const destination = trip.destination.toLowerCase()
-  const travellerType = trip.travelMode.toLowerCase()
-  const budgetRange = derivebudgetRange(trip.budgetUsd)
+  const key = tripGuideKeyForTrip(trip)
+  console.log(`\nClearing structured trip guide for: ${trip.destination}`)
+  console.log(
+    `  Cache key: ${key.destination} | ${key.startMonth}–${key.endMonth} | ${key.travellerType} | ${key.budgetRange}\n`
+  )
 
-  console.log(`\nClearing cache for: ${trip.destination}`)
-  console.log(`  Cache key: ${destination} | ${startMonth}–${endMonth} | ${travellerType} | ${budgetRange}\n`)
+  await TripGuideStore.deleteByKey(key)
 
-  const deleted = await db
-    .delete(adviceCache)
-    .where(
-      and(
-        eq(adviceCache.destination, destination),
-        eq(adviceCache.startMonth, startMonth),
-        eq(adviceCache.endMonth, endMonth),
-        eq(adviceCache.travellerType, travellerType),
-        eq(adviceCache.budgetRange, budgetRange)
-      )
-    )
-    .returning({ id: adviceCache.id })
-
-  console.log(`✓ Deleted ${deleted.length} cached advice record(s).`)
-  console.log('  Reload the trip page to regenerate advice.\n')
+  console.log('✓ Deleted cached trip guide (if one existed).')
+  console.log('  Reload the trip page to regenerate it.\n')
 
   process.exit(0)
 }

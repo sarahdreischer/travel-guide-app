@@ -1,21 +1,21 @@
 /**
- * Export AI advice for recently-created trips to a printable HTML file (one
- * trip per page). Open the file in a browser and use "Print → Save as PDF"
- * (or print to paper) to review LLM response quality.
+ * Export structured Trip Guides for recently-created trips to a printable HTML
+ * file (one trip per page). Open the file in a browser and use
+ * "Print → Save as PDF" (or print to paper) to review guide quality.
  *
  * Each page contains, for one trip:
  *   - Trip metadata (destination, dates, party, budget, activities, etc.)
- *   - Category group headline tips (the "_group_tips" record)
- *   - Every category with its full question/answer pairs
+ *   - The researched destination facts summary (currency, driving side, etc.)
+ *   - Every topic with its headline + recommendation and each guide item
+ *     (recommendation, why, answer, entities, claims, actions)
  *
  * Usage:
- *   npm run export-advice -- --weeks 4              # trips created in last 4 weeks
+ *   npm run export-advice -- --weeks 4               # trips created in last 4 weeks
  *   npm run export-advice -- --days 10
  *   npm run export-advice -- --months 3
- *   npm run export-advice -- --weeks 2 --by generated   # filter by advice generatedAt instead of trip createdAt
- *   npm run export-advice -- --weeks 4 --out advice-review.html
+ *   npm run export-advice -- --weeks 4 --out guide-review.html
  *
- * Defaults: --weeks 4, --by created, --out advice-export-<timestamp>.html
+ * Defaults: --weeks 4, --out advice-export-<timestamp>.html
  *
  * Requires DATABASE_URL in .env.local.
  */
@@ -31,7 +31,6 @@ import path from 'path'
 interface Options {
   windowMs: number
   windowLabel: string
-  by: 'created' | 'generated'
   out: string
 }
 
@@ -64,10 +63,9 @@ function parseArgs(argv: string[]): Options {
     windowLabel = `last ${n} month${n !== 1 ? 's' : ''}`
   }
 
-  const by = args.get('by') === 'generated' ? 'generated' : 'created'
   const out = args.get('out') ?? `advice-export-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.html`
 
-  return { windowMs, windowLabel, by, out }
+  return { windowMs, windowLabel, out }
 }
 
 // ─── HTML helpers ─────────────────────────────────────────────────────────────
@@ -80,94 +78,35 @@ function esc(s: unknown): string {
     .replace(/"/g, '&quot;')
 }
 
-const GROUP_TIPS_CATEGORY = '_group_tips'
-
 async function main() {
   const opts = parseArgs(process.argv.slice(2))
 
   const { db } = await import('../src/db')
-  const { trips, adviceCache } = await import('../src/db/schema')
+  const { trips } = await import('../src/db/schema')
   const { gte, desc } = await import('drizzle-orm')
-  const { AdviceStore, deriveMonthRange } = await import('../src/lib/advice-store')
   const { derivebudgetRange } = await import('../src/lib/validators')
-  const { CATEGORIES, getSubQuestions } = await import('../src/lib/destinations')
-  const { findAnswer } = await import('../src/lib/answer-lookup')
-  const { groupSections, getGroupQuestions, cleanSubLabel } = await import('../src/lib/category-groups')
+  const { TripGuideStore, tripGuideKeyForTrip } = await import('../src/lib/trip-guide-store')
+  const { DestinationFactsStore } = await import('../src/lib/destination-facts-store')
+  const { splitDestination } = await import('../src/lib/destination-parse')
+  const { getQuestionById } = await import('../src/lib/question-library')
   const { fmtDate, nightCount } = await import('../src/lib/format-date')
 
   const since = new Date(Date.now() - opts.windowMs)
 
-  // ─── Select the trips in the window ─────────────────────────────────────────
-  type TripRow = typeof trips.$inferSelect
-  let selectedTrips: TripRow[]
+  const selectedTrips = await db
+    .select()
+    .from(trips)
+    .where(gte(trips.createdAt, since))
+    .orderBy(desc(trips.createdAt))
 
-  if (opts.by === 'generated') {
-    // Find advice rows generated in the window, then resolve their trips.
-    // advice_cache has no tripId, so we match trips whose derived cache key
-    // matches a recently-generated advice row.
-    const recentAdvice = await db
-      .select()
-      .from(adviceCache)
-      .where(gte(adviceCache.generatedAt, since))
-
-    if (recentAdvice.length === 0) {
-      selectedTrips = []
-    } else {
-      const allTrips = await db.select().from(trips)
-      const recentKeys = new Set(
-        recentAdvice.map((a) =>
-          [a.destination, a.startMonth, a.endMonth, a.travellerType, a.budgetRange]
-            .map((s) => String(s).toLowerCase())
-            .join('|')
-        )
-      )
-      selectedTrips = allTrips.filter((t) => {
-        const { startMonth, endMonth } = deriveMonthRange(t.startDate, t.endDate)
-        const key = [
-          t.destination.toLowerCase(),
-          startMonth,
-          endMonth,
-          t.travelMode.toLowerCase(),
-          derivebudgetRange(t.budgetUsd),
-        ].join('|')
-        return recentKeys.has(key)
-      })
-    }
-  } else {
-    selectedTrips = await db
-      .select()
-      .from(trips)
-      .where(gte(trips.createdAt, since))
-      .orderBy(desc(trips.createdAt))
-  }
-
-  console.log(`\nExporting advice for ${selectedTrips.length} trip(s) (${opts.windowLabel}, by ${opts.by})…\n`)
-
-  const categoriesWithQuestions = CATEGORIES.filter((c) => getSubQuestions(c).length > 0)
-  const groupDefs = getGroupQuestions()
+  console.log(`\nExporting trip guides for ${selectedTrips.length} trip(s) (${opts.windowLabel})…\n`)
 
   const pages: string[] = []
 
   for (const trip of selectedTrips) {
-    const records = await AdviceStore.getForTrip(trip.id)
-
-    // Split out the group-tips record from the per-category records.
-    const groupTipRecord = records.find((r) => r.category === GROUP_TIPS_CATEGORY)
-    const groupTips = (groupTipRecord?.answers as Record<string, string> | undefined) ?? {}
-
-    // Build CategorySection[] (same shape the app uses) for grouping.
-    const byCategory = new Map<string, Record<string, string>>()
-    for (const r of records) {
-      if (r.category === GROUP_TIPS_CATEGORY) continue
-      byCategory.set(r.category, (r.answers as Record<string, string>) ?? {})
-    }
-
-    const sections = categoriesWithQuestions.map((category) => {
-      const answers = byCategory.get(category) ?? null
-      return { category, conciseTip: null, answers, subQuestions: getSubQuestions(category) }
-    })
-
-    const groups = groupSections(sections, groupTips)
+    const guide = await TripGuideStore.get(tripGuideKeyForTrip(trip))
+    const { destination, country } = splitDestination(trip.destination)
+    const facts = await DestinationFactsStore.get(destination, country)
 
     const nights = nightCount(trip.startDate, trip.endDate)
     const meta = [
@@ -183,33 +122,46 @@ async function main() {
       ['Trip created', trip.createdAt ? fmtDate(new Date(trip.createdAt).toISOString().slice(0, 10)) : '—'],
     ]
 
-    // ─── Group headline tips block ────────────────────────────────────────────
-    const groupTipsRows = groupDefs
-      .map((g) => {
-        const tip = groupTips[g.id]
-        return `<tr><td class="k">${esc(g.name)}</td><td class="v">${tip ? esc(tip) : '<span class="missing">— not generated —</span>'}</td></tr>`
-      })
-      .join('')
+    // ─── Destination facts summary ────────────────────────────────────────────
+    const factsRows = facts
+      ? [
+          ['Currency', `${facts.currency.name} (${facts.currency.code})`],
+          ['Driving side', facts.drivingSide],
+          ['Languages', facts.languages.join(', ') || '—'],
+          ['Ride-hailing', facts.transport.rideHailing.join(', ') || '—'],
+          ['Geography', [facts.geography.type, facts.geography.majorAreas.join(', ')].filter(Boolean).join(' · ') || '—'],
+          ['Sources', String(facts.sources.length)],
+        ]
+          .map(([k, v]) => `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v)}</td></tr>`)
+          .join('')
+      : ''
 
-    // ─── Per-category Q&A blocks ──────────────────────────────────────────────
-    const categoryBlocks = groups
-      .map((group) => {
-        const sources = group.sources
-        const sourceBlocks = sources
-          .map((src) => {
-            const subLabel = sources.length > 1 ? `<h4 class="sub">${esc(cleanSubLabel(src.category))}</h4>` : ''
-            const qaRows = src.subQuestions
-              .map((q) => {
-                const a = findAnswer(src.answers, q)
-                return `<div class="qa"><p class="q">${esc(q)}</p><p class="a">${a ? esc(a) : '<span class="missing">— no answer —</span>'}</p></div>`
+    // ─── Topics + items ───────────────────────────────────────────────────────
+    const topicBlocks = guide
+      ? guide.topics
+          .map((topic) => {
+            const items = topic.items
+              .map((item) => {
+                const q = getQuestionById(item.questionId)?.question ?? item.questionId
+                const lines: string[] = []
+                if (item.recommendation) lines.push(`<p class="a"><strong>Recommendation:</strong> ${esc(item.recommendation)}</p>`)
+                if (item.why) lines.push(`<p class="a"><strong>Why:</strong> ${esc(item.why)}</p>`)
+                if (item.answer) lines.push(`<p class="a">${esc(item.answer)}</p>`)
+                if (item.entities.length) lines.push(`<p class="meta-line">Entities: ${esc(item.entities.map((e) => `${e.name} (${e.entityType})`).join(', '))}</p>`)
+                if (item.actions.length) lines.push(`<p class="meta-line">Actions: ${esc(item.actions.join('; '))}</p>`)
+                if (item.claims.length) {
+                  const claims = item.claims
+                    .map((c) => `<li>${esc(c.claim)} <span class="tag">[${esc(c.type)} · risk:${esc(c.risk)} · ${esc(c.volatility)}${c.verificationRequired ? ' · verify' : ''}]</span></li>`)
+                    .join('')
+                  lines.push(`<ul class="claims">${claims}</ul>`)
+                }
+                return `<div class="qa"><p class="q">${esc(q)} <span class="tag">[${esc(item.priority)}]</span></p>${lines.join('')}</div>`
               })
               .join('')
-            return `${subLabel}${qaRows}`
+            return `<section class="cat"><h3>${esc(topic.topicId)}</h3><p class="headline">${esc(topic.summary.headline)}</p><p class="a"><em>${esc(topic.summary.recommendation)}</em></p>${items}</section>`
           })
           .join('')
-        return `<section class="cat"><h3>${esc(group.name)}</h3>${sourceBlocks}</section>`
-      })
-      .join('')
+      : ''
 
     const page = `
     <article class="trip-page">
@@ -222,15 +174,14 @@ async function main() {
         ${meta.map(([k, v]) => `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v)}</td></tr>`).join('')}
       </table>
 
-      <h2>Category group tips</h2>
-      <table class="tips">${groupTipsRows}</table>
+      ${facts ? `<h2>Researched destination facts</h2><table class="tips">${factsRows}</table>` : '<p class="missing">No researched destination facts found.</p>'}
 
-      <h2>Detailed advice by category</h2>
-      ${categoryBlocks || '<p class="missing">No category advice found for this trip.</p>'}
+      <h2>Structured trip guide</h2>
+      ${topicBlocks || '<p class="missing">No structured trip guide found for this trip.</p>'}
     </article>`
 
     pages.push(page)
-    console.log(`  ✓ ${trip.destination} (${trip.id}) — ${byCategory.size} categories, ${Object.keys(groupTips).length} group tips`)
+    console.log(`  ✓ ${trip.destination} (${trip.id}) — ${guide ? guide.topics.length : 0} topics, facts: ${facts ? 'yes' : 'no'}`)
   }
 
   const html = `<!doctype html>
@@ -238,7 +189,7 @@ async function main() {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AI Advice Export — ${esc(opts.windowLabel)}</title>
+<title>Trip Guide Export — ${esc(opts.windowLabel)}</title>
 <style>
   @page { size: A4; margin: 16mm 14mm; }
   * { box-sizing: border-box; }
@@ -257,19 +208,23 @@ async function main() {
   td.k { width: 130px; color: #6B7280; font-weight: 600; }
   td.v { color: #111318; }
   section.cat { margin-bottom: 14px; page-break-inside: avoid; }
-  section.cat h3 { font-size: 13px; margin: 0 0 6px; color: #111318; background: #F3F6F7; padding: 4px 8px; border-left: 3px solid #1A5568; }
-  h4.sub { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6B7280; margin: 8px 0 4px; }
+  section.cat h3 { font-size: 13px; margin: 0 0 4px; color: #111318; background: #F3F6F7; padding: 4px 8px; border-left: 3px solid #1A5568; text-transform: capitalize; }
+  .headline { font-weight: 600; margin: 4px 0; }
   .qa { margin: 0 0 8px; padding-left: 8px; page-break-inside: avoid; }
-  .qa .q { font-weight: 600; margin: 0 0 2px; color: #374151; }
-  .qa .a { margin: 0; color: #111318; }
+  .qa .q { font-weight: 600; margin: 6px 0 2px; color: #374151; }
+  .qa .a { margin: 0 0 2px; color: #111318; }
+  .meta-line { margin: 2px 0; color: #6B7280; font-size: 11px; }
+  ul.claims { margin: 2px 0 4px 16px; padding: 0; }
+  ul.claims li { color: #374151; margin: 1px 0; }
+  .tag { color: #6B7280; font-weight: 400; font-size: 10px; }
   .missing { color: #B91C1C; font-style: italic; }
   @media print { .cover { page-break-after: always; } }
 </style>
 </head>
 <body>
   <div class="cover">
-    <h1>AI Advice Quality Review</h1>
-    <p>Window: ${esc(opts.windowLabel)} (filtered by ${opts.by === 'generated' ? 'advice generated date' : 'trip created date'})</p>
+    <h1>Trip Guide Quality Review</h1>
+    <p>Window: ${esc(opts.windowLabel)} (filtered by trip created date)</p>
     <p>Trips: ${selectedTrips.length}</p>
     <p>Generated: ${esc(new Date().toLocaleString('en-GB'))}</p>
     <p style="margin-top:16px;color:#9CA3AF;">Each following page is one trip. Use your browser's Print → Save as PDF.</p>

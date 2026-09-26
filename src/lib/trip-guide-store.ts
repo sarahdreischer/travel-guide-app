@@ -12,7 +12,7 @@ import { tripGuides } from '@/db/schema'
 import type { TripGuideRow, Trip } from '@/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { TripGuideSchema, safeParseTripGuide, type TripGuide } from '@/lib/schemas/trip-guide'
-import { deriveMonthRange } from '@/lib/advice-store'
+import { deriveMonthRange } from '@/lib/trip-cache-key'
 import { derivebudgetRange } from '@/lib/validators'
 
 export interface TripGuideKey {

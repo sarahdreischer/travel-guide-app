@@ -81,11 +81,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run test:file -- <pattern>` | Run specific test file (e.g. `npm run test:file -- sub-questions`) |
 | `npm run type-check` | TypeScript check without emitting |
 | `npm run lint` | ESLint |
-| `npm run reconcile` | Force-reconcile missing AI advice for all trips |
-| `npm run reconcile -- <tripId>` | Reconcile a specific trip |
-| `npm run clear-cache -- <tripId>` | Delete all cached AI advice for a trip (regenerates on next load) |
-| `npm run generate-demo-advice` | Regenerate real LLM advice for the `/demo` trips (writes `src/lib/demo-advice.generated.ts`) |
-| `npm run export-advice -- --weeks 4` | Export AI advice (group tips + per-category Q&A) for recent trips to a printable HTML file, one trip per page |
+| `npm run clear-cache -- <tripId>` | Delete a trip's cached structured guide (regenerates on next load) |
+| `npm run export-advice -- --weeks 4` | Export structured trip guides (destination facts + topics/items) for recent trips to a printable HTML file, one trip per page |
 
 ### Exporting advice for quality review
 
@@ -172,7 +169,6 @@ DATABASE_URL=postgresql://travel_user:travel_pass@localhost:5432/travel_guide np
 ### Notes
 
 - No function timeout limits — AI calls can run as long as needed
-- The `scheduled-reconciliation` module runs natively as a persistent process
 - App Platform auto-deploys on push to `main`
 - Instance: `basic-xxs` ($5/mo) is sufficient for personal use
 - Scale up instance size if you need more concurrent users
@@ -186,12 +182,17 @@ src/
 │   ├── (setup)/setup/      # Registration/setup page
 │   ├── (app)/              # Authenticated pages (home, destinations, profile, trip)
 │   └── api/                # API routes
-├── actions/                # Server Actions (auth, trip, advice, vote, profile)
+├── actions/                # Server Actions (auth, trip, trip-guide, vote, profile)
 ├── components/             # React components (forms, cards, UI primitives)
 ├── lib/
-│   ├── travel-config.ts    # Central config: destinations, categories, questions, topic mappings
-│   ├── llm-adapter.ts      # AI provider integration (OpenAI via Vercel AI SDK)
-│   ├── advice-store.ts     # Advice cache DB operations
+│   ├── travel-config.ts        # Destinations config
+│   ├── question-library.ts     # Topics + questions with stable IDs and metadata
+│   ├── web-research.ts         # Server-side web retrieval for destination research
+│   ├── destination-research.ts # Stage 1: research destination facts from the web
+│   ├── destination-facts-store.ts # Cache/persistence for researched destination facts
+│   ├── trip-guide-generator.ts # Stage 2: structured TripGuide generation
+│   ├── trip-guide-store.ts     # Structured trip guide persistence
+│   ├── ai-errors.ts            # Shared AI error types
 │   ├── ai-rate-limiter.ts  # Rate limiting for AI calls
 │   ├── auth.ts             # Authentication service
 │   ├── profile.ts          # Profile service

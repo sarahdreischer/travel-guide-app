@@ -31,7 +31,7 @@ import {
 import { gatherDestinationSources, type WebSource } from '@/lib/web-research'
 import { canCallAI, recordAICall, recordAIFailure, getRateLimitStatus } from '@/lib/ai-rate-limiter'
 import type { AICallPriority } from '@/lib/ai-rate-limiter'
-import { AIRateLimitedError, AdviceTimeoutError } from '@/lib/llm-adapter'
+import { AIRateLimitedError, AdviceTimeoutError } from '@/lib/ai-errors'
 
 // ─── Config ─────────────────────────────────────────────────────────────────
 

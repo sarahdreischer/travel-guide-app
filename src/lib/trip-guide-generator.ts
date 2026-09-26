@@ -28,7 +28,7 @@ import type { DestinationFacts } from '@/lib/schemas/destination-facts'
 import { QUESTION_LIBRARY, type QuestionDef } from '@/lib/question-library'
 import { canCallAI, recordAICall, recordAIFailure, getRateLimitStatus } from '@/lib/ai-rate-limiter'
 import type { AICallPriority } from '@/lib/ai-rate-limiter'
-import { AIRateLimitedError, AdviceTimeoutError } from '@/lib/llm-adapter'
+import { AIRateLimitedError, AdviceTimeoutError } from '@/lib/ai-errors'
 
 // ─── Config ─────────────────────────────────────────────────────────────────
 

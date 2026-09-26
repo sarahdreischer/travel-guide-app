@@ -11,9 +11,7 @@
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:file": "jest --passWithNoTests",
-    "reconcile": "tsx scripts/reconcile.ts",
     "clear-cache": "tsx scripts/clear-cache.ts",
-    "generate-demo-advice": "tsx scripts/generate-demo-advice.ts",
     "export-advice": "tsx scripts/export-advice-pdf.ts"
   },
   "dependencies": {
