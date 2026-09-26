@@ -21,13 +21,6 @@ const LOADING_MESSAGES = [
 
 const DEFAULT_TIMEOUT_SECONDS = 30
 
-// When the legacy advice is ready but the preferred structured guide is still
-// pending, wait up to this many seconds for the structured guide before
-// redirecting on the legacy fallback. Bounded so the user is never stuck. The
-// structured pipeline (web research + model) can lag the legacy path, so this
-// avoids showing legacy content that would be replaced moments later.
-const STRUCTURED_GRACE_SECONDS = 8
-
 interface GeneratingClientProps {
   tripId: string
   destination: string
@@ -36,8 +29,7 @@ interface GeneratingClientProps {
 
 type StatusData = {
   complete?: boolean
-  legacyComplete?: boolean
-  source?: 'structured' | 'legacy' | null
+  source?: 'structured' | null
   structuredGuide?: { status?: 'ready' | 'pending' }
 }
 
@@ -52,9 +44,6 @@ export default function GeneratingClient({
   const [failed, setFailed] = useState(false)
   const [complete, setComplete] = useState(false)
   const redirected = useRef(false)
-  // Wall-clock time (ms) at which the legacy fallback first became available
-  // while the structured guide was still pending. Drives the grace window.
-  const legacyReadyAt = useRef<number | null>(null)
 
   const progress = Math.min(Math.round((elapsed / timeoutSeconds) * 100), 99)
 
@@ -100,26 +89,12 @@ export default function GeneratingClient({
         if (!res.ok) throw new Error('status check failed')
         const data: StatusData = await res.json()
 
-        const structuredReady = data.structuredGuide?.status === 'ready'
-        const legacyComplete = data.legacyComplete ?? false
-
-        if (structuredReady) {
-          // The preferred structured guide is ready — go now.
+        // The structured guide is the only advice source — redirect once it's
+        // ready. If it never lands, the hard timeout below handles the redirect
+        // and the home page shows a "still generating" state.
+        if (data.structuredGuide?.status === 'ready' || data.complete) {
           goToTrip()
           return
-        }
-
-        if (legacyComplete) {
-          // Legacy fallback is ready but the structured guide is still pending.
-          // Give the structured guide a short, bounded grace window to land so
-          // the user sees it rather than legacy content that would be replaced
-          // moments later. If the window elapses, redirect on the fallback.
-          if (legacyReadyAt.current === null) legacyReadyAt.current = Date.now()
-          const waited = (Date.now() - legacyReadyAt.current) / 1000
-          if (waited >= STRUCTURED_GRACE_SECONDS) {
-            goToTrip()
-            return
-          }
         }
       } catch {
         // Don't fail — the hard timeout below will handle the redirect.

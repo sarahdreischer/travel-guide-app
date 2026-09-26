@@ -23,15 +23,6 @@ jest.mock('@/db', () => {
 
 jest.mock('@/db/schema', () => ({ trips: { id: 'id' } }))
 
-jest.mock('@/lib/advice-store', () => ({
-  AdviceStore: { getForTrip: jest.fn() },
-}))
-
-jest.mock('@/lib/destinations', () => ({
-  CATEGORIES: ['A', 'B', 'C'],
-  getSubQuestions: jest.fn(() => ['q1']),
-}))
-
 jest.mock('@/lib/trip-guide-store', () => ({
   TripGuideStore: { isReady: jest.fn() },
   tripGuideKeyForTrip: jest.fn(() => ({
@@ -43,24 +34,18 @@ jest.mock('@/lib/trip-guide-store', () => ({
   })),
 }))
 
-import { AdviceStore } from '@/lib/advice-store'
 import { TripGuideStore } from '@/lib/trip-guide-store'
 
 const params = Promise.resolve({ tripId: 'trip-1' })
 const req = new Request('http://localhost/api/advice-status/trip-1')
 
-function mockAdvice(count: number) {
-  ;(AdviceStore.getForTrip as jest.Mock).mockResolvedValue(Array.from({ length: count }, (_, i) => ({ category: `c${i}` })))
-}
-
-describe('advice-status GET', () => {
+describe('advice-status GET (structured-only)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     tripRow = mockTrip
   })
 
-  it('reports structured "ready" and complete when the structured guide exists', async () => {
-    mockAdvice(0) // legacy not ready
+  it('is complete when the structured guide is ready', async () => {
     ;(TripGuideStore.isReady as jest.Mock).mockResolvedValue(true)
 
     const res = await GET(req, { params })
@@ -69,57 +54,31 @@ describe('advice-status GET', () => {
     expect(body.structuredGuide.status).toBe('ready')
     expect(body.source).toBe('structured')
     expect(body.complete).toBe(true)
-    expect(body.legacyComplete).toBe(false)
+    expect(body.ready).toBe(1)
+    expect(body.total).toBe(1)
   })
 
-  it('is complete via the legacy fallback when structured is pending but legacy is fully cached', async () => {
-    mockAdvice(3) // all 3 categories ready
+  it('is pending (not complete) while the structured guide is not ready', async () => {
     ;(TripGuideStore.isReady as jest.Mock).mockResolvedValue(false)
 
     const res = await GET(req, { params })
     const body = await res.json()
 
     expect(body.structuredGuide.status).toBe('pending')
-    expect(body.legacyComplete).toBe(true)
-    expect(body.source).toBe('legacy')
-    expect(body.complete).toBe(true)
-  })
-
-  it('is NOT complete while both paths are still pending', async () => {
-    mockAdvice(1) // partial legacy
-    ;(TripGuideStore.isReady as jest.Mock).mockResolvedValue(false)
-
-    const res = await GET(req, { params })
-    const body = await res.json()
-
     expect(body.complete).toBe(false)
     expect(body.source).toBeNull()
-    expect(body.ready).toBe(1)
-    expect(body.total).toBe(3)
+    expect(body.ready).toBe(0)
   })
 
-  it('prefers structured even when legacy is also complete', async () => {
-    mockAdvice(3)
-    ;(TripGuideStore.isReady as jest.Mock).mockResolvedValue(true)
-
-    const res = await GET(req, { params })
-    const body = await res.json()
-
-    expect(body.source).toBe('structured')
-    expect(body.complete).toBe(true)
-  })
-
-  it('does not let a structured-guide lookup error break the poll', async () => {
-    mockAdvice(3)
+  it('treats a structured-guide lookup error as pending (never breaks the poll)', async () => {
     ;(TripGuideStore.isReady as jest.Mock).mockRejectedValue(new Error('db down'))
 
     const res = await GET(req, { params })
     const body = await res.json()
 
-    // Falls back to the legacy signal.
+    expect(body.complete).toBe(false)
     expect(body.structuredGuide.status).toBe('pending')
-    expect(body.complete).toBe(true)
-    expect(body.source).toBe('legacy')
+    expect(body.source).toBeNull()
   })
 
   it('returns 404 when the trip does not exist', async () => {

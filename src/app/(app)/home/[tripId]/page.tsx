@@ -5,14 +5,12 @@ import { db } from '@/db'
 import { trips, savedTips } from '@/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { AuthService } from '@/lib/auth'
-import { AdviceStore, deriveMonthRange } from '@/lib/advice-store'
-import type { AdviceRecord } from '@/lib/advice-store'
-import { derivebudgetRange } from '@/lib/validators'
-import { reconcileMissingAdviceAction, reconcileGroupTipsAction } from '@/actions/advice'
-import { CATEGORIES, getSubQuestions } from '@/lib/destinations'
-import { findAnswer } from '@/lib/answer-lookup'
 import { fmtDateShort, fmtDate, nightCount } from '@/lib/format-date'
-import { groupSections, type CategorySection } from '@/lib/category-groups'
+import type { CategorySection } from '@/lib/category-groups'
+import { TripGuideStore, tripGuideKeyForTrip } from '@/lib/trip-guide-store'
+import { tripGuideToGroups } from '@/lib/trip-guide-adapter'
+import { tripToGuideRequest } from '@/lib/trip-guide-request'
+import { getOrGenerateTripGuideAction } from '@/actions/trip-guide'
 import AdviceAccordion from '@/components/AdviceAccordion'
 import DeleteTripButton from '@/components/DeleteTripButton'
 import EditTripButton from '@/components/EditTripButton'
@@ -22,34 +20,6 @@ import AppFooter from '@/components/AppFooter'
 export type { CategorySection }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function deriveSummary(text: string | undefined | null): string | null {
-  if (!text) return null
-  const match = text.match(/^[^.!?]*[.!?]/)
-  return match ? match[0].trim() : text
-}
-
-function buildSections(adviceRecords: AdviceRecord[]): CategorySection[] {
-  const byCategory = new Map<string, AdviceRecord>()
-  for (const record of adviceRecords) byCategory.set(record.category, record)
-
-  return CATEGORIES.map((category) => {
-    const record = byCategory.get(category)
-    const answers = record?.answers as Record<string, string> | null | undefined
-    const subQuestions = getSubQuestions(category)
-
-    // Fallback tip: derive a summary from the first available answer for this category
-    const firstQuestion = subQuestions[0]
-    const firstAnswer = firstQuestion ? findAnswer(answers ?? null, firstQuestion) ?? null : null
-
-    return {
-      category,
-      conciseTip: deriveSummary(firstAnswer),
-      answers: answers ?? null,
-      subQuestions,
-    }
-  })
-}
 
 function IconArrowLeft() {
   return (
@@ -79,76 +49,23 @@ export default async function HomePage({
   const { getDestinationImageWithAttribution } = await import('@/lib/destination-image')
   const { imageUrl: heroUrl, attribution: heroAttribution } = await getDestinationImageWithAttribution(trip.destination)
 
-  // Fetch + reconcile advice
-  let adviceRecords = await AdviceStore.getForTrip(tripId)
-  const categoriesWithQuestions = CATEGORIES.filter((c) => getSubQuestions(c).length > 0)
+  // ─── Structured Trip Guide (the only advice source) ─────────────────────────
+  // The trip guide is produced by the two-stage pipeline (destination research →
+  // structured generation). Try the cache first; if it isn't there yet, generate
+  // it inline (the user is on this page waiting for it, and this also recovers
+  // if the fire-and-forget trigger at trip creation was lost, e.g. a restart).
+  const guideKey = tripGuideKeyForTrip(trip)
+  let guide = await TripGuideStore.get(guideKey)
 
-  if (adviceRecords.length < categoriesWithQuestions.length) {
-    const { startMonth, endMonth } = deriveMonthRange(trip.startDate, trip.endDate)
-    // The user is actively viewing this trip page and waiting for advice, so
-    // this reconciliation is high priority — it may use the full per-minute
-    // budget ahead of background reconciliation.
-    await reconcileMissingAdviceAction({
-      destination: trip.destination.toLowerCase(),
-      startMonth,
-      endMonth,
-      travellerType: trip.travelMode.toLowerCase(),
-      budgetRange: derivebudgetRange(trip.budgetUsd),
-      transportMode: (trip as { transportMode?: string | null }).transportMode ?? undefined,
-      startingLocation: (trip as { startingLocation?: string | null }).startingLocation ?? undefined,
-      totalBudgetUsd: trip.budgetUsd,
-      transportCostIncluded: (trip as { transportCostIncluded?: boolean }).transportCostIncluded ?? true,
-      tripDurationDays: Math.max(1, Math.round((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / 86400000)),
-      partySize: trip.travelMode.toLowerCase(),
-      activities: trip.activityPreferences,
-      travelStyle: trip.travelStyle || undefined,
-    }, 'high')
-    adviceRecords = await AdviceStore.getForTrip(tripId)
+  if (!guide) {
+    const result = await getOrGenerateTripGuideAction(tripToGuideRequest(trip), 'high')
+    if (result.status === 'success') {
+      guide = result.guide
+    }
   }
 
-  const isPartial = adviceRecords.length < categoriesWithQuestions.length
-  const sections = buildSections(adviceRecords)
-
-  // ─── Generate group key tips via AI ────────────────────────────────────────
-  // Group tips are stored in advice_cache with category = '_group_tips'
-  const { startMonth: sm, endMonth: em } = deriveMonthRange(trip.startDate, trip.endDate)
-  const cacheKey = {
-    destination: trip.destination.toLowerCase(),
-    startMonth: sm,
-    endMonth: em,
-    travellerType: trip.travelMode.toLowerCase(),
-    budgetRange: derivebudgetRange(trip.budgetUsd),
-    transportMode: (trip as { transportMode?: string | null }).transportMode ?? undefined,
-    startingLocation: (trip as { startingLocation?: string | null }).startingLocation ?? undefined,
-    totalBudgetUsd: trip.budgetUsd,
-    transportCostIncluded: (trip as { transportCostIncluded?: boolean }).transportCostIncluded ?? true,
-    tripDurationDays: Math.max(1, Math.round((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / 86400000)),
-    partySize: trip.travelMode.toLowerCase(),
-    activities: trip.activityPreferences,
-    travelStyle: trip.travelStyle || undefined,
-  }
-
-  // Ensure group headline tips exist (generates + caches if missing/stale).
-  // Shared with the manual and scheduled reconcilers.
-  await reconcileGroupTipsAction(cacheKey)
-  const groupTipRecord = await AdviceStore.findByCacheKey(cacheKey, '_group_tips')
-  const groupTips: Record<string, string> = groupTipRecord
-    ? (groupTipRecord.answers as Record<string, string>)
-    : {}
-
-  const legacyGroups = groupSections(sections, groupTips)
-
-  // Prefer the structured two-stage TripGuide when one has already been
-  // generated and cached for this trip. It is adapted back onto the same
-  // GroupSection[] shape the accordion consumes, so the UI is unchanged. When
-  // no structured guide exists yet (or it fails validation), we fall back to
-  // the legacy per-category advice rendering above — preserving existing
-  // behaviour, the generating/polling flow, saved tips, and feedback.
-  const { TripGuideStore, tripGuideKeyForTrip } = await import('@/lib/trip-guide-store')
-  const { tripGuideToGroups } = await import('@/lib/trip-guide-adapter')
-  const structuredGuide = await TripGuideStore.get(tripGuideKeyForTrip(trip))
-  const structuredGroups = structuredGuide ? tripGuideToGroups(structuredGuide) : []
-  const groups = structuredGroups.length > 0 ? structuredGroups : legacyGroups
+  const groups = guide ? tripGuideToGroups(guide) : []
+  const isGenerating = groups.length === 0
 
   const nights = nightCount(trip.startDate, trip.endDate)
   const detail = [
@@ -215,14 +132,14 @@ export default async function HomePage({
         </div>
       )}
 
-      {isPartial && (
+      {isGenerating ? (
         <div className="advice-partial-banner">
-          Some advice is still being generated — refresh to check for updates.
+          Your travel briefing is still being generated — refresh to check for updates.
         </div>
+      ) : (
+        /* Grouped rows + saved tips banner (managed by accordion) */
+        <AdviceAccordion groups={groups} tripId={tripId} savedKeys={savedKeys} initialSavedCount={savedCount} />
       )}
-
-      {/* 8 grouped rows + saved tips banner (managed by accordion) */}
-      <AdviceAccordion groups={groups} tripId={tripId} savedKeys={savedKeys} initialSavedCount={savedCount} />
 
       <AppFooter />
     </>

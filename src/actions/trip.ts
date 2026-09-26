@@ -3,12 +3,10 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { AuthService } from '@/lib/auth'
-import { validateTripDates, derivebudgetRange } from '@/lib/validators'
+import { validateTripDates } from '@/lib/validators'
 import { DESTINATIONS } from '@/lib/destinations'
 import { db } from '@/db'
 import { trips } from '@/db/schema'
-import { getOrGenerateAdviceAction } from '@/actions/advice'
-import { deriveMonthRange } from '@/lib/advice-store'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -170,35 +168,11 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
     })
     .returning({ id: trips.id })
 
-  // 6. Derive cache key
-  const { startMonth, endMonth } = deriveMonthRange(startDateStr!, endDateStr!)
-  const cacheKey = {
-    destination: destination!.toLowerCase(),
-    startMonth,
-    endMonth,
-    travellerType: travelMode!.toLowerCase(),
-    budgetRange: derivebudgetRange(budget!),
-    transportMode: transportMode ?? undefined,
-    startingLocation: startingLocation || undefined,
-    totalBudgetUsd: budget!,
-    transportCostIncluded: transportCostIncludedStr === 'true',
-    tripDurationDays: Math.max(1, Math.round((new Date(endDateStr!).getTime() - new Date(startDateStr!).getTime()) / 86400000)),
-    partySize: travelMode!.toLowerCase(),
-    activities: activityPreferences,
-    travelStyle: travelStyle || undefined,
-  }
-
-  // 7. Trigger advice generation (fire and don't block redirect)
-  getOrGenerateAdviceAction(cacheKey).catch(() => {
-    // Advice generation failures are logged server-side by the advice action;
-    // do not block the user's redirect.
-  })
-
-  // 7b. Two-stage pipeline (destination research → structured TripGuide).
-  // Fire-and-forget alongside the legacy path: it caches DestinationFacts
-  // (reused across trips) and a structured TripGuide the home page prefers when
-  // available. Failures fall back to the legacy advice rendering, so this never
-  // blocks the redirect or breaks the existing flow.
+  // 6. Trigger the two-stage pipeline (destination research → structured
+  // TripGuide) — the sole advice source. Fire-and-forget so the redirect isn't
+  // blocked; the generating page then waits for the structured guide, and the
+  // home page also generates inline on first view if this was lost (e.g. a
+  // server restart). Failures are logged server-side.
   import('@/actions/trip-guide')
     .then(({ getOrGenerateTripGuideAction }) =>
       getOrGenerateTripGuideAction({
@@ -215,10 +189,9 @@ export async function createTripAction(formData: FormData): Promise<CreateTripRe
       })
     )
     .catch(() => {
-      // Two-stage generation failures are logged server-side; the legacy advice
-      // path still populates the page.
+      // Two-stage generation failures are logged server-side by the action.
     })
 
-  // 8. Redirect to the "generating advice" page which shows a loading animation
+  // 7. Redirect to the "generating" page which shows a loading animation.
   redirect(`/home/${trip.id}/generating`)
 }
