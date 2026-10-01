@@ -21,6 +21,7 @@ export const DESTINATIONS = [
   // 'Cambodia',
   // 'Canada',
   'Cap Ferret, France',
+  'Cluj-Napoca, Romania',
   'Crete, Greece',
   // 'Chile',
   // 'Colombia',
