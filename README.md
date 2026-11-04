@@ -8,8 +8,6 @@ Check out [src/lib/travel-config.ts](travel-config.ts) for a full list of questi
 
 The app is built with Next.js 15 (App Router), TypeScript, Drizzle ORM, PostgreSQL, Tailwind CSS, and Vercel AI SDK.
 
-Any images provided in this app are provided by [https://unsplash.com](Unsplash). 
-
 ## Prerequisites
 
 - Node.js 18+
@@ -216,3 +214,12 @@ Edit `src/lib/travel-config.ts` — this is the single source of truth for:
 - Concise topic mappings (home page cards)
 
 After adding new questions, existing cached advice will be detected as stale and regenerated on the next page load.
+
+## License
+
+This project is licensed under the **MPL 2.0 License** - see the [LICENSE](LICENSE) file for details.
+
+### Media Attributions
+All images used in this project are sourced from **Unsplash**. 
+* The project code is governed by the MPL 2.0 License.
+* All images belong to Unsplash and their respective photographers, and are governed by the [Unsplash License](https://unsplash.com).
