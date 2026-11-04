@@ -1,12 +1,12 @@
 # Trip Guide
 
-Trip Guide is an AI-powered travel guide app which alleviates micro-decision making (such as finding the best transportation medium, buying public transport tickets, restaurant tipping culture etc.) for travellers. 
+Trip Guide is an AI-powered web application which alleviates micro-decision making (such as finding the best transportation medium, buying public transport tickets, restaurant tipping culture etc.) for travellers.
 
-Users have the ability to generate trips and provide details such as budget range, preferred acitivites, group size etc. and in turn receive structured advice across categories like transportation, food, safety, activities and more in.
+Users have the ability to generate trips and provide details such as budget range, preferred activities, group size etc. and in turn receive structured advice across categories like transportation, food, safety, activities and more in.
 
 Check out [src/lib/travel-config.ts](travel-config.ts) for a full list of questions that are answered for any created trip.
 
-The app is built with Next.js 15 (App Router), TypeScript, Drizzle ORM, PostgreSQL, Tailwind CSS, and Vercel AI SDK.
+The app is built with Next.JS 15, TypeScript, Drizzle ORM, PostgreSQL, Tailwind CSS and OpenAI.
 
 ## Prerequisites
 
