@@ -1,6 +1,6 @@
-# Trip Guide
+# Travel Guide
 
-Trip Guide is an AI-powered web application which alleviates micro-decision making (such as finding the best transportation medium, buying public transport tickets, restaurant tipping culture etc.) for travellers.
+Travel Guide is an AI-powered web application which alleviates micro-decision making (such as finding the best transportation medium, buying public transport tickets, restaurant tipping culture etc.) for travellers.
 
 Users have the ability to generate trips and provide details such as budget range, preferred activities, group size etc. and in turn receive structured advice across categories like transportation, food, safety, activities and more in.
 
